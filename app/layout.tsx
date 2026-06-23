@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import { Sora, JetBrains_Mono } from 'next/font/google';
+import { Suspense } from 'react';
 import './globals.css';
 import { Providers } from '@/providers/providers';
+import { GoogleAnalytics } from '@/components/shared/google-analytics';
 
 const sora = Sora({
   variable: '--font-sans',
@@ -44,6 +46,9 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
+        <Suspense fallback={null}>
+          <GoogleAnalytics />
+        </Suspense>
         <Providers>{children}</Providers>
       </body>
     </html>
