@@ -19,6 +19,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - Sora font via `next/font/google` (weights 200–800), JetBrains Mono for mono
 - Brand: #FF0000 (Agaseke red); mobile-first; dark mode via next-themes
 - tiptap for rich text editing, @tailwindcss/typography for prose HTML rendering
+- Google Analytics (GA4) via `next/script` gtag — measurement ID from `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`
 - CURRENCY = USD (not RWF)
 - Platform fee: 10% (payer configurable: org or donor)
 - AES-GCM 256 + PBKDF2 for chat encryption
@@ -35,6 +36,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - `app/api/payments/initiate/` — POST, initiates pawaPay payment page
 - `app/api/payments/status/` — GET, checks pawaPay deposit status
 - `app/api/payments/webhook/` — POST, pawaPay callback (server-side, verifies via API, updates Firestore)
+- GA4 page view tracking via `GoogleAnalytics` component in root layout
 
 ### Key Patterns
 - AuthGuard via client-side auth store (Firebase Auth uses indexedDB — middleware can't read it)
@@ -45,6 +47,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - Rich text content (org bio + campaign descriptions) stored as HTML, rendered via `RichTextContent` with Tailwind prose styles
 - Campaign detail dialog on donate page — click info button to see full rich text description + progress
 - Server-side Firestore writes via REST API + OAuth2 JWT assertion (in `lib/firebase/server.ts`)
+- Google Analytics gtag loaded in root layout with Suspense boundary for `useSearchParams`
 
 ### Server Helpers (lib/firebase/server.ts)
 - `getAccessToken()` — RS256 JWT assertion → OAuth2 token
