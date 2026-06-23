@@ -2,21 +2,24 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Heart, ChevronRight, Shield, Lock, CreditCard, Smartphone } from 'lucide-react';
+import { Heart, ChevronRight, Shield, Lock, CreditCard, Smartphone, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import PublicOrgHeader from '@/components/shared/public-org-header';
 import PublicOrgFooter from '@/components/shared/public-org-footer';
+import { RichTextContent } from '@/components/shared/rich-text-content';
 import { useOrganizationBySlug } from '@/hooks/use-organization';
 import { useActiveCampaigns } from '@/hooks/use-campaigns';
 import { useCampaignDonationTotals } from '@/hooks/use-campaign-donations';
 import { useAuthStore } from '@/store/auth-store';
 import { CURRENCY, DONATION_FREQUENCIES } from '@/lib/constants';
 import { format } from 'date-fns';
+import type { Campaign } from '@/types/campaign';
 
 const AMOUNT_PRESETS = [5000, 10000, 25000, 50000, 100000];
 type Frequency = (typeof DONATION_FREQUENCIES)[number];
@@ -37,6 +40,7 @@ export default function DonateClient({ slug }: DonateClientProps) {
   const [customAmount, setCustomAmount] = useState('');
   const [frequency, setFrequency] = useState<Frequency>('one_time');
   const [campaignId, setCampaignId] = useState<string>('');
+  const [detailCampaign, setDetailCampaign] = useState<Campaign | null>(null);
 
   useEffect(() => {
     const fromUrl = searchParams?.get('campaignId');
@@ -199,25 +203,34 @@ export default function DonateClient({ slug }: DonateClientProps) {
                     const raisedAmount = Math.max(c.raisedAmount, computedRaised);
                     const progress = c.goalAmount > 0 ? Math.min((raisedAmount / c.goalAmount) * 100, 100) : 0;
                     return (
-                      <button
-                        key={c.id}
-                        onClick={() => setCampaignId(c.id)}
-                        className={`rounded-xl border p-4 text-left transition-all ${
-                          campaignId === c.id ? 'border-primary bg-primary/5 shadow-sm' : 'hover:border-primary/50 hover:bg-primary/5'
-                        }`}
-                      >
-                        <p className="font-medium">{c.title}</p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {raisedAmount.toLocaleString()} / {c.goalAmount.toLocaleString()} {CURRENCY}
-                          {c.endDate && ` · Ends ${format(c.endDate.toDate(), 'MMM d, yyyy')}`}
-                        </p>
-                        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                          <div
-                            className="h-full rounded-full bg-primary transition-all"
-                            style={{ width: `${progress}%` }}
-                          />
-                        </div>
-                      </button>
+                      <div key={c.id} className="relative">
+                        <button
+                          onClick={() => setCampaignId(c.id)}
+                          className={`w-full rounded-xl border p-4 pr-10 text-left transition-all ${
+                            campaignId === c.id ? 'border-primary bg-primary/5 shadow-sm' : 'hover:border-primary/50 hover:bg-primary/5'
+                          }`}
+                        >
+                          <p className="font-medium">{c.title}</p>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {raisedAmount.toLocaleString()} / {c.goalAmount.toLocaleString()} {CURRENCY}
+                            {c.endDate && ` · Ends ${format(c.endDate.toDate(), 'MMM d, yyyy')}`}
+                          </p>
+                          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                            <div
+                              className="h-full rounded-full bg-primary transition-all"
+                              style={{ width: `${progress}%` }}
+                            />
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDetailCampaign(c)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                          title="View campaign details"
+                        >
+                          <Info className="size-4" />
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -285,6 +298,55 @@ export default function DonateClient({ slug }: DonateClientProps) {
         </Card>
       </div>
       <PublicOrgFooter orgName={org.name} />
+
+      <Dialog open={!!detailCampaign} onOpenChange={(open) => { if (!open) setDetailCampaign(null); }}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          {detailCampaign && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-xl">{detailCampaign.title}</DialogTitle>
+                <DialogDescription>
+                  {detailCampaign.goalAmount.toLocaleString()} {CURRENCY} goal
+                  {detailCampaign.endDate && ` · Ends ${format(detailCampaign.endDate.toDate(), 'MMM d, yyyy')}`}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                {(() => {
+                  const computedRaised = campaignTotals?.[detailCampaign.id] ?? 0;
+                  const raised = Math.max(detailCampaign.raisedAmount, computedRaised);
+                  const pct = detailCampaign.goalAmount > 0 ? Math.min((raised / detailCampaign.goalAmount) * 100, 100) : 0;
+                  return (
+                    <div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium">{raised.toLocaleString()} {CURRENCY} raised</span>
+                        <span className="text-muted-foreground">{Math.round(pct)}% of goal</span>
+                      </div>
+                      <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
+                        <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })()}
+                <RichTextContent html={detailCampaign.description} />
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    onClick={() => {
+                      setCampaignId(detailCampaign.id);
+                      setDetailCampaign(null);
+                    }}
+                    className="flex-1"
+                  >
+                    Select this campaign
+                  </Button>
+                  <Button variant="outline" onClick={() => setDetailCampaign(null)}>
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

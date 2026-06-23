@@ -3,13 +3,13 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { RichTextEditor } from '@/components/shared/rich-text-editor';
 import { Campaign } from '@/types/campaign';
 import { PlatformFeePayer } from '@/lib/constants';
 
@@ -45,6 +45,7 @@ export function CampaignForm({ open, onOpenChange, onSubmit, editingCampaign }: 
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<CampaignFormData>({
     resolver: zodResolver(campaignSchema),
@@ -61,6 +62,17 @@ export function CampaignForm({ open, onOpenChange, onSubmit, editingCampaign }: 
 
   const platformFeePayer = watch('platformFeePayer');
   const goalAmount = watch('goalAmount');
+  const descriptionValue = watch('description');
+
+  useEffect(() => {
+    if (editingCampaign) {
+      setValue('title', editingCampaign.title);
+      setValue('description', editingCampaign.description);
+      setValue('goalAmount', editingCampaign.goalAmount);
+      setValue('endDate', editingCampaign.endDate?.toDate().toISOString().split('T')[0] ?? '');
+      setValue('platformFeePayer', editingCampaign.platformFeePayer);
+    }
+  }, [editingCampaign, setValue]);
 
   async function onFormSubmit(data: CampaignFormData) {
     setIsSubmitting(true);
@@ -91,7 +103,12 @@ export function CampaignForm({ open, onOpenChange, onSubmit, editingCampaign }: 
           </div>
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
-            <Textarea id="description" placeholder="Tell donors what this campaign supports..." rows={3} {...register('description')} />
+            <RichTextEditor
+              value={descriptionValue}
+              onChange={(html) => setValue('description', html, { shouldValidate: true })}
+              placeholder="Tell donors what this campaign supports..."
+              minHeight="200px"
+            />
             {errors.description && <p className="text-xs text-destructive">{errors.description.message}</p>}
           </div>
           <div className="grid grid-cols-2 gap-4">

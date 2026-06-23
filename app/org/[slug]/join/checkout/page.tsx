@@ -53,11 +53,12 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   function PageLayout({ children }: { children: React.ReactNode }) {
+    if (!org) return <>{children}</>;
     return (
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/[0.02]">
         <PublicOrgHeader org={org} slug={slug} />
         {children}
-        <PublicOrgFooter orgName={org?.name ?? ''} />
+        <PublicOrgFooter orgName={org.name} />
       </div>
     );
   }

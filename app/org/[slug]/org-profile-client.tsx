@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
+  Building2,
   Users,
   Heart,
   MapPin,
@@ -17,6 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import PublicOrgHeader from '@/components/shared/public-org-header';
 import PublicOrgFooter from '@/components/shared/public-org-footer';
+import { RichTextContent } from '@/components/shared/rich-text-content';
 import { useOrganizationBySlug } from '@/hooks/use-organization';
 import { useOrgMembers } from '@/hooks/use-members';
 import { useActiveCampaigns } from '@/hooks/use-campaigns';
@@ -123,7 +125,7 @@ export default function OrgProfileClient({ slug }: OrgProfileClientProps) {
             <div className="lg:col-span-2 space-y-12">
               <section>
                 <h2 className="text-xl font-bold">About</h2>
-                <p className="mt-3 leading-relaxed text-muted-foreground">{org.description}</p>
+                <div className="mt-3"><RichTextContent html={org.description} /></div>
               </section>
 
               {campaigns && campaigns.length > 0 && (
@@ -153,7 +155,7 @@ export default function OrgProfileClient({ slug }: OrgProfileClientProps) {
                             </Badge>
                           </div>
                           <h3 className="mt-3 font-semibold">{c.title}</h3>
-                          <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{c.description}</p>
+                          <div className="mt-1 line-clamp-2 text-sm text-muted-foreground"><RichTextContent html={c.description} /></div>
                           <div className="mt-4">
                             <div className="flex items-center justify-between text-sm">
                               <span className="font-medium">{Math.round(progress)}%</span>

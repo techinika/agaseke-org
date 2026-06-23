@@ -4,6 +4,7 @@ import { Campaign } from '@/types/campaign';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { RichTextContent } from '@/components/shared/rich-text-content';
 import { Pencil, Trash2, EyeOff, CheckCircle2, Calendar, Target, Percent } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -35,7 +36,7 @@ export function CampaignCard({ campaign, onEdit, onToggleActive, onDelete }: Cam
                 </Badge>
               )}
             </div>
-            <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{campaign.description}</p>
+            <div className="mt-1 text-sm text-muted-foreground line-clamp-2"><RichTextContent html={campaign.description} /></div>
           </div>
           <div className="flex shrink-0 gap-1">
             <Button variant="ghost" size="icon-xs" onClick={() => onEdit(campaign)}>

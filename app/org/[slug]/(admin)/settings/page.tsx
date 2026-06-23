@@ -5,10 +5,10 @@ import { useParams } from 'next/navigation';
 import { Save, Loader2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/shared/page-header';
+import { RichTextEditor } from '@/components/shared/rich-text-editor';
 import { useOrganizationBySlug, useUpdateOrganization } from '@/hooks/use-organization';
 import { useAuthStore } from '@/store/auth-store';
 import { useImageUpload } from '@/hooks/use-image-upload';
@@ -111,7 +111,12 @@ export default function SettingsPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="desc">Description</Label>
-            <Textarea id="desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} disabled={!isAdmin} />
+            <RichTextEditor
+              value={description}
+              onChange={setDescription}
+              placeholder="Tell visitors about your organization..."
+              minHeight="200px"
+            />
           </div>
           {isAdmin && (
             <Button onClick={handleSave} disabled={updateOrg.isPending}>

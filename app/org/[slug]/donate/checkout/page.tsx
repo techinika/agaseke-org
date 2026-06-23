@@ -56,11 +56,12 @@ export default function DonationCheckoutPage() {
   const [done, setDone] = useState(false);
 
   function PageLayout({ children }: { children: React.ReactNode }) {
+    if (!org) return <>{children}</>;
     return (
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/[0.02]">
         <PublicOrgHeader org={org} slug={slug} />
         {children}
-        <PublicOrgFooter orgName={org?.name ?? ''} />
+        <PublicOrgFooter orgName={org.name} />
       </div>
     );
   }
@@ -116,7 +117,7 @@ export default function DonationCheckoutPage() {
           depositId,
           amount: rwfAmount,
           returnUrl,
-          reason: `Donation to ${org.name}${campaignId ? ` for ${campaign?.name || 'campaign'}` : ''}`,
+          reason: `Donation to ${org.name}${campaignId ? ` for ${campaign?.title || 'campaign'}` : ''}`,
         }),
       });
 
