@@ -1,0 +1,117 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOrgAdmin(orgId) {
+      return isAuthenticated()
+        && request.auth.uid in get(/databases/$(database)/documents/organizations/$(orgId)).data.adminIds;
+    }
+
+    function isOrgMember(orgId) {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid));
+    }
+
+    function getUserType() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAuthenticated() && request.auth.uid == userId;
+      allow delete: if false;
+    }
+
+    // Organizations collection
+    match /organizations/{orgId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isOrgAdmin(orgId);
+      allow delete: if false;
+
+      // Tiers subcollection
+      match /tiers/{tierId} {
+        allow read: if isAuthenticated();
+        allow create: if isOrgAdmin(orgId);
+        allow update: if isOrgAdmin(orgId);
+        allow delete: if isOrgAdmin(orgId);
+      }
+
+      // Campaigns subcollection
+      match /campaigns/{campaignId} {
+        allow read: if isAuthenticated();
+        allow create: if isOrgAdmin(orgId);
+        allow update: if isOrgAdmin(orgId);
+        allow delete: if isOrgAdmin(orgId);
+      }
+
+      // Rooms subcollection
+      match /rooms/{roomId} {
+        allow read: if isAuthenticated()
+          && (isOrgAdmin(orgId)
+            || (isOrgMember(orgId)
+              && (resource.data.type == 'general'
+                || (resource.data.type == 'members_only')
+                || (resource.data.type == 'tier_restricted'
+                  && get(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid)).data.tierId in resource.data.allowedTierIds))));
+        allow create: if isOrgAdmin(orgId);
+        allow update: if isOrgAdmin(orgId);
+        allow delete: if isOrgAdmin(orgId);
+
+        // Messages subcollection
+        match /messages/{msgId} {
+          allow read: if isAuthenticated() && (isOrgAdmin(orgId) || isOrgMember(orgId));
+          allow create: if isAuthenticated() && request.auth.uid == request.resource.data.senderId;
+          allow update: if isAuthenticated() && request.auth.uid == resource.data.senderId;
+          allow delete: if isOrgAdmin(orgId);
+        }
+      }
+
+      // Members subcollection
+      match /members/{userId} {
+        allow read: if isAuthenticated() && (isOrgAdmin(orgId) || request.auth.uid == userId);
+        allow create: if isAuthenticated();
+        allow update: if isOrgAdmin(orgId);
+        allow delete: if false;
+      }
+    }
+
+    // Transactions collection (read-only for non-admins, write only by Cloud Functions)
+    match /transactions/{txnId} {
+      allow read: if isAuthenticated()
+        && (get(/databases/$(database)/documents/organizations/$(resource.data.orgId)).data.adminIds.hasAny([request.auth.uid])
+          || resource.data.userId == request.auth.uid);
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    // Donations collection
+    match /donations/{donationId} {
+      allow read: if isAuthenticated()
+        && (get(/databases/$(database)/documents/organizations/$(resource.data.orgId)).data.adminIds.hasAny([request.auth.uid])
+          || resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated();
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    // Memberships collection
+    match /memberships/{membershipId} {
+      allow read: if isAuthenticated()
+        && (get(/databases/$(database)/documents/organizations/$(resource.data.orgId)).data.adminIds.hasAny([request.auth.uid])
+          || resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated();
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}
