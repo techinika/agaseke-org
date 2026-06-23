@@ -18,6 +18,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - ImageKit for image uploads
 - Sora font via `next/font/google` (weights 200–800), JetBrains Mono for mono
 - Brand: #FF0000 (Agaseke red); mobile-first; dark mode via next-themes
+- tiptap for rich text editing, @tailwindcss/typography for prose HTML rendering
 - CURRENCY = USD (not RWF)
 - Platform fee: 10% (payer configurable: org or donor)
 - AES-GCM 256 + PBKDF2 for chat encryption
@@ -41,6 +42,8 @@ A web app for nonprofits to manage memberships and collect donations.
 - Campaign `raisedAmount` updated atomically (`increment`) AND computed from donations — computed sum is authoritative
 - pawaPay return URLs are path-based (`/org/{slug}/payment/return/{depositId}/{type}`) to avoid query param issues
 - Fee breakdown hidden from public checkout UI
+- Rich text content (org bio + campaign descriptions) stored as HTML, rendered via `RichTextContent` with Tailwind prose styles
+- Campaign detail dialog on donate page — click info button to see full rich text description + progress
 - Server-side Firestore writes via REST API + OAuth2 JWT assertion (in `lib/firebase/server.ts`)
 
 ### Server Helpers (lib/firebase/server.ts)
@@ -56,5 +59,4 @@ A web app for nonprofits to manage memberships and collect donations.
 2. Add pawaPay credentials and test payment flow end-to-end
 3. Configure pawaPay callback URL to point at `https://agaseke.co/api/payments/webhook`
 4. Set up automated reconciliation cycle for pending transactions (cron job or periodic check)
-5. Run `npm run build` locally to confirm zero errors
-6. Test full user flow: browse org → donate → pawaPay redirect → return page → records updated
+5. Test full user flow: browse org → donate → pawaPay redirect → return page → records updated

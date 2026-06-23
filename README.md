@@ -12,6 +12,7 @@ Built with Next.js 16 (App Router), Firebase (Firestore, Auth, Storage), Tailwin
 - **Mobile money payments** — Pay with MTN MoMo, Airtel Money, and other providers via pawaPay
 - **Admin dashboard** — Revenue breakdown, member lists, campaign progress
 - **Public organization pages** — White-labeled profile, join, and donate pages
+- **Rich text content** — Org bios and campaign descriptions support images, video embeds, links, and formatted text via tiptap editor
 
 ## Getting Started
 
@@ -39,6 +40,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the result.
 - **Payments**: pawaPay
 - **Images**: ImageKit
 - **Encryption**: AES-GCM 256
+- **Rich text**: tiptap editor with @tailwindcss/typography
 
 ## Project Structure
 
@@ -55,7 +57,7 @@ app/
     chat/          — Public chat
     payment/       — Payment return/confirmation
 components/
-  shared/          — AuthGuard, headers, footers, modals
+  shared/          — AuthGuard, headers, footers, modals, RichTextEditor, RichTextContent
   ui/              — shadcn/ui primitives
   rooms/           — Chat components
   members/         — Tier forms, cards
