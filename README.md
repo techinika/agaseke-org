@@ -40,7 +40,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the result.
 | `NEXT_PUBLIC_APP_URL` | Yes | App base URL (for email links and return URLs) |
 | `CRON_SECRET` | Yes | Shared secret for cron job authorization |
 | `NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT` | For uploads | ImageKit URL endpoint |
-| `IMAGEKIT_PUBLIC_KEY` | For uploads | ImageKit public key |
+| `NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY` | For uploads | ImageKit public key |
 | `IMAGEKIT_PRIVATE_KEY` | For uploads | ImageKit private key |
 | `RESEND_API_KEY` | For email | Resend API key |
 | `SMTP_ENCRYPTION_KEY` | For email | 32-byte hex key for org SMTP password encryption |

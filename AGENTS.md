@@ -89,10 +89,13 @@ A web app for nonprofits to manage memberships and collect donations.
 - `SMTP_ENCRYPTION_KEY` — 32 bytes hex key for AES-GCM SMTP password encryption
 - `SMTP_HOST/PORT/USER/PASS` — fallback SMTP provider
 - `CRON_SECRET` — shared secret for cron job authorization
+- `NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT` — ImageKit URL endpoint
+- `NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY` — ImageKit public key (was `IMAGEKIT_PUBLIC_KEY` — missing `NEXT_PUBLIC_` prefix)
+- `IMAGEKIT_PRIVATE_KEY` — ImageKit private key
 
 ### Next Steps
 1. Add `RESEND_API_KEY` to `.env.local` and register/verify sender domain in Resend
 2. Configure cron-job.org with `CRON_SECRET` and app URL for the 3 cron endpoints
-3. Add ImageKit keys to `.env.local` and test image upload
+3. Add ImageKit keys to `.env.local` (all 3: URL endpoint, public key, private key) and test image upload
 4. Test full payment flow: donate → pawaPay sandbox → webhook → email receipt → cron reconciliation
 5. Add pawaPay production credentials and remove sandbox mode
