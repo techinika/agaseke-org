@@ -7,6 +7,22 @@ interface UploadResult {
   thumbnailUrl: string;
 }
 
+interface AuthParams {
+  signature: string;
+  token: string;
+  expire: number;
+}
+
+async function getAuthParams(): Promise<AuthParams | null> {
+  try {
+    const response = await fetch('/api/imagekit/auth');
+    if (!response.ok) return null;
+    return response.json();
+  } catch {
+    return null;
+  }
+}
+
 export function getImageKitUrl(path: string, transformations?: Record<string, string>): string {
   if (!IMAGEKIT_URL_ENDPOINT) return path;
   const base = `${IMAGEKIT_URL_ENDPOINT}/${path}`;
@@ -22,12 +38,23 @@ export async function uploadToImageKit(
   fileName: string,
   folder?: string
 ): Promise<UploadResult> {
+  const authParams = await getAuthParams();
+  if (!authParams && !IMAGEKIT_PUBLIC_KEY) {
+    throw new Error('ImageKit not configured');
+  }
+
   const formData = new FormData();
   formData.append('file', file);
   formData.append('fileName', fileName);
   if (folder) formData.append('folder', folder);
   formData.append('publicKey', IMAGEKIT_PUBLIC_KEY ?? '');
   formData.append('useUniqueFileName', 'true');
+
+  if (authParams) {
+    formData.append('signature', authParams.signature);
+    formData.append('token', authParams.token);
+    formData.append('expire', String(authParams.expire));
+  }
 
   const response = await fetch('https://upload.imagekit.io/api/v1/files/upload', {
     method: 'POST',
