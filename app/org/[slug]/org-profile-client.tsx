@@ -25,6 +25,7 @@ import { useActiveCampaigns } from '@/hooks/use-campaigns';
 import { useActiveTiers } from '@/hooks/use-tiers';
 import { useCampaignDonationTotals } from '@/hooks/use-campaign-donations';
 import { format } from 'date-fns';
+import { hexToOklch } from '@/lib/utils';
 
 interface OrgProfileClientProps {
   slug: string;
@@ -73,8 +74,17 @@ export default function OrgProfileClient({ slug }: OrgProfileClientProps) {
     );
   }
 
+  const brandStyle = org.brandColor
+    ? hexToOklch(org.brandColor)
+    : { primary: 'oklch(0.628 0.258 29.23)', primaryForeground: 'oklch(0.985 0 0)' };
+
   return (
-    <>
+    <div
+      style={{
+        '--primary': brandStyle.primary,
+        '--primary-foreground': brandStyle.primaryForeground,
+      } as React.CSSProperties}
+    >
       <PublicOrgHeader org={org} slug={slug} />
       <div className="min-h-screen">
         <div className="relative h-64 bg-gradient-to-br from-primary/90 via-primary/60 to-primary/30 sm:h-80">
@@ -281,6 +291,6 @@ export default function OrgProfileClient({ slug }: OrgProfileClientProps) {
         </div>
       </div>
       <PublicOrgFooter orgName={org.name} />
-    </>
+    </div>
   );
 }
