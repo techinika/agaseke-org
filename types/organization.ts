@@ -14,6 +14,8 @@ export interface Organization {
   country: string;
   category: string;
 
+  brandColor?: string;
+
   // Email/SMTP settings (optional — org can configure custom SMTP)
   smtpHost?: string;
   smtpPort?: number;

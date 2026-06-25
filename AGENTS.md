@@ -41,6 +41,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - `app/api/payments/webhook/` — POST, pawaPay callback (verifies via API, delegates to shared `completeDeposit()`/`failDeposit()`)
 - `app/api/payments/finalize/` — POST, client-side return verification (delegates to shared functions)
 - `app/api/payments/reconcile/` — POST, manual reconcile via `CRON_SECRET` (delegates to `reconcilePendingTransaction()`)
+- `app/api/org/smtp/` — POST, encrypts SMTP password and saves to Firestore
 - `app/api/cron/reconcile/` — GET/POST, cron-hittable pending transaction reconciliation with admin alerts
 - `app/api/cron/payment-reminders/` — GET/POST, sends 3-day reminders for memberships and recurring donations
 - `app/api/cron/membership-expiry/` — GET/POST, marks expired memberships and sends expiry notifications

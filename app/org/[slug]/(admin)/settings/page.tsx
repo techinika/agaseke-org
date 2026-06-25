@@ -37,6 +37,9 @@ export default function SettingsPage() {
   const [smtpPass, setSmtpPass] = useState('');
   const [smtpFromEmail, setSmtpFromEmail] = useState('');
   const [smtpFromName, setSmtpFromName] = useState('');
+  const [brandColor, setBrandColor] = useState('#FF0000');
+
+  const [savingSmtp, setSavingSmtp] = useState(false);
 
   const logoInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -63,6 +66,7 @@ export default function SettingsPage() {
     setSmtpPass(org.smtpPass ?? '');
     setSmtpFromEmail(org.smtpFromEmail ?? '');
     setSmtpFromName(org.smtpFromName ?? '');
+    setBrandColor(org.brandColor ?? '#FF0000');
     setInitialized(true);
   }
 
@@ -74,6 +78,7 @@ export default function SettingsPage() {
         description,
         logoURL: logoURL || null,
         coverURL: coverURL || null,
+        brandColor: brandColor || '#FF0000',
       });
       toast.success('Settings saved');
     } catch {
@@ -83,18 +88,27 @@ export default function SettingsPage() {
 
   async function handleSaveSmtp() {
     if (!org) return;
+    setSavingSmtp(true);
     try {
-      await updateOrg.mutateAsync({
-        smtpHost: smtpHost || undefined,
-        smtpPort: smtpPort ? parseInt(smtpPort) : undefined,
-        smtpUser: smtpUser || undefined,
-        smtpPass: smtpPass || undefined,
-        smtpFromEmail: smtpFromEmail || undefined,
-        smtpFromName: smtpFromName || undefined,
+      const res = await fetch('/api/org/smtp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orgId: org.id,
+          smtpHost,
+          smtpPort: smtpPort ? parseInt(smtpPort) : null,
+          smtpUser,
+          smtpPass,
+          smtpFromEmail,
+          smtpFromName,
+        }),
       });
+      if (!res.ok) throw new Error('Failed to save');
       toast.success('Email settings saved');
     } catch {
       toast.error('Failed to save email settings');
+    } finally {
+      setSavingSmtp(false);
     }
   }
 
@@ -297,6 +311,27 @@ export default function SettingsPage() {
                   </div>
                 )}
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="brandColor">Brand Color</Label>
+                <div className="flex items-center gap-3">
+                  <input
+                    id="brandColor"
+                    type="color"
+                    value={brandColor}
+                    onChange={(e) => setBrandColor(e.target.value)}
+                    className="size-10 cursor-pointer rounded-lg border bg-transparent p-0.5"
+                  />
+                  <Input
+                    value={brandColor}
+                    onChange={(e) => setBrandColor(e.target.value)}
+                    placeholder="#FF0000"
+                    className="w-32 font-mono text-sm"
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    Used in email headers and CTAs
+                  </span>
+                </div>
+              </div>
               <Button onClick={handleSave} disabled={updateOrg.isPending}>
                 {updateOrg.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Save className="mr-2 size-4" />}
                 Save appearance
@@ -377,8 +412,8 @@ export default function SettingsPage() {
                   />
                 </div>
               </div>
-              <Button onClick={handleSaveSmtp} disabled={updateOrg.isPending}>
-                {updateOrg.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Mail className="mr-2 size-4" />}
+              <Button onClick={handleSaveSmtp} disabled={savingSmtp}>
+                {savingSmtp ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Mail className="mr-2 size-4" />}
                 Save email settings
               </Button>
             </>
