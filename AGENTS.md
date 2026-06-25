@@ -47,6 +47,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - `app/api/cron/membership-expiry/` — GET/POST, marks expired memberships and sends expiry notifications
 - GA4 page view tracking via `GoogleAnalytics` component in root layout
 - Campaign create/edit moved from modals to dedicated pages: `campaigns/new/`, `campaigns/[campaignId]/edit/`
+- **Sidebar improvements**: Fixed toggle on all screens, "View public page" link, "All organizations" hidden from non-admins ✅
 
 ### Key Patterns
 - AuthGuard via client-side auth store (Firebase Auth uses indexedDB — middleware can't read it)

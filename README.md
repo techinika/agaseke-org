@@ -79,21 +79,21 @@ app/
     donate/        — Donation flow with checkout
     chat/          — Public chat
     payment/       — Payment return/confirmation
-components/
-  shared/          — AuthGuard, AdminGuard, AdminMainContent, headers, footers, modals, RichTextEditor, RichTextContent, GoogleAnalytics
-  ui/              — shadcn/ui primitives
-  rooms/           — Chat components
-  members/         — Tier forms, cards
-  donations/       — Campaign forms, cards, campaign-form-fields
-lib/
-  firebase/        — Client + Admin SDK, Firestore helpers (server.ts has REST API helpers)
-  email/           — Send dispatcher, Resend/SMTP providers, AES-GCM encrypt, 8 email templates
-  payments.ts      — Shared completeDeposit, failDeposit, reconcilePendingTransaction
-  pawapay.ts       — pawaPay API client
-  app-url.ts       — Dynamic APP_URL helper
-  imagekit.ts      — Image upload utilities
-  encryption.ts    — AES-GCM 256 chat encryption
-  constants.ts     — Collections, fee rates, types
+  components/
+    shared/          — AuthGuard, AdminGuard, AdminMainContent, BrandColorWrapper, headers, footers, modals, RichTextEditor, RichTextContent, GoogleAnalytics
+    ui/              — shadcn/ui primitives
+    rooms/           — Chat components
+    members/         — Tier forms, cards
+    donations/       — Campaign forms, cards, campaign-form-fields
+  lib/
+    firebase/        — Client + Admin SDK, Firestore helpers (server.ts has REST API helpers)
+    email/           — Send dispatcher, Resend/SMTP providers, AES-GCM encrypt, 8 email templates
+    payments.ts      — Shared completeDeposit, failDeposit, reconcilePendingTransaction
+    pawapay.ts       — pawaPay API client
+    app-url.ts       — Dynamic APP_URL helper
+    imagekit.ts      — Image upload utilities (with auth)
+    encryption.ts    — AES-GCM 256 chat encryption
+    constants.ts     — Collections, fee rates, types
 types/             — TypeScript interfaces
 hooks/             — React Query hooks, custom hooks
 ```
