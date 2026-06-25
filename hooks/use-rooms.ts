@@ -87,7 +87,10 @@ export function useSendMessage(orgId: string, roomId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: Omit<ChatMessage, 'id' | 'createdAt'>) => {
-      return addDocument(messagesPath(orgId, roomId), data);
+      const cleanData = Object.fromEntries(
+        Object.entries(data).filter(([, v]) => v !== undefined)
+      );
+      return addDocument(messagesPath(orgId, roomId), cleanData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['room-messages', orgId, roomId] });

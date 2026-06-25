@@ -34,6 +34,8 @@ export function RichTextEditor({ value, onChange, placeholder = 'Start writing..
     extensions: [
       StarterKit.configure({
         heading: { levels: [2, 3] },
+        link: false,
+        underline: false,
       }),
       Underline,
       ImageExtension.configure({ inline: true }),

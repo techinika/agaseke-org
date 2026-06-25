@@ -62,6 +62,8 @@ A web app for nonprofits to manage memberships and collect donations.
 - **Cron auth**: all 3 cron endpoints check `Authorization: Bearer {CRON_SECRET}` header
 - **Campaign form**: `CampaignFormFields` extracted as reusable component; `CampaignForm` wraps in dialog for backward compat; dedicated pages for create/edit
 - **Super admin**: User docs with `isAdmin: true` can access `/admin/organizations` to view all orgs; accessible from sidebar
+- **Firestore safety**: `useSendMessage` strips `undefined` values from data before `addDoc` to avoid Firestore rejecting undefined fields (e.g. `imageURL`)
+- **tiptap**: StarterKit v3.27+ bundles `link` and `underline` — explicitly disabled in config since they're added separately
 
 ### Server Helpers (lib/firebase/server.ts)
 - `getAccessToken()` — RS256 JWT assertion → OAuth2 token
