@@ -11,6 +11,7 @@ import {
   MessageSquare,
   Settings,
   Shield,
+  ExternalLink,
   X,
   ChevronLeft,
   Menu,
@@ -60,7 +61,7 @@ export function OrgSidebar({ orgSlug }: OrgSidebarProps) {
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r bg-card transition-transform duration-200 lg:static lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r bg-card transition-transform duration-200 lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
@@ -117,6 +118,12 @@ export function OrgSidebar({ orgSlug }: OrgSidebarProps) {
             <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground">
               <User className="mr-2 size-4" />
               My membership
+            </Button>
+          </Link>
+          <Link href={`/org/${orgSlug}`} target="_blank">
+            <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground">
+              <ExternalLink className="mr-2 size-4" />
+              View public page
             </Button>
           </Link>
           {profile?.isAdmin && (
