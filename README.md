@@ -71,6 +71,7 @@ app/
   api/
     payments/      — initiate, finalize, webhook, reconcile, status
     cron/          — reconcile, payment-reminders, membership-expiry
+    org/           — smtp (encrypt and store SMTP credentials)
   org/[slug]/
     (admin)/       — Dashboard, settings, campaigns (new/[campaignId]/edit), members, finance, rooms
     (member)/      — Chat rooms
@@ -79,7 +80,7 @@ app/
     chat/          — Public chat
     payment/       — Payment return/confirmation
 components/
-  shared/          — AuthGuard, headers, footers, modals, RichTextEditor, RichTextContent, GoogleAnalytics
+  shared/          — AuthGuard, AdminGuard, AdminMainContent, headers, footers, modals, RichTextEditor, RichTextContent, GoogleAnalytics
   ui/              — shadcn/ui primitives
   rooms/           — Chat components
   members/         — Tier forms, cards

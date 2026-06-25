@@ -29,7 +29,7 @@ A web app for nonprofits to manage memberships and collect donations.
 ### Architecture
 - `(auth)/` route group — login, signup, forgot-password, verify-email
 - `(legal)/` route group — Terms of Service, Privacy Policy (with PublicNav + PublicFooter)
-- `org/[slug]/(admin)/` — dashboard, settings, campaigns, members, finance, rooms
+- `org/[slug]/(admin)/` — dashboard, settings (brand color picker + encrypted SMTP), campaigns, members, finance, rooms
 - `org/[slug]/(member)/` — member-only rooms
 - `org/[slug]/join/` — join flow with pawaPay checkout
 - `org/[slug]/donate/` — donation flow with pawaPay checkout
@@ -65,6 +65,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - **Super admin**: User docs with `isAdmin: true` can access `/admin/organizations` to view all orgs; accessible from sidebar
 - **Firestore safety**: `useSendMessage` strips `undefined` values from data before `addDoc` to avoid Firestore rejecting undefined fields (e.g. `imageURL`)
 - **tiptap**: StarterKit v3.27+ bundles `link` and `underline` — explicitly disabled in config since they're added separately
+- **Sidebar**: Fixed on all screens, toggleable via hamburger/X button. Content uses `AdminMainContent` client component for dynamic `lg:pl-64` padding. "View public page" link opens org profile in new tab. "All organizations" link visible only to super admins.
 
 ### Server Helpers (lib/firebase/server.ts)
 - `getAccessToken()` — RS256 JWT assertion → OAuth2 token
