@@ -15,6 +15,7 @@ import { useAuthStore } from '@/store/auth-store';
 import { useUserMembership } from '@/hooks/use-memberships';
 import { Room } from '@/types/room';
 import { toast } from 'sonner';
+import { BrandColorWrapper } from '@/components/shared/brand-color-wrapper';
 
 export default function PublicChatPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -111,40 +112,42 @@ export default function PublicChatPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/[0.02]">
-      <PublicOrgHeader org={org} slug={slug} />
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-        {!showMobileList && selectedRoom && (
-          <button
-            onClick={() => setShowMobileList(true)}
-            className="mb-3 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground sm:hidden"
-          >
-            <ArrowLeft className="size-4" />
-            All rooms
-          </button>
-        )}
-        <div className="flex h-[calc(100vh-12rem)] overflow-hidden rounded-xl border">
-          <div className={`w-full shrink-0 border-r bg-muted/30 sm:w-64 ${showMobileList ? 'block' : 'hidden sm:block'}`}>
-            <RoomList
-              rooms={rooms ?? []}
-              selectedRoomId={selectedRoom?.id ?? null}
-              onSelect={handleSelectRoom}
-              onCreateClick={() => toast.info('Create rooms from the admin panel')}
-              isLoading={roomsLoading}
-            />
-          </div>
-          <div className={`flex-1 ${showMobileList ? 'hidden sm:block' : 'block'}`}>
-            <ChatView
-              room={selectedRoom}
-              messages={messages}
-              isMessagesLoading={messagesLoading}
-              onSendMessage={handleSendMessage}
-              isSending={sendMessage.isPending}
-            />
+    <BrandColorWrapper org={org}>
+      <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/[0.02]">
+        <PublicOrgHeader org={org} slug={slug} />
+        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+          {!showMobileList && selectedRoom && (
+            <button
+              onClick={() => setShowMobileList(true)}
+              className="mb-3 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground sm:hidden"
+            >
+              <ArrowLeft className="size-4" />
+              All rooms
+            </button>
+          )}
+          <div className="flex h-[calc(100vh-12rem)] overflow-hidden rounded-xl border">
+            <div className={`w-full shrink-0 border-r bg-muted/30 sm:w-64 ${showMobileList ? 'block' : 'hidden sm:block'}`}>
+              <RoomList
+                rooms={rooms ?? []}
+                selectedRoomId={selectedRoom?.id ?? null}
+                onSelect={handleSelectRoom}
+                onCreateClick={() => toast.info('Create rooms from the admin panel')}
+                isLoading={roomsLoading}
+              />
+            </div>
+            <div className={`flex-1 ${showMobileList ? 'hidden sm:block' : 'block'}`}>
+              <ChatView
+                room={selectedRoom}
+                messages={messages}
+                isMessagesLoading={messagesLoading}
+                onSendMessage={handleSendMessage}
+                isSending={sendMessage.isPending}
+              />
+            </div>
           </div>
         </div>
+        <PublicOrgFooter orgName={org.name} />
       </div>
-      <PublicOrgFooter orgName={org.name} />
-    </div>
+    </BrandColorWrapper>
   );
 }

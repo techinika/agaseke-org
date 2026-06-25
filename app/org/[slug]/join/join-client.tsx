@@ -12,6 +12,7 @@ import { useOrganizationBySlug } from '@/hooks/use-organization';
 import { useOrgMembers } from '@/hooks/use-members';
 import { useAuthStore } from '@/store/auth-store';
 import { CURRENCY_SYMBOL } from '@/lib/constants';
+import { BrandColorWrapper } from '@/components/shared/brand-color-wrapper';
 
 interface JoinClientProps {
   slug: string;
@@ -77,103 +78,105 @@ export default function JoinClient({ slug }: JoinClientProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/[0.02]">
-      <PublicOrgHeader org={org} slug={slug} />
-      <div className="relative h-48 bg-gradient-to-br from-primary/90 via-primary/60 to-primary/30 sm:h-56">
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 px-4 pb-6 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-5xl">
-              <div className="flex items-end gap-4">
-                {org.logoURL && (
-                  <div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-white shadow-lg sm:size-20">
-                    <img src={org.logoURL} alt={org.name} className="size-full rounded-xl object-cover" />
-                  </div>
-                )}
-              <div className="pb-1">
-                <h1 className="text-2xl font-bold text-white sm:text-3xl lg:text-4xl">Join {org.name}</h1>
-                <p className="mt-1 max-w-2xl text-sm text-white/80 sm:text-base">{org.description}</p>
-                {members && (
-                  <p className="mt-1 text-xs text-white/60 sm:text-sm">
-                    {members.length} member{members.length !== 1 ? 's' : ''} and growing
-                  </p>
-                )}
+    <BrandColorWrapper org={org}>
+      <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/[0.02]">
+        <PublicOrgHeader org={org} slug={slug} />
+        <div className="relative h-48 bg-gradient-to-br from-primary/90 via-primary/60 to-primary/30 sm:h-56">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 px-4 pb-6 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-5xl">
+                <div className="flex items-end gap-4">
+                  {org.logoURL && (
+                    <div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-white shadow-lg sm:size-20">
+                      <img src={org.logoURL} alt={org.name} className="size-full rounded-xl object-cover" />
+                    </div>
+                  )}
+                <div className="pb-1">
+                  <h1 className="text-2xl font-bold text-white sm:text-3xl lg:text-4xl">Join {org.name}</h1>
+                  <p className="mt-1 max-w-2xl text-sm text-white/80 sm:text-base">{org.description}</p>
+                  {members && (
+                    <p className="mt-1 text-xs text-white/60 sm:text-sm">
+                      {members.length} member{members.length !== 1 ? 's' : ''} and growing
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-      <div className="mx-auto max-w-5xl px-4 py-12 sm:py-16">
+        <div className="mx-auto max-w-5xl px-4 py-12 sm:py-16">
 
-        {tiers && tiers.length > 0 ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 items-start">
-            {tiers.map((tier, index) => (
-              <div
-                key={tier.id}
-                className={`group relative rounded-2xl border bg-card transition-all hover:shadow-lg hover:-translate-y-0.5 ${
-                  index === 1 ? 'border-primary shadow-md' : ''
-                }`}
-              >
-                {index === 1 && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <Badge className="bg-primary px-4 py-1 text-xs font-semibold shadow-sm">
-                      <Star className="mr-1 size-3" /> Popular
-                    </Badge>
-                  </div>
-                )}
-                <div className="p-6 sm:p-8">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-bold">{tier.name}</h3>
-                    <div className={`flex size-10 items-center justify-center rounded-xl ${
-                      index === 1 ? 'bg-primary text-primary-foreground' : 'bg-muted'
-                    }`}>
-                      {index === 0 ? <Shield className="size-5" /> : index === 1 ? <Sparkles className="size-5" /> : <Star className="size-5" />}
+          {tiers && tiers.length > 0 ? (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 items-start">
+              {tiers.map((tier, index) => (
+                <div
+                  key={tier.id}
+                  className={`group relative rounded-2xl border bg-card transition-all hover:shadow-lg hover:-translate-y-0.5 ${
+                    index === 1 ? 'border-primary shadow-md' : ''
+                  }`}
+                >
+                  {index === 1 && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <Badge className="bg-primary px-4 py-1 text-xs font-semibold shadow-sm">
+                        <Star className="mr-1 size-3" /> Popular
+                      </Badge>
                     </div>
-                  </div>
-                  <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{tier.description}</p>
-
-                  <div className="mt-6">
-                    <span className="text-4xl font-bold">{CURRENCY_SYMBOL}{tier.price}</span>
-                    <span className="ml-1.5 text-sm text-muted-foreground">
-                      /{tier.billingCycle === 'one_time' ? 'once' : tier.billingCycle === 'monthly' ? 'month' : 'year'}
-                    </span>
-                  </div>
-
-                  {tier.benefits.length > 0 && (
-                    <ul className="mt-6 space-y-3">
-                      {tier.benefits.map((benefit, i) => (
-                        <li key={i} className="flex items-start gap-3 text-sm">
-                          <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" />
-                          <span>{benefit}</span>
-                        </li>
-                      ))}
-                    </ul>
                   )}
+                  <div className="p-6 sm:p-8">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xl font-bold">{tier.name}</h3>
+                      <div className={`flex size-10 items-center justify-center rounded-xl ${
+                        index === 1 ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                      }`}>
+                        {index === 0 ? <Shield className="size-5" /> : index === 1 ? <Sparkles className="size-5" /> : <Star className="size-5" />}
+                      </div>
+                    </div>
+                    <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{tier.description}</p>
 
-                  <Button
-                    className={`mt-8 w-full h-12 text-base font-semibold ${
-                      index === 1 ? 'shadow-md' : ''
-                    }`}
-                    variant={index === 1 ? 'default' : 'outline'}
-                    onClick={() => handleJoin(tier.id)}
-                  >
-                    {tier.price === 0 ? 'Join for free' : `Join ${tier.name}`}
-                    <ArrowRight className="ml-2 size-4" />
-                  </Button>
+                    <div className="mt-6">
+                      <span className="text-4xl font-bold">{CURRENCY_SYMBOL}{tier.price}</span>
+                      <span className="ml-1.5 text-sm text-muted-foreground">
+                        /{tier.billingCycle === 'one_time' ? 'once' : tier.billingCycle === 'monthly' ? 'month' : 'year'}
+                      </span>
+                    </div>
+
+                    {tier.benefits.length > 0 && (
+                      <ul className="mt-6 space-y-3">
+                        {tier.benefits.map((benefit, i) => (
+                          <li key={i} className="flex items-start gap-3 text-sm">
+                            <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" />
+                            <span>{benefit}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    <Button
+                      className={`mt-8 w-full h-12 text-base font-semibold ${
+                        index === 1 ? 'shadow-md' : ''
+                      }`}
+                      variant={index === 1 ? 'default' : 'outline'}
+                      onClick={() => handleJoin(tier.id)}
+                    >
+                      {tier.price === 0 ? 'Join for free' : `Join ${tier.name}`}
+                      <ArrowRight className="ml-2 size-4" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-2xl border border-dashed py-20 text-center">
-            <Users className="mx-auto mb-4 size-12 text-muted-foreground/50" />
-            <h2 className="text-xl font-semibold">No membership tiers available</h2>
-            <p className="mt-2 text-muted-foreground">
-              This organization hasn&apos;t set up membership options yet. Check back later.
-            </p>
-          </div>
-        )}
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed py-20 text-center">
+              <Users className="mx-auto mb-4 size-12 text-muted-foreground/50" />
+              <h2 className="text-xl font-semibold">No membership tiers available</h2>
+              <p className="mt-2 text-muted-foreground">
+                This organization hasn&apos;t set up membership options yet. Check back later.
+              </p>
+            </div>
+          )}
+        </div>
+        <PublicOrgFooter orgName={org.name} />
       </div>
-      <PublicOrgFooter orgName={org.name} />
-    </div>
+    </BrandColorWrapper>
   );
 }
