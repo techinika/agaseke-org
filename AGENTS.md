@@ -34,6 +34,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - `org/[slug]/join/` — join flow with pawaPay checkout
 - `org/[slug]/donate/` — donation flow with pawaPay checkout
 - `org/[slug]/payment/return/[depositId]/[type]/` — payment return page (client-side verification)
+- `admin/organizations/` — super admin page listing all organizations (requires `isAdmin: true` on user doc)
 - `org/[slug]/chat/` — public chat (guest-accessible)
 - `app/api/payments/initiate/` — POST, initiates pawaPay payment page
 - `app/api/payments/status/` — GET, checks pawaPay deposit status
@@ -60,6 +61,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - **Email pipeline**: `lib/email/index.ts` → org SMTP → Resend → system SMTP fallback; org SMTP passwords encrypted with AES-GCM
 - **Cron auth**: all 3 cron endpoints check `Authorization: Bearer {CRON_SECRET}` header
 - **Campaign form**: `CampaignFormFields` extracted as reusable component; `CampaignForm` wraps in dialog for backward compat; dedicated pages for create/edit
+- **Super admin**: User docs with `isAdmin: true` can access `/admin/organizations` to view all orgs; accessible from sidebar
 
 ### Server Helpers (lib/firebase/server.ts)
 - `getAccessToken()` — RS256 JWT assertion → OAuth2 token

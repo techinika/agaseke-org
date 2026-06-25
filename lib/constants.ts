@@ -30,6 +30,7 @@ export const ROUTES = {
   ORG_ROOMS: (slug: string) => `/org/${slug}/rooms`,
   ORG_JOIN: (slug: string) => `/org/${slug}/join`,
   ORG_DONATE: (slug: string) => `/org/${slug}/donate`,
+  ADMIN_ORGANIZATIONS: '/admin/organizations',
 } as const;
 
 export const USER_TYPES = ['org_admin', 'member', 'donor'] as const;

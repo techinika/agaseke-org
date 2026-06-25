@@ -8,4 +8,5 @@ export interface AppUser {
   photoURL: string | null;
   createdAt: Timestamp;
   type: UserType;
+  isAdmin?: boolean;
 }

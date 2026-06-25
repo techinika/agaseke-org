@@ -10,6 +10,7 @@ import {
   Wallet,
   MessageSquare,
   Settings,
+  Shield,
   X,
   ChevronLeft,
   Menu,
@@ -118,6 +119,14 @@ export function OrgSidebar({ orgSlug }: OrgSidebarProps) {
               My membership
             </Button>
           </Link>
+          {profile?.isAdmin && (
+            <Link href="/admin/organizations">
+              <Button variant="ghost" size="sm" className="w-full justify-start text-primary">
+                <Shield className="mr-2 size-4" />
+                Admin panel
+              </Button>
+            </Link>
+          )}
           <Link href="/">
             <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground">
               <ChevronLeft className="mr-2 size-4" />

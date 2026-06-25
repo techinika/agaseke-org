@@ -66,6 +66,8 @@ Open [http://localhost:3000](http://localhost:3000) to see the result.
 app/
   (auth)/          — Login, signup, password reset
   (legal)/         — Terms of Service, Privacy Policy
+  admin/
+    organizations/ — Super admin: list all organizations (requires isAdmin)
   api/
     payments/      — initiate, finalize, webhook, reconcile, status
     cron/          — reconcile, payment-reminders, membership-expiry
