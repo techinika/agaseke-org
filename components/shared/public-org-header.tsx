@@ -1,14 +1,22 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Menu, X, Home, Users, Heart, MessageSquare, LogIn } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Organization } from '@/types/organization';
-import { useAuthStore } from '@/store/auth-store';
-import { useUserMembership } from '@/hooks/use-memberships';
-import { SignInModal } from '@/components/shared/sign-in-modal';
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  Menu,
+  X,
+  Home,
+  Users,
+  Heart,
+  MessageSquare,
+  LogIn,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Organization } from "@/types/organization";
+import { useAuthStore } from "@/store/auth-store";
+import { useUserMembership } from "@/hooks/use-memberships";
+import { SignInModal } from "@/components/shared/sign-in-modal";
 
 interface PublicOrgHeaderProps {
   org: Organization;
@@ -18,21 +26,25 @@ interface PublicOrgHeaderProps {
 export default function PublicOrgHeader({ org, slug }: PublicOrgHeaderProps) {
   const pathname = usePathname();
   const { user, profile } = useAuthStore();
-  const { data: membership } = useUserMembership(org.id, user?.uid ?? '');
-  const isMember = !!membership && membership.status === 'active';
+  const { data: membership } = useUserMembership(org.id, user?.uid ?? "");
+  const isMember = !!membership && membership.status === "active";
   const [menuOpen, setMenuOpen] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
 
   const isActive = (path: string) => pathname === path;
 
   const links = [
-    { href: `/org/${slug}`, label: 'Home', icon: Home },
-    { href: `/org/${slug}/join`, label: 'Join', icon: Users },
-    { href: `/org/${slug}/donate`, label: 'Donate', icon: Heart },
+    { href: `/org/${slug}`, label: "Home", icon: Home },
+    { href: `/org/${slug}/join`, label: "Join", icon: Users },
+    { href: `/org/${slug}/donate`, label: "Donate", icon: Heart },
   ];
 
   if (isMember) {
-    links.push({ href: `/org/${slug}/chat`, label: 'Chat', icon: MessageSquare });
+    links.push({
+      href: `/org/${slug}/chat`,
+      label: "Chat",
+      icon: MessageSquare,
+    });
   }
 
   return (
@@ -40,16 +52,12 @@ export default function PublicOrgHeader({ org, slug }: PublicOrgHeaderProps) {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href={`/org/${slug}`} className="flex items-center gap-3">
           <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10">
-            {org.logoURL ? (
+            {org.logoURL && (
               <img
                 src={org.logoURL}
                 alt={org.name}
                 className="size-9 rounded-xl object-cover"
               />
-            ) : (
-              <span className="text-sm font-bold text-primary">
-                {org.name.charAt(0).toUpperCase()}
-              </span>
             )}
           </div>
           <span className="text-base font-semibold tracking-tight">
@@ -64,8 +72,8 @@ export default function PublicOrgHeader({ org, slug }: PublicOrgHeaderProps) {
               href={link.href}
               className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
                 isActive(link.href)
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
               <link.icon className="size-4" />
@@ -89,7 +97,9 @@ export default function PublicOrgHeader({ org, slug }: PublicOrgHeaderProps) {
               className="ml-2 flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-muted-foreground hover:text-foreground"
             >
               <div className="flex size-7 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
-                {(profile?.displayName || user.displayName || user.email || 'U').charAt(0).toUpperCase()}
+                {(profile?.displayName || user.displayName || user.email || "U")
+                  .charAt(0)
+                  .toUpperCase()}
               </div>
             </Link>
           )}
@@ -120,8 +130,8 @@ export default function PublicOrgHeader({ org, slug }: PublicOrgHeaderProps) {
                 onClick={() => setMenuOpen(false)}
                 className={`flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors ${
                   isActive(link.href)
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
               >
                 <link.icon className="size-4" />
@@ -130,7 +140,10 @@ export default function PublicOrgHeader({ org, slug }: PublicOrgHeaderProps) {
             ))}
             {!user && (
               <button
-                onClick={() => { setMenuOpen(false); setSignInOpen(true); }}
+                onClick={() => {
+                  setMenuOpen(false);
+                  setSignInOpen(true);
+                }}
                 className="flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 <LogIn className="size-4" />
