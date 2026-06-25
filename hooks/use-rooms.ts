@@ -14,8 +14,7 @@ import {
   query,
   orderBy,
   onSnapshot,
-  where,
-  QueryConstraint,
+  limit,
 } from 'firebase/firestore';
 
 function roomsPath(orgId: string) {
@@ -50,7 +49,8 @@ export function useRoomMessages(orgId: string, roomId: string | null) {
     const db = getDb();
     const q = query(
       collection(db, messagesPath(orgId, roomId)),
-      orderBy('createdAt', 'asc')
+      orderBy('createdAt', 'asc'),
+      limit(200)
     );
 
     const unsubscribe = onSnapshot(

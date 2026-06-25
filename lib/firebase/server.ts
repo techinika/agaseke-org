@@ -244,16 +244,32 @@ export async function incrementFirestoreField(
   const headers = await getAuthHeaders();
   const path = docPath(config.projectId, collection, docId, subcollection, subDocId);
 
-  const url = `${FIRESTORE_BASE}/${encodeURI(path)}`;
+  const commitUrl = `${FIRESTORE_BASE}/projects/${config.projectId}/databases/(default)/documents:commit`;
 
-  const response = await fetch(url, { headers });
-  if (!response.ok) throw new Error(`Failed to read document for increment: ${response.status}`);
+  const response = await fetch(commitUrl, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      writes: [
+        {
+          transform: {
+            document: path,
+            fieldTransforms: [
+              {
+                fieldPath: field,
+                increment: { integerValue: String(amount) },
+              },
+            ],
+          },
+        },
+      ],
+    }),
+  });
 
-  const data = await response.json();
-  const currentValue = parseInt(data.fields?.[field]?.integerValue || '0');
-  const newValue = currentValue + amount;
-
-  await updateFirestoreDocument(collection, docId, { [field]: newValue }, subcollection, subDocId);
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Firestore atomic increment failed: ${response.status} ${errorText}`);
+  }
 }
 
 export async function fetchOrgBySlug(slug: string): Promise<{ id: string; name: string; description: string; category: string; country: string; logoURL?: string; coverURL?: string } | null> {

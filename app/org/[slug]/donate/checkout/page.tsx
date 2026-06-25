@@ -53,7 +53,6 @@ export default function DonationCheckoutPage() {
   const message = searchParams.get('message') || '';
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [done, setDone] = useState(false);
 
   function PageLayout({ children }: { children: React.ReactNode }) {
     if (!org) return <>{children}</>;
@@ -69,15 +68,16 @@ export default function DonationCheckoutPage() {
   async function handlePay() {
     if (!org || amount < 100 || !feeBreakdown) return;
     setIsProcessing(true);
+    const depositId = generateDepositId();
+    let donationId: string | null = null;
     try {
-      const depositId = generateDepositId();
       const now = Timestamp.now();
       const totalToPay = feeBreakdown.totalToPay;
       const orgReceives = feeBreakdown.orgReceives;
       const rwfAmount = convertToRwf(totalToPay);
       const returnUrl = getReturnUrl(slug, depositId, 'donation');
 
-      await addDocument(COLLECTIONS.DONATIONS, {
+      donationId = await addDocument(COLLECTIONS.DONATIONS, {
         orgId: org.id,
         userId: user?.uid ?? null,
         donorName,
@@ -132,34 +132,6 @@ export default function DonationCheckoutPage() {
       toast.error(error instanceof Error ? error.message : 'Payment initiation failed');
       setIsProcessing(false);
     }
-  }
-
-  if (done) {
-    return (
-      <PageLayout>
-        <div className="mx-auto max-w-lg px-4 py-12">
-          <Card className="text-center">
-            <CardHeader>
-              <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-success/10">
-                <CheckCircle2 className="size-8 text-success" />
-              </div>
-              <CardTitle className="text-xl">Thank you!</CardTitle>
-              <CardDescription>
-                Your donation of {(feeBreakdown?.totalToPay || amount).toLocaleString()} {CURRENCY} has been received.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                {org?.name} greatly appreciates your support.
-              </p>
-              <Button onClick={() => router.push(`/org/${slug}`)}>
-                Back to {org?.name}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </PageLayout>
-    );
   }
 
   return (

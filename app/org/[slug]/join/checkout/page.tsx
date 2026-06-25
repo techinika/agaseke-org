@@ -66,8 +66,9 @@ export default function CheckoutPage() {
   async function handlePayment() {
     if (!user || !org || !tier) return;
     setIsProcessing(true);
+    const depositId = generateDepositId();
+    let membershipId: string | null = null;
     try {
-      const depositId = generateDepositId();
       const now = Timestamp.now();
       const totalToPay = feeBreakdown!.totalToPay;
       const rwfAmount = convertToRwf(totalToPay);
@@ -79,7 +80,7 @@ export default function CheckoutPage() {
           ? new Timestamp(now.seconds + 365 * 24 * 3600, 0)
           : now;
 
-      const membershipId = await createMembership.mutateAsync({
+      membershipId = await createMembership.mutateAsync({
         orgId: org.id,
         userId: user.uid,
         tierId: tier.id,

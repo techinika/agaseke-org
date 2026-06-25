@@ -13,4 +13,12 @@ export interface Organization {
   status: OrgStatus;
   country: string;
   category: string;
+
+  // Email/SMTP settings (optional — org can configure custom SMTP)
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpUser?: string;
+  smtpPass?: string;
+  smtpFromEmail?: string;
+  smtpFromName?: string;
 }

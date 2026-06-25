@@ -17,6 +17,17 @@ export function useCampaigns(orgId: string) {
   });
 }
 
+export function useCampaign(orgId: string, campaignId: string) {
+  return useQuery({
+    queryKey: ['campaign', orgId, campaignId],
+    queryFn: () =>
+      queryDocuments<Campaign>(campaignsPath(orgId)).then((docs) =>
+        docs.find((d) => d.id === campaignId) ?? null
+      ),
+    enabled: !!orgId && !!campaignId,
+  });
+}
+
 export function useActiveCampaigns(orgId: string) {
   return useQuery({
     queryKey: ['campaigns', orgId, 'active'],

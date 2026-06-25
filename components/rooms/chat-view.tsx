@@ -8,6 +8,7 @@ import { MessageBubble } from './message-bubble';
 import { Room, ChatMessage } from '@/types/room';
 import { useAuthStore } from '@/store/auth-store';
 import { useImageUpload } from '@/hooks/use-image-upload';
+import { encryptMessage, decryptMessage } from '@/lib/encryption';
 
 interface ChatViewProps {
   room: Room | null;
@@ -43,11 +44,24 @@ export function ChatView({
   const { upload, isUploading, error: uploadError, reset: resetUpload } = useImageUpload({ folder: 'chat' });
   const [pendingImage, setPendingImage] = useState<{ file: File; preview: string } | null>(null);
 
+  const [decryptedMessages, setDecryptedMessages] = useState<Record<string, string>>({});
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  useEffect(() => {
+    if (!room || !user) return;
+    for (const msg of messages) {
+      if (msg.content && !decryptedMessages[msg.id]) {
+        decryptMessage(msg.content, room.id, user.uid).then((decrypted) => {
+          setDecryptedMessages((prev) => ({ ...prev, [msg.id]: decrypted }));
+        });
+      }
+    }
+  }, [messages, room, user]);
 
   useEffect(() => {
     return () => {
@@ -58,7 +72,7 @@ export function ChatView({
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = input.trim();
-    if ((!trimmed && !pendingImage) || isSending || !room) return;
+    if ((!trimmed && !pendingImage) || isSending || !room || !user) return;
 
     let imageURL: string | undefined;
     if (pendingImage) {
@@ -67,10 +81,12 @@ export function ChatView({
       imageURL = url;
     }
 
+    const encrypted = trimmed ? await encryptMessage(trimmed, room.id, user.uid) : '';
+
     setInput('');
     setPendingImage(null);
     resetUpload();
-    await onSendMessage(trimmed, imageURL);
+    await onSendMessage(encrypted, imageURL);
   }
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -142,7 +158,7 @@ export function ChatView({
           messages.map((msg) => (
             <MessageBubble
               key={msg.id}
-              message={msg}
+              message={{ ...msg, content: decryptedMessages[msg.id] ?? msg.content }}
               isOwn={user?.uid === msg.senderId}
             />
           ))

@@ -2,16 +2,18 @@
 
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
-import { MessageSquare, ArrowLeft } from 'lucide-react';
+import { MessageSquare, ArrowLeft, Pencil, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { RoomList } from '@/components/rooms/room-list';
 import { ChatView } from '@/components/rooms/chat-view';
 import { CreateRoomDialog } from '@/components/rooms/create-room-dialog';
-import { useRooms, useRoomMessages, useSendMessage, useCreateRoom } from '@/hooks/use-rooms';
+import { useRooms, useRoomMessages, useSendMessage, useCreateRoom, useUpdateRoom, useDeleteRoom } from '@/hooks/use-rooms';
 import { useOrganizationBySlug } from '@/hooks/use-organization';
 import { useAuthStore } from '@/store/auth-store';
+import { useTiers } from '@/hooks/use-tiers';
 import { Room } from '@/types/room';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 export default function RoomsPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -29,9 +31,15 @@ export default function RoomsPage() {
 
   const sendMessage = useSendMessage(orgId, selectedRoom?.id ?? '');
   const createRoom = useCreateRoom(orgId);
+  const updateRoom = useUpdateRoom(orgId);
+  const deleteRoom = useDeleteRoom(orgId);
+  const { data: tiers } = useTiers(orgId);
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [showMobileList, setShowMobileList] = useState(true);
+
+  const isAdmin = org?.adminIds?.includes(user?.uid ?? '');
 
   async function handleSendMessage(content: string, imageURL?: string) {
     if (!user || !selectedRoom) return;
@@ -57,6 +65,34 @@ export default function RoomsPage() {
       setDialogOpen(false);
     } catch {
       toast.error('Failed to create room');
+    }
+  }
+
+  async function handleUpdateRoom(data: {
+    name: string;
+    description: string;
+    type: Room['type'];
+    allowedTierIds: string[];
+  }) {
+    if (!editingRoom) return;
+    try {
+      await updateRoom.mutateAsync({ roomId: editingRoom.id, data });
+      toast.success('Room updated');
+      setDialogOpen(false);
+      setEditingRoom(null);
+    } catch {
+      toast.error('Failed to update room');
+    }
+  }
+
+  async function handleDeleteRoom(room: Room) {
+    if (!confirm(`Delete "${room.name}"? This cannot be undone.`)) return;
+    try {
+      await deleteRoom.mutateAsync(room.id);
+      if (selectedRoom?.id === room.id) setSelectedRoom(null);
+      toast.success('Room deleted');
+    } catch {
+      toast.error('Failed to delete room');
     }
   }
 
@@ -88,27 +124,58 @@ export default function RoomsPage() {
             rooms={rooms ?? []}
             selectedRoomId={selectedRoom?.id ?? null}
             onSelect={handleSelectRoom}
-            onCreateClick={() => setDialogOpen(true)}
+            onCreateClick={() => {
+              setEditingRoom(null);
+              setDialogOpen(true);
+            }}
             isLoading={roomsLoading}
           />
         </div>
 
-        <div className={`flex-1 ${showMobileList ? 'hidden sm:block' : 'block'}`}>
-          <ChatView
-            room={selectedRoom}
-            messages={messages}
-            isMessagesLoading={messagesLoading}
-            onSendMessage={handleSendMessage}
-            isSending={sendMessage.isPending}
-          />
+        <div className={`flex flex-1 flex-col ${showMobileList ? 'hidden sm:block' : 'block'}`}>
+          {isAdmin && selectedRoom && (
+            <div className="flex items-center justify-end gap-1 border-b px-3 py-1.5">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => {
+                  setEditingRoom(selectedRoom);
+                  setDialogOpen(true);
+                }}
+                title="Edit room"
+              >
+                <Pencil className="size-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => handleDeleteRoom(selectedRoom)}
+                title="Delete room"
+                className="hover:text-destructive"
+              >
+                <Trash2 className="size-3.5" />
+              </Button>
+            </div>
+          )}
+          <div className="flex-1">
+            <ChatView
+              room={selectedRoom}
+              messages={messages}
+              isMessagesLoading={messagesLoading}
+              onSendMessage={handleSendMessage}
+              isSending={sendMessage.isPending}
+            />
+          </div>
         </div>
       </div>
 
       <CreateRoomDialog
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onSubmit={handleCreateRoom}
-        isSubmitting={createRoom.isPending}
+        onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingRoom(null); }}
+        onSubmit={editingRoom ? handleUpdateRoom : handleCreateRoom}
+        isSubmitting={createRoom.isPending || updateRoom.isPending}
+        editingRoom={editingRoom}
+        tiers={tiers ?? []}
       />
     </div>
   );

@@ -65,3 +65,7 @@ export type PlatformFeePayer = (typeof PLATFORM_FEE_PAYERS)[number];
 
 export const CURRENCY = 'USD';
 export const CURRENCY_SYMBOL = '$';
+
+// Email / Reminders
+export const REMINDER_DAYS_BEFORE = 3;
+export const MEMBERSHIP_GRACE_PERIOD_DAYS = 7;

@@ -163,7 +163,7 @@ function TierFormInner({ open, onOpenChange, onSubmit, editingTier }: TierFormPr
                   <span className="text-sm font-medium">Donor pays</span>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {price > 0
-                      ? `Donor pays ${(price * 1.1).toLocaleString()} USD, you receive ${price.toLocaleString()} USD`
+                      ? `Donor pays ${Math.ceil(price / 0.9).toLocaleString()} USD, you receive ${price.toLocaleString()} USD`
                       : '10% added to checkout'}
                   </p>
                 </div>
