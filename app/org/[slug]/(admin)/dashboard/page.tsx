@@ -105,7 +105,7 @@ export default function OrgDashboardPage() {
             <Skeleton className="h-9 w-32" />
           </div>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(260px,1fr))]">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-32 rounded-xl" />
           ))}
@@ -227,7 +227,7 @@ export default function OrgDashboardPage() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-base">Quick Actions</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-2">
+            <CardContent className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(240px,1fr))]">
               <Link
                 href={`/org/${slug}/members`}
                 className="flex items-center gap-3 rounded-xl border p-4 transition-all hover:bg-muted hover:shadow-sm"

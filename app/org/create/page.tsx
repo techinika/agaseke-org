@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Loader2, Check, ChevronLeft, ImageIcon, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -174,6 +175,12 @@ export default function CreateOrgPage() {
     <div className="flex min-h-screen items-center justify-center px-4 py-12">
       <div className="w-full max-w-lg">
         <div className="mb-8 text-center">
+          <div className="mb-4">
+            <Link href="/org" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <ChevronLeft className="size-4" />
+              Back to organizations
+            </Link>
+          </div>
           <h1 className="text-2xl font-bold">Create your organization</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Set up your organization in just a few steps

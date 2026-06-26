@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { Loader2, ArrowLeft, CheckCircle2, Smartphone } from 'lucide-react';
+import { Loader2, ArrowLeft, CheckCircle2, Smartphone, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import PublicOrgHeader from '@/components/shared/public-org-header';
 import PublicOrgFooter from '@/components/shared/public-org-footer';
+import { OrgNotFound } from '@/components/shared/org-not-found';
 import { useActiveTiers } from '@/hooks/use-tiers';
 import { useOrganizationBySlug } from '@/hooks/use-organization';
 import { useAuthStore } from '@/store/auth-store';
@@ -171,7 +172,11 @@ export default function CheckoutPage() {
     );
   }
 
-  if (!tier || !org) {
+  if (!org) {
+    return <OrgNotFound icon={Users} />;
+  }
+
+  if (!tier) {
     return (
       <PageLayout>
         <div className="mx-auto max-w-lg px-4 py-12 text-center">

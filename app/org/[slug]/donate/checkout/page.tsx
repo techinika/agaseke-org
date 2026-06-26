@@ -2,13 +2,15 @@
 
 import { useState, useMemo } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { Loader2, ArrowLeft, Smartphone, CheckCircle2 } from 'lucide-react';
+import { Loader2, ArrowLeft, Smartphone, CheckCircle2, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import PublicOrgHeader from '@/components/shared/public-org-header';
 import PublicOrgFooter from '@/components/shared/public-org-footer';
+import { OrgNotFound } from '@/components/shared/org-not-found';
 import { useOrganizationBySlug } from '@/hooks/use-organization';
 import { useAuthStore } from '@/store/auth-store';
 import { useCampaigns } from '@/hooks/use-campaigns';
@@ -24,7 +26,7 @@ export default function DonationCheckoutPage() {
   const router = useRouter();
   const { user } = useAuthStore();
 
-  const { data: org } = useOrganizationBySlug(slug);
+  const { data: org, isLoading: orgLoading } = useOrganizationBySlug(slug);
   const { data: campaigns } = useCampaigns(org?.id ?? '');
 
   const campaignId = searchParams.get('campaignId') || '';
@@ -134,13 +136,27 @@ export default function DonationCheckoutPage() {
     }
   }
 
+  if (orgLoading) {
+    return (
+      <PageLayout>
+        <div className="mx-auto max-w-lg px-4 py-12">
+          <Skeleton className="h-96 rounded-xl" />
+        </div>
+      </PageLayout>
+    );
+  }
+
+  if (!org) {
+    return <OrgNotFound icon={Heart} />;
+  }
+
   return (
     <PageLayout>
       <div className="mx-auto w-full max-w-lg px-4 py-8 sm:py-12">
         <Card className="overflow-hidden">
           <CardHeader className="space-y-1 border-b bg-muted/30 pb-4 sm:pb-6">
             <CardTitle className="text-lg sm:text-xl">Complete your donation</CardTitle>
-            <CardDescription>To {org?.name}</CardDescription>
+            <CardDescription>To {org.name}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 p-4 sm:p-6">
             <div className="rounded-lg border bg-muted/50 p-4">

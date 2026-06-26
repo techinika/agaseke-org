@@ -3,7 +3,6 @@
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Building2,
   Users,
   Heart,
   MapPin,
@@ -26,6 +25,7 @@ import { useActiveTiers } from '@/hooks/use-tiers';
 import { useCampaignDonationTotals } from '@/hooks/use-campaign-donations';
 import { format } from 'date-fns';
 import { BrandColorWrapper } from '@/components/shared/brand-color-wrapper';
+import { OrgNotFound } from '@/components/shared/org-not-found';
 
 interface OrgProfileClientProps {
   slug: string;
@@ -58,20 +58,7 @@ export default function OrgProfileClient({ slug }: OrgProfileClientProps) {
   }
 
   if (!org) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center px-4">
-        <div className="mx-auto max-w-md text-center">
-          <Building2 className="mx-auto mb-6 size-16 text-muted-foreground/50" />
-          <h1 className="text-2xl font-bold">Organization not found</h1>
-          <p className="mt-2 text-muted-foreground">
-            This organization doesn&apos;t exist or may have been removed.
-          </p>
-          <Button variant="outline" className="mt-6" onClick={() => router.push('/')}>
-            Go home
-          </Button>
-        </div>
-      </div>
-    );
+    return <OrgNotFound />;
   }
 
   return (

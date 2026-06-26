@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { MessageSquare, ArrowLeft } from 'lucide-react';
+import { ArrowLeft, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import PublicOrgHeader from '@/components/shared/public-org-header';
@@ -16,6 +16,7 @@ import { useUserMembership } from '@/hooks/use-memberships';
 import { Room } from '@/types/room';
 import { toast } from 'sonner';
 import { BrandColorWrapper } from '@/components/shared/brand-color-wrapper';
+import { OrgNotFound } from '@/components/shared/org-not-found';
 
 export default function PublicChatPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -65,14 +66,7 @@ export default function PublicChatPage() {
   }
 
   if (!org) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center px-4">
-        <MessageSquare className="mb-6 size-16 text-muted-foreground/50" />
-        <h1 className="text-2xl font-bold">Organization not found</h1>
-        <p className="mt-2 text-muted-foreground">This organization doesn&apos;t exist.</p>
-        <Button variant="outline" className="mt-6" onClick={() => router.push('/')}>Go home</Button>
-      </div>
-    );
+    return <OrgNotFound />;
   }
 
   if (!user) {

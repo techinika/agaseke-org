@@ -164,17 +164,16 @@ export function OrgSidebar({ orgSlug, orgName }: OrgSidebarProps) {
                 </Button>
               </Link>
             )}
-            {profile?.isAdmin && (
+            <Link href="/org">
               <Button
                 variant="ghost"
                 size="sm"
                 className="w-full justify-start text-muted-foreground h-8"
-                onClick={() => router.push("/")}
               >
                 <ChevronLeft className="mr-2 size-3.5" />
                 All organizations
               </Button>
-            )}
+            </Link>
             <Button
               variant="ghost"
               size="sm"

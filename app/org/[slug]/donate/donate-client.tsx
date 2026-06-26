@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Heart, ChevronRight, Shield, Lock, CreditCard, Smartphone, Info } from 'lucide-react';
+import { ChevronRight, Shield, Lock, CreditCard, Smartphone, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,6 +21,7 @@ import { CURRENCY, DONATION_FREQUENCIES } from '@/lib/constants';
 import { format } from 'date-fns';
 import type { Campaign } from '@/types/campaign';
 import { BrandColorWrapper } from '@/components/shared/brand-color-wrapper';
+import { OrgNotFound } from '@/components/shared/org-not-found';
 
 const AMOUNT_PRESETS = [5000, 10000, 25000, 50000, 100000];
 type Frequency = (typeof DONATION_FREQUENCIES)[number];
@@ -84,14 +85,7 @@ export default function DonateClient({ slug }: DonateClientProps) {
   }
 
   if (!org) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center px-4">
-        <Heart className="mb-6 size-16 text-muted-foreground/50" />
-        <h1 className="text-2xl font-bold">Organization not found</h1>
-        <p className="mt-2 text-muted-foreground">This organization doesn&apos;t exist.</p>
-        <Button variant="outline" className="mt-6" onClick={() => router.push('/')}>Go home</Button>
-      </div>
-    );
+    return <OrgNotFound />;
   }
 
   const frequencyLabels: Record<Frequency, string> = {

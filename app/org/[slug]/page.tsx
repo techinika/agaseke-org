@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { fetchOrgBySlug } from '@/lib/firebase/server';
 import OrgProfileClient from './org-profile-client';
 
@@ -33,7 +34,7 @@ export default async function OrgProfilePage({ params }: Props) {
   const org = await fetchOrgBySlug(slug);
 
   if (!org) {
-    return null;
+    notFound();
   }
 
   return <OrgProfileClient slug={slug} />;

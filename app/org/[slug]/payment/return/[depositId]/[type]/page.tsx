@@ -2,18 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { CheckCircle2, XCircle, Loader2, ArrowLeft, Clock } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, ArrowLeft, Clock, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import PublicOrgHeader from '@/components/shared/public-org-header';
 import PublicOrgFooter from '@/components/shared/public-org-footer';
+import { OrgNotFound } from '@/components/shared/org-not-found';
 import { useOrganizationBySlug } from '@/hooks/use-organization';
 import { BrandColorWrapper } from '@/components/shared/brand-color-wrapper';
 
 export default function PaymentReturnPage() {
   const { slug, depositId, type } = useParams<{ slug: string; depositId: string; type: string }>();
   const router = useRouter();
-  const { data: org } = useOrganizationBySlug(slug);
+  const { data: org, isLoading: orgLoading } = useOrganizationBySlug(slug);
 
   const [status, setStatus] = useState<'checking' | 'success' | 'failed' | 'processing'>('checking');
   const [errorMessage, setErrorMessage] = useState('');
@@ -59,12 +61,16 @@ export default function PaymentReturnPage() {
     checkAndFinalize();
   }, [depositId, finalized, paymentType]);
 
-  if (!org) {
+  if (orgLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="size-8 animate-spin" />
+      <div className="mx-auto max-w-lg px-4 py-12">
+        <Skeleton className="h-96 rounded-xl" />
       </div>
     );
+  }
+
+  if (!org) {
+    return <OrgNotFound icon={CreditCard} />;
   }
 
   return (

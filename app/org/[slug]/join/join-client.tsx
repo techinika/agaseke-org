@@ -13,6 +13,7 @@ import { useOrgMembers } from '@/hooks/use-members';
 import { useAuthStore } from '@/store/auth-store';
 import { CURRENCY_SYMBOL } from '@/lib/constants';
 import { BrandColorWrapper } from '@/components/shared/brand-color-wrapper';
+import { OrgNotFound } from '@/components/shared/org-not-found';
 
 interface JoinClientProps {
   slug: string;
@@ -65,16 +66,7 @@ export default function JoinClient({ slug }: JoinClientProps) {
   }
 
   if (!org) {
-    return (
-      <div className="flex min-h-screen items-center justify-center px-4">
-        <div className="text-center">
-          <Users className="mx-auto mb-6 size-16 text-muted-foreground/50" />
-          <h1 className="text-2xl font-bold">Organization not found</h1>
-          <p className="mt-2 text-muted-foreground">The organization you&apos;re looking for doesn&apos;t exist.</p>
-          <Button variant="outline" className="mt-6" onClick={() => router.push('/')}>Go home</Button>
-        </div>
-      </div>
-    );
+    return <OrgNotFound icon={Users} />;
   }
 
   return (
