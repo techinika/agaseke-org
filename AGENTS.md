@@ -18,6 +18,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - ImageKit for image uploads
 - Sora font via `next/font/google` (weights 200–800), JetBrains Mono for mono
 - Brand: #FF0000 (Agaseke red); mobile-first; dark mode via next-themes
+- Brand color applied as-is (hex directly on `--primary` CSS var — no OKLCH conversion)
 - tiptap for rich text editing, @tailwindcss/typography for prose HTML rendering
 - Google Analytics (GA4) via `next/script` gtag — measurement ID from `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`
 - CURRENCY = USD (not RWF)
@@ -68,7 +69,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - **Super admin**: User docs with `isAdmin: true` can access `/admin/organizations` to view all orgs; accessible from sidebar
 - **Firestore safety**: `useSendMessage` strips `undefined` values from data before `addDoc` to avoid Firestore rejecting undefined fields (e.g. `imageURL`)
 - **tiptap**: StarterKit v3.27+ bundles `link` and `underline` — explicitly disabled in config since they're added separately
-- **Sidebar**: Fixed on all screens, toggleable via hamburger/X button. Hamburger shown only when sidebar closed (at `left-3 top-3`), X button inside sidebar header when open. Content uses `AdminMainContent` client component for dynamic padding (`lg:pl-64` when open, `pl-14` when closed to clear hamburger). Sidebar title is org name (not "Agaseke4Org") with `break-words`. "View public page" link opens org profile in new tab. "All organizations" link visible only to super admins.
+- **Sidebar**: Fixed on all screens, toggleable via hamburger/X button. Hamburger shown only when sidebar closed (at `left-3 top-3`), X button inside sidebar header when open. Content uses `AdminMainContent` client component for dynamic padding (`lg:pl-64` when open, `sm:pl-14` when closed to clear hamburger). Sidebar title is org name (not "Agaseke4Org") with `break-words`. "View public page" link opens org profile in new tab. "All organizations" link visible only to super admins.
 - **Org listing**: `/org` page shows all orgs the user is an admin of, with card grid (avatar, description, country, category), "View page" (new tab) and "Dashboard" buttons, and a "New organization" button.
 - **Login redirect**: Default redirect after login changed from `/org/create` to `/org` (shows org listing instead of forcing creation).
 

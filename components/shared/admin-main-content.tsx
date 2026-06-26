@@ -10,7 +10,7 @@ export function AdminMainContent({ children }: { children: React.ReactNode }) {
     <main
       className={cn(
         'flex-1 overflow-auto transition-all duration-200',
-        sidebarOpen ? 'lg:pl-64' : 'pl-14'
+        sidebarOpen ? 'lg:pl-64' : 'sm:pl-14'
       )}
     >
       <div className="mx-auto max-w-7xl p-4 pt-20 lg:px-8 lg:pt-8">{children}</div>

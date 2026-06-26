@@ -2,7 +2,7 @@
 
 import { ReactNode } from 'react';
 import { Organization } from '@/types/organization';
-import { hexToOklch } from '@/lib/utils';
+import { brandColorValues } from '@/lib/utils';
 
 interface BrandColorWrapperProps {
   org: Organization;
@@ -11,8 +11,8 @@ interface BrandColorWrapperProps {
 
 export function BrandColorWrapper({ org, children }: BrandColorWrapperProps) {
   const brandStyle = org.brandColor
-    ? hexToOklch(org.brandColor)
-    : { primary: 'oklch(0.628 0.258 29.23)', primaryForeground: 'oklch(0.985 0 0)' };
+    ? brandColorValues(org.brandColor)
+    : { primary: '#FF0000', primaryForeground: '#ffffff' };
 
   return (
     <div
