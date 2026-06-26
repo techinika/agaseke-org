@@ -48,7 +48,7 @@ export default function PublicOrgHeader({ org, slug }: PublicOrgHeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-gradient-to-r from-background via-background to-primary/[0.03] backdrop-blur-xl supports-[backdrop-filter]:from-background/80 supports-[backdrop-filter]:via-background/80">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href={`/org/${slug}`} className="flex items-center gap-3">
           <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10">

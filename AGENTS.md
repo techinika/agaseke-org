@@ -53,7 +53,7 @@ A web app for nonprofits to manage memberships and collect donations.
 
 ### Key Patterns
 - AuthGuard via client-side auth store (Firebase Auth uses indexedDB — middleware can't read it)
-- Public org pages white-labeled (no Agaseke branding) with SignInModal for logged-out users
+- Public org pages white-labeled (no Agaseke branding, solid `bg-background` on nav/footer — no gradients) with SignInModal for logged-out users
 - Campaign `raisedAmount` updated atomically (`increment`) AND computed from donations — computed sum is authoritative
 - pawaPay return URLs are path-based (`/org/{slug}/payment/return/{depositId}/{type}`) to avoid query param issues
 - Fee breakdown hidden from public checkout UI

@@ -9,7 +9,7 @@ interface PublicOrgFooterProps {
 
 export default function PublicOrgFooter({ orgName }: PublicOrgFooterProps) {
   return (
-    <footer className="border-t border-border/40 bg-gradient-to-r from-background via-background to-primary/[0.03]">
+    <footer className="border-t border-border/40 bg-background">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 sm:flex-row sm:px-6 lg:px-8">
         <p className="text-center text-sm text-muted-foreground sm:text-left">
           &copy; {new Date().getFullYear()} {orgName}. All rights reserved.
