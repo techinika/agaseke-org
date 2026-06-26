@@ -17,6 +17,7 @@ Built with Next.js 16 (App Router), Firebase (Firestore, Auth, Storage), Tailwin
 - **Google Analytics** — GA4 page view tracking via measurement ID
 - **Email notifications** — Payment confirmations, reminders, expiry alerts, and failure notices via Resend or org-configured SMTP
 - **Automated reconciliation** — Cron-driven pending transaction checks with admin email alerts
+- **Progressive Web App** — Installable with offline support, push notifications, and home screen launch via web app manifest and service worker
 
 ## Getting Started
 

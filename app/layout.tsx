@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import './globals.css';
 import { Providers } from '@/providers/providers';
 import { GoogleAnalytics } from '@/components/shared/google-analytics';
+import { PWARegister } from '@/components/shared/pwa-register';
 
 const sora = Sora({
   variable: '--font-sans',
@@ -24,8 +25,20 @@ export const metadata: Metadata = {
   description:
     'Agaseke helps nonprofits, churches, schools, and associations manage memberships, collect donations, and connect with their community. Simple tools for African organizations.',
   metadataBase: new URL('https://agaseke.co'),
+  manifest: '/manifest.webmanifest',
   icons: { icon: '/favicon.svg' },
   keywords: ['membership management', 'donation platform', 'nonprofit tools', 'Africa', 'organization management', 'member engagement'],
+  appleWebApp: {
+    capable: true,
+    title: 'Agaseke',
+    statusBarStyle: 'default',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -51,6 +64,9 @@ export default function RootLayout({
           <GoogleAnalytics />
         </Suspense>
         <Providers>{children}</Providers>
+        <Suspense fallback={null}>
+          <PWARegister />
+        </Suspense>
       </body>
     </html>
   );
