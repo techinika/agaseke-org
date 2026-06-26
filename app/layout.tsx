@@ -24,6 +24,7 @@ export const metadata: Metadata = {
   description:
     'Agaseke helps nonprofits, churches, schools, and associations manage memberships, collect donations, and connect with their community. Simple tools for African organizations.',
   metadataBase: new URL('https://agaseke.co'),
+  icons: { icon: '/favicon.svg' },
   keywords: ['membership management', 'donation platform', 'nonprofit tools', 'Africa', 'organization management', 'member engagement'],
   openGraph: {
     type: 'website',

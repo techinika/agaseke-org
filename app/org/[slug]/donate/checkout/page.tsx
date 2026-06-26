@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { Loader2, ArrowLeft, Smartphone, CheckCircle2, Heart } from 'lucide-react';
+import { Loader2, ArrowLeft, Smartphone, CreditCard, CheckCircle2, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,6 +11,9 @@ import { Separator } from '@/components/ui/separator';
 import PublicOrgHeader from '@/components/shared/public-org-header';
 import PublicOrgFooter from '@/components/shared/public-org-footer';
 import { OrgNotFound } from '@/components/shared/org-not-found';
+import { BrandColorWrapper } from '@/components/shared/brand-color-wrapper';
+import { PaymentMethodSelector } from '@/components/shared/payment-method-selector';
+import type { PaymentMethod } from '@/components/shared/payment-method-selector';
 import { useOrganizationBySlug } from '@/hooks/use-organization';
 import { useAuthStore } from '@/store/auth-store';
 import { useCampaigns } from '@/hooks/use-campaigns';
@@ -55,15 +58,18 @@ export default function DonationCheckoutPage() {
   const message = searchParams.get('message') || '';
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('mobile_money');
 
   function PageLayout({ children }: { children: React.ReactNode }) {
     if (!org) return <>{children}</>;
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/[0.02]">
-        <PublicOrgHeader org={org} slug={slug} />
-        {children}
-        <PublicOrgFooter orgName={org.name} />
-      </div>
+      <BrandColorWrapper org={org}>
+        <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/[0.02]">
+          <PublicOrgHeader org={org} slug={slug} />
+          {children}
+          <PublicOrgFooter orgName={org.name} />
+        </div>
+      </BrandColorWrapper>
     );
   }
 
@@ -97,7 +103,9 @@ export default function DonationCheckoutPage() {
         createdAt: now,
       });
 
-      await addDocument(COLLECTIONS.TRANSACTIONS, {
+      const pm = paymentMethod === 'card' ? 'pesapal' : 'pawapay';
+
+      const txData: Record<string, unknown> = {
         orgId: org.id,
         userId: user?.uid ?? null,
         amount: totalToPay,
@@ -108,28 +116,54 @@ export default function DonationCheckoutPage() {
         referenceId: depositId,
         depositId,
         status: 'pending',
-        paymentMethod: 'pawapay',
+        paymentMethod: pm,
         createdAt: now,
-      });
+      };
 
-      const res = await fetch('/api/payments/initiate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          depositId,
-          amount: rwfAmount,
-          returnUrl,
-          reason: `Donation to ${org.name}${campaignId ? ` for ${campaign?.title || 'campaign'}` : ''}`,
-        }),
-      });
+      await addDocument(COLLECTIONS.TRANSACTIONS, txData);
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to initiate payment');
+      if (paymentMethod === 'card') {
+        const res = await fetch('/api/payments/initiate-card', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            depositId,
+            amount: rwfAmount,
+            returnUrl,
+            reason: `Donation to ${org.name}${campaignId ? ` for ${campaign?.title || 'campaign'}` : ''}`,
+            email: donorEmail || user?.email || undefined,
+            firstName: donorName || 'Supporter',
+            lastName: org.name,
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Failed to initiate card payment');
+        }
+
+        const { redirectUrl } = await res.json();
+        window.location.href = redirectUrl;
+      } else {
+        const res = await fetch('/api/payments/initiate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            depositId,
+            amount: rwfAmount,
+            returnUrl,
+            reason: `Donation to ${org.name}${campaignId ? ` for ${campaign?.title || 'campaign'}` : ''}`,
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Failed to initiate payment');
+        }
+
+        const { redirectUrl } = await res.json();
+        window.location.href = redirectUrl;
       }
-
-      const { redirectUrl } = await res.json();
-      window.location.href = redirectUrl;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Payment initiation failed');
       setIsProcessing(false);
@@ -184,17 +218,9 @@ export default function DonationCheckoutPage() {
 
             <Separator />
 
-            <div className="rounded-lg border bg-primary/5 p-4">
-              <div className="flex items-center gap-3">
-                <Smartphone className="size-6 text-primary" />
-                <div>
-                  <p className="font-medium">Mobile Money</p>
-                  <p className="text-xs text-muted-foreground">
-                    Pay with MTN MoMo, Airtel Money, or other mobile money providers via pawaPay.
-                    You will be redirected to the secure payment page.
-                  </p>
-                </div>
-              </div>
+            <div>
+              <p className="mb-3 text-sm font-medium">Select payment method</p>
+              <PaymentMethodSelector value={paymentMethod} onChange={setPaymentMethod} />
             </div>
           </CardContent>
           <div className="flex flex-col gap-3 border-t p-4 sm:flex-row sm:p-6">
@@ -214,6 +240,8 @@ export default function DonationCheckoutPage() {
             >
               {isProcessing ? (
                 <Loader2 className="mr-2 size-4 animate-spin" />
+              ) : paymentMethod === 'card' ? (
+                <CreditCard className="mr-2 size-4" />
               ) : (
                 <Smartphone className="mr-2 size-4" />
               )}

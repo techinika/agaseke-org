@@ -1,4 +1,5 @@
 import { checkDepositStatus } from '@/lib/pawapay';
+import { getTransactionStatus } from '@/lib/pesapal';
 import {
   queryFirestoreDocuments,
   updateFirestoreDocument,
@@ -106,7 +107,23 @@ async function processMembership(depositId: string): Promise<void> {
   }
 }
 
-export async function reconcilePendingTransaction(depositId: string): Promise<'completed' | 'failed' | 'skipped'> {
+export async function reconcilePendingTransaction(
+  depositId: string,
+  paymentMethod?: string
+): Promise<'completed' | 'failed' | 'skipped'> {
+  if (!paymentMethod) {
+    const txs = await queryFirestoreDocuments(COLLECTIONS.TRANSACTIONS, 'depositId', 'EQUAL', depositId);
+    paymentMethod = (txs[0]?.paymentMethod as string) || 'pawapay';
+  }
+
+  if (paymentMethod === 'pesapal') {
+    return reconcilePesaPal(depositId);
+  }
+
+  return reconcilePawaPay(depositId);
+}
+
+async function reconcilePawaPay(depositId: string): Promise<'completed' | 'failed' | 'skipped'> {
   const result = await checkDepositStatus(depositId);
   if (result.status === 'NOT_FOUND') return 'skipped';
 
@@ -120,4 +137,31 @@ export async function reconcilePendingTransaction(depositId: string): Promise<'c
     return 'failed';
   }
   return 'skipped';
+}
+
+async function reconcilePesaPal(depositId: string): Promise<'completed' | 'failed' | 'skipped'> {
+  const txs = await queryFirestoreDocuments(COLLECTIONS.TRANSACTIONS, 'depositId', 'EQUAL', depositId);
+  const tx = txs[0];
+  const orderTrackingId = tx?.orderTrackingId as string | undefined;
+
+  if (!orderTrackingId) return 'skipped';
+
+  try {
+    const statusData = await getTransactionStatus(orderTrackingId);
+    const desc = statusData.payment_status_description || '';
+
+    if (desc === 'Completed') {
+      await completeDeposit(depositId);
+      return 'completed';
+    }
+
+    if (desc === 'Failed' || desc === 'Cancelled' || desc === 'Declined') {
+      await failDeposit(depositId);
+      return 'failed';
+    }
+
+    return 'skipped';
+  } catch {
+    return 'skipped';
+  }
 }

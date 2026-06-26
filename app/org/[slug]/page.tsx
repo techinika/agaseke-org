@@ -21,6 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: org.name,
     description: org.description || `${org.name} - ${org.category} organization on Agaseke. Join, donate, or learn more.`,
+    icons: org.logoURL ? { icon: org.logoURL } : undefined,
     openGraph: {
       title: org.name,
       description: org.description || `${org.name} - ${org.category} organization on Agaseke.`,

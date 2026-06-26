@@ -10,6 +10,7 @@ Built with Next.js 16 (App Router), Firebase (Firestore, Auth, Storage), Tailwin
 - **Donation collection** — One-time and recurring donations with campaign tracking
 - **Chat rooms** — Encrypted group chat for members, with public and private rooms
 - **Mobile money payments** — Pay with MTN MoMo, Airtel Money, and other providers via pawaPay
+- **Card payments** — Pay with Visa, Mastercard, and other bank cards via PesaPal
 - **Admin dashboard** — Revenue breakdown, member lists, campaign progress
 - **Public organization pages** — White-labeled profile, join, and donate pages
 - **Rich text content** — Org bios and campaign descriptions support images, video embeds, links, and formatted text via tiptap editor
@@ -37,6 +38,11 @@ Open [http://localhost:3000](http://localhost:3000) to see the result.
 | `FIREBASE_ADMIN_PRIVATE_KEY` | Yes | Firebase Admin SDK private key |
 | `PAWAPAY_BASE_URL` | Yes | pawaPay API base URL (sandbox or production) |
 | `PAWAPAY_API_TOKEN` | Yes | pawaPay API token |
+| `PAWAPAY_WEBHOOK_SECRET` | For webhooks | pawaPay webhook HMAC secret |
+| `PESAPAL_URL` | For cards | PesaPal API base URL |
+| `PESAPAL_CONSUMER_KEY` | For cards | PesaPal consumer key |
+| `PESAPAL_CONSUMER_SECRET` | For cards | PesaPal consumer secret |
+| `PESAPAL_IPN_ID` | For cards | PesaPal IPN ID (auto-registered if empty) |
 | `NEXT_PUBLIC_APP_URL` | Yes | App base URL (for email links and return URLs) |
 | `CRON_SECRET` | Yes | Shared secret for cron job authorization |
 | `NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT` | For uploads | ImageKit URL endpoint |
@@ -53,7 +59,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the result.
 - **Styling**: Tailwind CSS v4, shadcn/ui (base-nova)
 - **Backend**: Firebase (Firestore, Auth, Storage)
 - **State**: Zustand, React Query
-- **Payments**: pawaPay
+- **Payments**: pawaPay (mobile money), PesaPal (card)
 - **Images**: ImageKit
 - **Email**: Resend + Nodemailer SMTP
 - **Encryption**: AES-GCM 256
@@ -69,7 +75,7 @@ app/
   admin/
     organizations/ — Super admin: list all organizations (requires isAdmin)
   api/
-    payments/      — initiate, finalize, webhook, reconcile, status
+    payments/      — initiate, initiate-card, finalize, webhook, pesapal-ipn, reconcile, status
     cron/          — reconcile, payment-reminders, membership-expiry
     org/           — smtp (encrypt and store SMTP credentials)
   org/             — User's organization listing (card grid with dashboard + public page links)
@@ -92,6 +98,7 @@ app/
     email/           — Send dispatcher, Resend/SMTP providers, AES-GCM encrypt, 8 email templates
     payments.ts      — Shared completeDeposit, failDeposit, reconcilePendingTransaction
     pawapay.ts       — pawaPay API client
+    pesapal.ts       — PesaPal API client (auth, IPN, order, status)
     app-url.ts       — Dynamic APP_URL helper
     imagekit.ts      — Image upload utilities (with auth)
     encryption.ts    — AES-GCM 256 chat encryption

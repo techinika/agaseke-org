@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { Loader2, ArrowLeft, CheckCircle2, Smartphone, Users } from 'lucide-react';
+import { Loader2, ArrowLeft, CheckCircle2, Smartphone, CreditCard, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,6 +11,9 @@ import { Separator } from '@/components/ui/separator';
 import PublicOrgHeader from '@/components/shared/public-org-header';
 import PublicOrgFooter from '@/components/shared/public-org-footer';
 import { OrgNotFound } from '@/components/shared/org-not-found';
+import { BrandColorWrapper } from '@/components/shared/brand-color-wrapper';
+import { PaymentMethodSelector } from '@/components/shared/payment-method-selector';
+import type { PaymentMethod } from '@/components/shared/payment-method-selector';
 import { useActiveTiers } from '@/hooks/use-tiers';
 import { useOrganizationBySlug } from '@/hooks/use-organization';
 import { useAuthStore } from '@/store/auth-store';
@@ -52,15 +55,18 @@ export default function CheckoutPage() {
   }, [tier, feePayer]);
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('mobile_money');
 
   function PageLayout({ children }: { children: React.ReactNode }) {
     if (!org) return <>{children}</>;
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/[0.02]">
-        <PublicOrgHeader org={org} slug={slug} />
-        {children}
-        <PublicOrgFooter orgName={org.name} />
-      </div>
+      <BrandColorWrapper org={org}>
+        <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/[0.02]">
+          <PublicOrgHeader org={org} slug={slug} />
+          {children}
+          <PublicOrgFooter orgName={org.name} />
+        </div>
+      </BrandColorWrapper>
     );
   }
 
@@ -103,7 +109,9 @@ export default function CheckoutPage() {
         photoURL: profile?.photoURL || user.photoURL,
       });
 
-      await addDocument(COLLECTIONS.TRANSACTIONS, {
+      const pm = paymentMethod === 'card' ? 'pesapal' : 'pawapay';
+
+      const txData: Record<string, unknown> = {
         orgId: org.id,
         userId: user.uid,
         amount: totalToPay,
@@ -114,28 +122,54 @@ export default function CheckoutPage() {
         referenceId: depositId,
         depositId,
         status: 'pending',
-        paymentMethod: 'pawapay',
+        paymentMethod: pm,
         createdAt: now,
-      });
+      };
 
-      const res = await fetch('/api/payments/initiate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          depositId,
-          amount: rwfAmount,
-          returnUrl,
-          reason: `Membership ${tier.name} for ${org.name}`,
-        }),
-      });
+      await addDocument(COLLECTIONS.TRANSACTIONS, txData);
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to initiate payment');
+      if (paymentMethod === 'card') {
+        const res = await fetch('/api/payments/initiate-card', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            depositId,
+            amount: rwfAmount,
+            returnUrl,
+            reason: `Membership ${tier.name} for ${org.name}`,
+            email: user.email || profile?.email,
+            firstName: profile?.displayName || user.displayName || 'Member',
+            lastName: org.name,
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Failed to initiate card payment');
+        }
+
+        const { redirectUrl } = await res.json();
+        window.location.href = redirectUrl;
+      } else {
+        const res = await fetch('/api/payments/initiate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            depositId,
+            amount: rwfAmount,
+            returnUrl,
+            reason: `Membership ${tier.name} for ${org.name}`,
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Failed to initiate payment');
+        }
+
+        const { redirectUrl } = await res.json();
+        window.location.href = redirectUrl;
       }
-
-      const { redirectUrl } = await res.json();
-      window.location.href = redirectUrl;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Payment initiation failed');
       setIsProcessing(false);
@@ -228,17 +262,9 @@ export default function CheckoutPage() {
 
             <Separator />
 
-            <div className="rounded-lg border bg-primary/5 p-4">
-              <div className="flex items-center gap-3">
-                <Smartphone className="size-6 text-primary" />
-                <div>
-                  <p className="font-medium">Mobile Money</p>
-                  <p className="text-xs text-muted-foreground">
-                    Pay with MTN MoMo, Airtel Money, or other mobile money providers via pawaPay.
-                    You will be redirected to the secure payment page.
-                  </p>
-                </div>
-              </div>
+            <div>
+              <p className="mb-3 text-sm font-medium">Select payment method</p>
+              <PaymentMethodSelector value={paymentMethod} onChange={setPaymentMethod} />
             </div>
           </CardContent>
           <div className="flex flex-col gap-3 border-t p-4 sm:flex-row sm:p-6">
@@ -258,6 +284,8 @@ export default function CheckoutPage() {
             >
               {isProcessing ? (
                 <Loader2 className="mr-2 size-4 animate-spin" />
+              ) : paymentMethod === 'card' ? (
+                <CreditCard className="mr-2 size-4" />
               ) : (
                 <Smartphone className="mr-2 size-4" />
               )}

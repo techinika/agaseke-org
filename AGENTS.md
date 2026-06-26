@@ -15,6 +15,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - Firebase (Firestore, Auth, Storage) — project "ndafana-one"
 - Zustand + React Query for state
 - pawaPay for mobile money payments (hosted payment page flow)
+- PesaPal for card payments (hosted payment page flow via SubmitOrderRequest + IPN)
 - ImageKit for image uploads
 - Sora font via `next/font/google` (weights 200–800), JetBrains Mono for mono
 - Brand: #FF0000 (Agaseke red); mobile-first; dark mode via next-themes
@@ -34,15 +35,17 @@ A web app for nonprofits to manage memberships and collect donations.
 - `org/create/` — create organization wizard (3 steps: basic info, category/location, logo)
 - `org/[slug]/(admin)/` — dashboard, settings (brand color picker + encrypted SMTP), campaigns, members, finance, rooms
 - `org/[slug]/(member)/` — member-only rooms
-- `org/[slug]/join/` — join flow with pawaPay checkout
-- `org/[slug]/donate/` — donation flow with pawaPay checkout
-- `org/[slug]/payment/return/[depositId]/[type]/` — payment return page (client-side verification)
+- `org/[slug]/join/` — join flow with pawaPay or PesaPal checkout (user selects payment method)
+- `org/[slug]/donate/` — donation flow with pawaPay or PesaPal checkout (user selects payment method)
+- `org/[slug]/payment/return/[depositId]/[type]/` — payment return page (client-side verification, handles both pawaPay and PesaPal)
 - `admin/organizations/` — super admin page listing all organizations (requires `isAdmin: true` on user doc)
 - `org/[slug]/chat/` — public chat (guest-accessible)
 - `app/api/payments/initiate/` — POST, initiates pawaPay payment page
 - `app/api/payments/status/` — GET, checks pawaPay deposit status
 - `app/api/payments/webhook/` — POST, pawaPay callback (verifies via API, delegates to shared `completeDeposit()`/`failDeposit()`)
-- `app/api/payments/finalize/` — POST, client-side return verification (delegates to shared functions)
+- `app/api/payments/finalize/` — POST, client-side return verification (delegates to shared functions, supports both pawaPay and PesaPal)
+- `app/api/payments/initiate-card/` — POST, initiates PesaPal payment page
+- `app/api/payments/pesapal-ipn/` — POST, PesaPal IPN callback (verifies via API, delegates to shared `completeDeposit()`/`failDeposit()`)
 - `app/api/payments/reconcile/` — POST, manual reconcile via `CRON_SECRET` (delegates to `reconcilePendingTransaction()`)
 - `app/api/org/smtp/` — POST, encrypts SMTP password and saves to Firestore
 - `app/api/cron/reconcile/` — GET/POST, cron-hittable pending transaction reconciliation with admin alerts
@@ -74,6 +77,9 @@ A web app for nonprofits to manage memberships and collect donations.
 - **Login redirect**: Default redirect after login changed from `/org/create` to `/org` (shows org listing instead of forcing creation).
 - **Org not-found**: Shared `OrgNotFound` component with configurable icon; server component uses `notFound()`, all public client pages render `OrgNotFound` when org is null (fixes blank pages, infinite spinners, and misleading error messages on checkout/payment pages).
 - **Dashboard responsive**: Stat cards and Quick Actions grids use `auto-fill` with `minmax` for smooth responsive layout (cards wrap at 260px/240px) instead of fixed breakpoints.
+- **Org logo as favicon**: Root layout metadata sets default `icons: '/favicon.svg'` (red "A" on white). `BrandColorWrapper` overrides via DOM — sets `<link rel="icon">` to `org.logoURL` on mount, restores `/favicon.svg` on cleanup. Server profile page uses `generateMetadata` with `icons: org.logoURL` for initial server render.
+- **PesaPal IPN**: If `PESAPAL_IPN_ID` is set in env, it's reused; otherwise `initiate-card` auto-registers a new one. IPN endpoint is `/api/payments/pesapal-ipn`. Uses `IPNCHANGE` notification type.
+- **Payment method selector**: `PaymentMethodSelector` component on checkout pages — user picks between Mobile Money (pawaPay) and Bank Card (PesaPal). Transaction `paymentMethod` field set to `'pawapay'` or `'pesapal'`. Finalize/reconcile routes detect method and call the correct status API.
 
 ### Server Helpers (lib/firebase/server.ts)
 - `getAccessToken()` — RS256 JWT assertion → OAuth2 token
@@ -95,7 +101,13 @@ A web app for nonprofits to manage memberships and collect donations.
 ### Shared Payment Logic (lib/payments.ts)
 - `completeDeposit(depositId)` — marks transactions completed, processes donations (increments campaigns) and memberships (activates member), sends success emails
 - `failDeposit(depositId, failureReason?)` — marks transactions failed, sends failure notifications
-- `reconcilePendingTransaction(depositId)` — checks pawaPay status, delegates to complete/fail
+- `reconcilePendingTransaction(depositId, paymentMethod?)` — checks pawaPay or PesaPal status (detects by transaction field), delegates to complete/fail
+
+### PesaPal (lib/pesapal.ts)
+- `getAuthToken()` — obtains OAuth2 token from PesaPal
+- `registerIpnUrl(url)` — registers IPN endpoint for async notifications
+- `submitOrderRequest(params)` — initiates card payment order, returns `redirect_url` + `order_tracking_id`
+- `getTransactionStatus(orderTrackingId)` — queries PesaPal for transaction status
 
 ### Env Vars Added
 - `NEXT_PUBLIC_APP_URL` — dynamic base URL for all email links and return URLs
@@ -106,10 +118,12 @@ A web app for nonprofits to manage memberships and collect donations.
 - `NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT` — ImageKit URL endpoint
 - `NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY` — ImageKit public key (was `IMAGEKIT_PUBLIC_KEY` — missing `NEXT_PUBLIC_` prefix)
 - `IMAGEKIT_PRIVATE_KEY` — ImageKit private key
+- `PESAPAL_URL`, `PESAPAL_CONSUMER_KEY`, `PESAPAL_CONSUMER_SECRET`, `PESAPAL_IPN_ID` — PesaPal card payments
 
 ### Next Steps
 1. Add `RESEND_API_KEY` to `.env.local` and register/verify sender domain in Resend
 2. Configure cron-job.org with `CRON_SECRET` and app URL for the 3 cron endpoints
 3. Add ImageKit keys to `.env.local` (all 3: URL endpoint, public key, private key) and test image upload
 4. Test full payment flow: donate → pawaPay sandbox → webhook → email receipt → cron reconciliation
-5. Add pawaPay production credentials and remove sandbox mode
+5. Add PesaPal keys to `.env.local` and test card payment flow: donate → PesaPal sandbox → IPN → email receipt
+6. Add pawaPay production credentials and remove sandbox mode
