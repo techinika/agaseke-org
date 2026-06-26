@@ -5,7 +5,16 @@ import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export function MobileNav() {
+interface MobileNavLink {
+  href: string;
+  label: string;
+}
+
+interface MobileNavProps {
+  navLinks?: MobileNavLink[];
+}
+
+export function MobileNav({ navLinks = [] }: MobileNavProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -22,13 +31,16 @@ export function MobileNav() {
       {open && (
         <div id="mobile-nav-menu" className="border-t px-4 pb-4 pt-2 md:hidden">
           <nav className="flex flex-col gap-2">
-            <Link
-              href="#features"
-              className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted"
-              onClick={() => setOpen(false)}
-            >
-              Features
-            </Link>
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted"
+                onClick={() => setOpen(false)}
+              >
+                {link.label}
+              </Link>
+            ))}
             <Link
               href="/auth/login"
               className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted"

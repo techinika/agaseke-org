@@ -6,6 +6,7 @@ Built with Next.js 16 (App Router), Firebase (Firestore, Auth, Storage), Tailwin
 
 ## Features
 
+- **Landing page** — Full marketing site with problem/solution, how it works, audience targeting, FAQ, and CTAs
 - **Membership management** — Create tiers with custom pricing, benefits, and billing cycles
 - **Donation collection** — One-time and recurring donations with campaign tracking
 - **Chat rooms** — Encrypted group chat for members, with public and private rooms
@@ -71,6 +72,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the result.
 
 ```
 app/
+  page.tsx         — Landing page (hero, features, how it works, audience cards, FAQ, CTA)
   (auth)/          — Login, signup, password reset
   (legal)/         — Terms of Service, Privacy Policy
   admin/

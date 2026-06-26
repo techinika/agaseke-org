@@ -19,7 +19,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - ImageKit for image uploads
 - Sora font via `next/font/google` (weights 200–800), JetBrains Mono for mono
 - Brand: #FF0000 (Agaseke red); mobile-first; dark mode via next-themes
-- Brand color applied as-is (hex directly on `--primary` CSS var — no OKLCH conversion)
+- Brand color applied as-is (hex directly on `--primary` CSS var — no OKLCH conversion); set via `BrandColorWrapper` on `document.documentElement` (not a wrapper div) so Dialog/Sheet portals inherit brand colors
 - tiptap for rich text editing, @tailwindcss/typography for prose HTML rendering
 - Google Analytics (GA4) via `next/script` gtag — measurement ID from `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`
 - CURRENCY = USD (not RWF)
@@ -132,6 +132,11 @@ A web app for nonprofits to manage memberships and collect donations.
 - `NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY` — ImageKit public key (was `IMAGEKIT_PUBLIC_KEY` — missing `NEXT_PUBLIC_` prefix)
 - `IMAGEKIT_PRIVATE_KEY` — ImageKit private key
 - `PESAPAL_URL`, `PESAPAL_CONSUMER_KEY`, `PESAPAL_CONSUMER_SECRET`, `PESAPAL_IPN_ID` — PesaPal card payments
+
+### Key Patterns (cont.)
+- **BrandColorWrapper on root**: Sets `--primary`/`--primary-foreground` CSS vars on `document.documentElement` via `useEffect` (not a wrapper div) so portal-rendered content (Dialog, Sheet) correctly inherits the org's brand color. Cleans up to defaults on unmount.
+- **Landing page**: 8-section scrollable page (hero, problem/solution, how-it-works, features, audience cards, stats/reasons, FAQ, CTA) with PublicNav links to sections. PublicNav + MobileNav share a `navLinks` array. Dialog/Sheet overlays omit `backdrop-blur-sm` to avoid visual distraction.
+- **MobileNav accepts navLinks**: `MobileNav` now accepts an optional `navLinks` prop for dynamic navigation links alongside the fixed Log in / Get started buttons.
 
 ### Completed — Deep Codebase Analysis Fixes ✅
 - Added missing `'use client'` directives (badge, chat-view, create-room-dialog)

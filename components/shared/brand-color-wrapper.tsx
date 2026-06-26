@@ -11,6 +11,9 @@ interface BrandColorWrapperProps {
   children: ReactNode;
 }
 
+const DEFAULT_PRIMARY = '#FF0000';
+const DEFAULT_PRIMARY_FOREGROUND = '#ffffff';
+
 function setFavicon(url: string) {
   let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
   if (!link) {
@@ -21,6 +24,16 @@ function setFavicon(url: string) {
   link.href = url;
 }
 
+function setRootCSSVars(primary: string, primaryForeground: string) {
+  document.documentElement.style.setProperty('--primary', primary);
+  document.documentElement.style.setProperty('--primary-foreground', primaryForeground);
+}
+
+function restoreRootCSSVars() {
+  document.documentElement.style.removeProperty('--primary');
+  document.documentElement.style.removeProperty('--primary-foreground');
+}
+
 export function BrandColorWrapper({ org, children }: BrandColorWrapperProps) {
   useEffect(() => {
     if (org.logoURL) {
@@ -29,18 +42,15 @@ export function BrandColorWrapper({ org, children }: BrandColorWrapperProps) {
     return () => setFavicon(DEFAULT_FAVICON);
   }, [org.logoURL]);
 
-  const brandStyle = org.brandColor
-    ? brandColorValues(org.brandColor)
-    : { primary: '#FF0000', primaryForeground: '#ffffff' };
+  useEffect(() => {
+    if (org.brandColor) {
+      const { primary, primaryForeground } = brandColorValues(org.brandColor);
+      setRootCSSVars(primary, primaryForeground);
+    } else {
+      setRootCSSVars(DEFAULT_PRIMARY, DEFAULT_PRIMARY_FOREGROUND);
+    }
+    return () => restoreRootCSSVars();
+  }, [org.brandColor]);
 
-  return (
-    <div
-      style={{
-        '--primary': brandStyle.primary,
-        '--primary-foreground': brandStyle.primaryForeground,
-      } as React.CSSProperties}
-    >
-      {children}
-    </div>
-  );
+  return <>{children}</>;
 }
