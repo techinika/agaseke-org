@@ -37,15 +37,18 @@ export function useRooms(orgId: string) {
 export function useRoomMessages(orgId: string, roomId: string | null) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!orgId || !roomId) {
       setMessages([]);
       setIsLoading(false);
+      setError(null);
       return;
     }
 
     setIsLoading(true);
+    setError(null);
     const db = getDb();
     const q = query(
       collection(db, messagesPath(orgId, roomId)),
@@ -72,7 +75,8 @@ export function useRoomMessages(orgId: string, roomId: string | null) {
         setMessages(msgs);
         setIsLoading(false);
       },
-      () => {
+      (err) => {
+        setError(err instanceof Error ? err.message : 'Failed to load messages');
         setIsLoading(false);
       }
     );
@@ -80,20 +84,17 @@ export function useRoomMessages(orgId: string, roomId: string | null) {
     return unsubscribe;
   }, [orgId, roomId]);
 
-  return { messages, isLoading };
+  return { messages, isLoading, error };
 }
 
 export function useSendMessage(orgId: string, roomId: string) {
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: Omit<ChatMessage, 'id' | 'createdAt'>) => {
+      if (!roomId) throw new Error('No room selected');
       const cleanData = Object.fromEntries(
         Object.entries(data).filter(([, v]) => v !== undefined)
       );
       return addDocument(messagesPath(orgId, roomId), cleanData);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['room-messages', orgId, roomId] });
     },
   });
 }
@@ -106,10 +107,14 @@ export function useCreateRoom(orgId: string) {
       description: string;
       type: Room['type'];
       allowedTierIds: string[];
+      createdBy?: string;
     }) => {
       return addDocument(roomsPath(orgId), {
-        ...data,
-        createdBy: '',
+        name: data.name,
+        description: data.description,
+        type: data.type,
+        allowedTierIds: data.allowedTierIds,
+        createdBy: data.createdBy ?? '',
       });
     },
     onSuccess: () => {

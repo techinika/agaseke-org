@@ -21,12 +21,16 @@ export async function POST(request: NextRequest) {
     const signature = request.headers.get('x-pawapay-signature') || '';
 
     if (WEBHOOK_SECRET && !verifyWebhookSignature(textBody, signature)) {
-      console.error('Invalid webhook signature');
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
-    const body = JSON.parse(textBody);
-    const depositId: string | undefined = body.depositId;
+    let body: Record<string, unknown>;
+    try {
+      body = JSON.parse(textBody);
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
+    }
+    const depositId = typeof body.depositId === 'string' ? body.depositId : undefined;
 
     if (!depositId) {
       return NextResponse.json({ error: 'Missing depositId' }, { status: 400 });

@@ -1,5 +1,3 @@
-'use client';
-
 interface RichTextContentProps {
   html: string;
   className?: string;

@@ -1,5 +1,3 @@
-'use client';
-
 import { LucideIcon, Construction } from 'lucide-react';
 import { PageHeader } from './page-header';
 import { EmptyState } from './empty-state';

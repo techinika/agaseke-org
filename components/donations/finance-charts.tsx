@@ -21,7 +21,6 @@ import { format, startOfMonth } from 'date-fns';
 
 interface FinanceChartsProps {
   transactions: Transaction[];
-  isLoading: boolean;
 }
 
 const COLORS = ['#FF0000', '#16a34a', '#888888', '#111111'];

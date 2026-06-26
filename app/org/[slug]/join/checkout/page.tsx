@@ -18,7 +18,8 @@ import { useActiveTiers } from '@/hooks/use-tiers';
 import { useOrganizationBySlug } from '@/hooks/use-organization';
 import { useAuthStore } from '@/store/auth-store';
 import { useCreateMembership } from '@/hooks/use-memberships';
-import { CURRENCY, COLLECTIONS, SUBCOLLECTIONS, PLATFORM_FEE_RATE } from '@/lib/constants';
+import { CURRENCY, COLLECTIONS, SUBCOLLECTIONS } from '@/lib/constants';
+import { calculateFee } from '@/lib/fees';
 import { addDocument, setDocument } from '@/lib/firebase/firestore';
 import { generateDepositId, convertToRwf, getReturnUrl } from '@/lib/pawapay';
 import { toast } from 'sonner';
@@ -41,17 +42,7 @@ export default function CheckoutPage() {
 
   const feeBreakdown = useMemo(() => {
     if (!tier) return null;
-    const feeRate = PLATFORM_FEE_RATE;
-    if (feePayer === 'org') {
-      const totalToPay = tier.price;
-      const platformFee = Math.round(tier.price * feeRate);
-      const orgReceives = tier.price - platformFee;
-      return { totalToPay, platformFee, orgReceives };
-    }
-    const orgReceives = tier.price;
-    const totalToPay = Math.ceil(tier.price / (1 - feeRate));
-    const platformFee = totalToPay - orgReceives;
-    return { totalToPay, platformFee, orgReceives };
+    return calculateFee(tier.price, feePayer);
   }, [tier, feePayer]);
 
   const [isProcessing, setIsProcessing] = useState(false);

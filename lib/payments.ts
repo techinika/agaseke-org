@@ -40,6 +40,7 @@ export async function failDeposit(depositId: string, failureReason?: string): Pr
   const processed = new Set<string>();
 
   for (const tx of txs) {
+    if (tx.status === 'completed') continue;
     if (tx.status === 'failed') continue;
     await updateFirestoreDocument(COLLECTIONS.TRANSACTIONS, tx.id, { status: 'failed' });
 

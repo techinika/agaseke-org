@@ -13,12 +13,14 @@ export function MobileNav() {
       <button
         className="flex size-10 items-center justify-center rounded-lg md:hidden"
         onClick={() => setOpen(!open)}
+        aria-expanded={open}
         aria-label={open ? 'Close menu' : 'Open menu'}
+        aria-controls="mobile-nav-menu"
       >
         {open ? <X className="size-5" /> : <Menu className="size-5" />}
       </button>
       {open && (
-        <div className="border-t px-4 pb-4 pt-2 md:hidden">
+        <div id="mobile-nav-menu" className="border-t px-4 pb-4 pt-2 md:hidden">
           <nav className="flex flex-col gap-2">
             <Link
               href="#features"

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   queryFirestoreDocuments,
   readFirestoreDocument,
+  updateFirestoreDocument,
 } from '@/lib/firebase/server';
 import { COLLECTIONS, SUBCOLLECTIONS } from '@/lib/constants';
 import { sendEmail, getUserEmail } from '@/lib/email';
@@ -20,15 +21,16 @@ export async function POST(request: NextRequest) {
 
 async function handleCron(request: NextRequest): Promise<NextResponse> {
   try {
-    if (CRON_SECRET && request.headers.get('authorization') !== `Bearer ${CRON_SECRET}`) {
+    if (!CRON_SECRET || request.headers.get('authorization') !== `Bearer ${CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const results = { remindersSent: 0, membershipsChecked: 0, donationsChecked: 0, errors: 0 };
+    const results = { remindersSent: 0, membershipsChecked: 0, donationsChecked: 0, errors: 0, skippedDuplicates: 0 };
     const appUrl = getAppUrl();
 
     const now = Date.now();
     const threeDaysFromNow = now + 3 * 24 * 60 * 60 * 1000;
+    const today = new Date().toISOString().slice(0, 10);
 
     const memberships = await queryFirestoreDocuments(
       COLLECTIONS.MEMBERSHIPS,
@@ -43,11 +45,18 @@ async function handleCron(request: NextRequest): Promise<NextResponse> {
         const renewsAt = membership.renewsAt as string | undefined;
         if (!renewsAt) continue;
 
+        const lastReminderDate = membership.lastReminderDate as string | undefined;
+        if (lastReminderDate === today) {
+          results.skippedDuplicates++;
+          continue;
+        }
+
         const renewsAtTime = new Date(renewsAt).getTime();
         if (renewsAtTime > threeDaysFromNow || renewsAtTime <= now) continue;
 
         const userId = membership.userId as string;
         const orgId = membership.orgId as string;
+        const membershipId = (membership as any).id as string;
         const tierId = membership.tierId as string;
 
         const org = await readFirestoreDocument(COLLECTIONS.ORGANIZATIONS, orgId);
@@ -92,6 +101,10 @@ async function handleCron(request: NextRequest): Promise<NextResponse> {
           orgId
         );
 
+        await updateFirestoreDocument(COLLECTIONS.MEMBERSHIPS, membershipId, {
+          lastReminderDate: today,
+        });
+
         results.remindersSent++;
       } catch {
         results.errors++;
@@ -113,6 +126,13 @@ async function handleCron(request: NextRequest): Promise<NextResponse> {
 
         const nextBillingDate = donation.nextBillingDate as string | undefined;
         if (!nextBillingDate) continue;
+
+        const donationId = (donation as any).id as string;
+        const lastReminderDate = donation.lastReminderDate as string | undefined;
+        if (lastReminderDate === today) {
+          results.skippedDuplicates++;
+          continue;
+        }
 
         const billingTime = new Date(nextBillingDate).getTime();
         if (billingTime > threeDaysFromNow || billingTime <= now) continue;
@@ -162,6 +182,10 @@ async function handleCron(request: NextRequest): Promise<NextResponse> {
           },
           orgId
         );
+
+        await updateFirestoreDocument(COLLECTIONS.DONATIONS, donationId, {
+          lastReminderDate: today,
+        });
 
         results.remindersSent++;
       } catch {

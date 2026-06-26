@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { Loader2, ArrowLeft, Smartphone, CreditCard, CheckCircle2, Heart } from 'lucide-react';
+import { Loader2, ArrowLeft, Smartphone, CreditCard, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,11 +17,12 @@ import type { PaymentMethod } from '@/components/shared/payment-method-selector'
 import { useOrganizationBySlug } from '@/hooks/use-organization';
 import { useAuthStore } from '@/store/auth-store';
 import { useCampaigns } from '@/hooks/use-campaigns';
-import { CURRENCY, COLLECTIONS, SUBCOLLECTIONS, PLATFORM_FEE_RATE } from '@/lib/constants';
-import { addDocument, updateDocument } from '@/lib/firebase/firestore';
+import { CURRENCY, COLLECTIONS } from '@/lib/constants';
+import { calculateFee } from '@/lib/fees';
+import { addDocument } from '@/lib/firebase/firestore';
 import { generateDepositId, convertToRwf, getReturnUrl } from '@/lib/pawapay';
 import { toast } from 'sonner';
-import { Timestamp, increment } from 'firebase/firestore';
+import { Timestamp } from 'firebase/firestore';
 
 export default function DonationCheckoutPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -40,17 +41,7 @@ export default function DonationCheckoutPage() {
 
   const feeBreakdown = useMemo(() => {
     if (!amount) return null;
-    const feeRate = PLATFORM_FEE_RATE;
-    if (feePayer === 'org') {
-      const totalToPay = amount;
-      const platformFee = Math.round(amount * feeRate);
-      const orgReceives = amount - platformFee;
-      return { totalToPay, platformFee, orgReceives };
-    }
-    const orgReceives = amount;
-    const totalToPay = Math.ceil(amount / (1 - feeRate));
-    const platformFee = totalToPay - orgReceives;
-    return { totalToPay, platformFee, orgReceives };
+    return calculateFee(amount, feePayer);
   }, [amount, feePayer]);
   const frequency = (searchParams.get('frequency') || 'one_time') as string;
   const donorName = searchParams.get('donorName') || 'Anonymous';

@@ -45,8 +45,8 @@ export function TierFormFields({
   submittingLabel,
   defaultValues,
 }: TierFormFieldsProps) {
-  const initialBenefits = defaultValues?.benefits?.length ? defaultValues.benefits : [''];
-  const [benefits, setBenefits] = useState<string[]>(initialBenefits);
+  const initialBenefits = defaultValues?.benefits?.length ? defaultValues.benefits.map((b) => ({ id: crypto.randomUUID(), value: b })) : [{ id: crypto.randomUUID(), value: '' }];
+  const [benefits, setBenefits] = useState<{ id: string; value: string }[]>(initialBenefits);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
@@ -63,7 +63,7 @@ export function TierFormFields({
       price: defaultValues?.price ?? 0,
       billingCycle: defaultValues?.billingCycle ?? 'monthly',
       platformFeePayer: defaultValues?.platformFeePayer ?? 'org',
-      benefits: initialBenefits,
+      benefits: initialBenefits.map((b) => b.value),
     },
   });
 
@@ -71,22 +71,20 @@ export function TierFormFields({
   const price = watch('price');
 
   function addBenefit() {
-    setBenefits([...benefits, '']);
+    setBenefits([...benefits, { id: crypto.randomUUID(), value: '' }]);
   }
 
-  function removeBenefit(index: number) {
+  function removeBenefit(id: string) {
     if (benefits.length === 1) return;
-    setBenefits(benefits.filter((_, i) => i !== index));
+    setBenefits(benefits.filter((b) => b.id !== id));
   }
 
-  function updateBenefit(index: number, value: string) {
-    const updated = [...benefits];
-    updated[index] = value;
-    setBenefits(updated);
+  function updateBenefit(id: string, value: string) {
+    setBenefits(benefits.map((b) => (b.id === id ? { ...b, value } : b)));
   }
 
   async function onFormSubmit(data: TierFormData) {
-    const filtered = benefits.filter((b) => b.trim().length > 0);
+    const filtered = benefits.map((b) => b.value).filter((v) => v.trim().length > 0);
     if (filtered.length === 0) return;
     setIsSubmitting(true);
     await onSubmit({ ...data, benefits: filtered, platformFeePayer: data.platformFeePayer });
@@ -172,18 +170,18 @@ export function TierFormFields({
       <div className="space-y-2">
         <Label>Benefits</Label>
         <div className="space-y-2">
-          {benefits.map((benefit, index) => (
-            <div key={index} className="flex gap-2">
+          {benefits.map((benefit) => (
+            <div key={benefit.id} className="flex gap-2">
               <Input
-                value={benefit}
-                onChange={(e) => updateBenefit(index, e.target.value)}
+                value={benefit.value}
+                onChange={(e) => updateBenefit(benefit.id, e.target.value)}
                 placeholder="e.g. Access to premium rooms"
               />
               <Button
                 type="button"
                 variant="ghost"
                 size="icon-xs"
-                onClick={() => removeBenefit(index)}
+                onClick={() => removeBenefit(benefit.id)}
                 disabled={benefits.length === 1}
               >
                 <X className="size-4" />

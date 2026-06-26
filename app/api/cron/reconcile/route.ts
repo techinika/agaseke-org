@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
 async function handleCron(request: NextRequest): Promise<NextResponse> {
   try {
-    if (CRON_SECRET && request.headers.get('authorization') !== `Bearer ${CRON_SECRET}`) {
+    if (!CRON_SECRET || request.headers.get('authorization') !== `Bearer ${CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -33,7 +33,7 @@ async function handleCron(request: NextRequest): Promise<NextResponse> {
     );
 
     const results = { checked: 0, completed: 0, failed: 0, skipped: 0, errors: 0 };
-    const orgPendingMap = new Map<string, number>();
+    const orgPendingMap = new Map<string, { count: number; totalAmount: number }>();
 
     for (const tx of pendingTxs) {
       const depositId = tx.depositId as string | undefined;
@@ -52,7 +52,11 @@ async function handleCron(request: NextRequest): Promise<NextResponse> {
         } else {
           const orgId = tx.orgId as string | undefined;
           if (orgId) {
-            orgPendingMap.set(orgId, (orgPendingMap.get(orgId) || 0) + 1);
+            const prev = orgPendingMap.get(orgId) || { count: 0, totalAmount: 0 };
+            orgPendingMap.set(orgId, {
+              count: prev.count + 1,
+              totalAmount: prev.totalAmount + ((tx.amount as number) || 0),
+            });
           }
           results.skipped++;
         }
@@ -63,15 +67,12 @@ async function handleCron(request: NextRequest): Promise<NextResponse> {
 
     if (hasEmailConfigured()) {
       const appUrl = getAppUrl();
-      for (const [orgId, count] of orgPendingMap) {
+      for (const [orgId, pending] of orgPendingMap) {
         try {
           const orgData = await readFirestoreDocument(COLLECTIONS.ORGANIZATIONS, orgId);
           if (!orgData) continue;
 
           const admins = await getOrgAdmins(orgId);
-          const totalAmount = pendingTxs
-            .filter((tx) => tx.orgId === orgId)
-            .reduce((sum, tx) => sum + ((tx.amount as number) || 0), 0);
           const brandColor = (orgData.brandColor as string) || '#FF0000';
 
           for (const admin of admins) {
@@ -82,8 +83,8 @@ async function handleCron(request: NextRequest): Promise<NextResponse> {
                 html: pendingTransactionAlertTemplate({
                   adminName: admin.name || 'Admin',
                   orgName: orgData.name as string,
-                  pendingCount: count,
-                  totalAmount: totalAmount.toFixed(2),
+                  pendingCount: pending.count,
+                  totalAmount: pending.totalAmount.toFixed(2),
                   currency: 'USD',
                   brandColor,
                   reconcileUrl: `${appUrl}/org/${orgData.slug as string}/finance`,

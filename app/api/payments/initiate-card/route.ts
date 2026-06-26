@@ -17,8 +17,15 @@ export async function POST(request: NextRequest) {
 
     let notificationId = process.env.PESAPAL_IPN_ID;
     if (!notificationId) {
-      const ipnUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/payments/pesapal-ipn`;
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const ipnUrl = `${appUrl}/api/payments/pesapal-ipn`;
       notificationId = await registerIpnUrl(ipnUrl);
+      if (!notificationId) {
+        return NextResponse.json(
+          { error: 'Failed to register IPN URL with PesaPal' },
+          { status: 500 }
+        );
+      }
     }
 
     const order = await submitOrderRequest({
@@ -31,7 +38,7 @@ export async function POST(request: NextRequest) {
       billingAddress: {
         emailAddress: email || 'supporter@agaseke.org',
         firstName: firstName || 'Supporter',
-        lastName: lastName || 'Agaseke',
+        lastName: lastName || 'Supporter',
         countryCode: 'RW',
       },
     });

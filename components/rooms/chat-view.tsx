@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useRef, useEffect } from 'react';
 import { Send, Hash, Lock, Users, ImagePlus, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -45,6 +47,7 @@ export function ChatView({
   const [pendingImage, setPendingImage] = useState<{ file: File; preview: string } | null>(null);
 
   const [decryptedMessages, setDecryptedMessages] = useState<Record<string, string>>({});
+  const decryptedRef = useRef(new Set<string>());
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -54,13 +57,18 @@ export function ChatView({
 
   useEffect(() => {
     if (!room || !user) return;
+    let cancelled = false;
     for (const msg of messages) {
-      if (msg.content && !decryptedMessages[msg.id]) {
+      if (msg.content && !decryptedRef.current.has(msg.id)) {
         decryptMessage(msg.content, room.id, user.uid).then((decrypted) => {
-          setDecryptedMessages((prev) => ({ ...prev, [msg.id]: decrypted }));
+          if (!cancelled) {
+            decryptedRef.current.add(msg.id);
+            setDecryptedMessages((prev) => ({ ...prev, [msg.id]: decrypted }));
+          }
         });
       }
     }
+    return () => { cancelled = true; };
   }, [messages, room, user]);
 
   useEffect(() => {

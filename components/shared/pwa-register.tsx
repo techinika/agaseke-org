@@ -2,8 +2,13 @@
 
 import { useEffect, useState } from 'react';
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
 export function PWARegister() {
-  const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
 
   useEffect(() => {
@@ -15,7 +20,7 @@ export function PWARegister() {
 
     const handler = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
       setIsInstallable(true);
     };
 
@@ -26,8 +31,8 @@ export function PWARegister() {
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;
-    (deferredPrompt as any).prompt();
-    const result = await (deferredPrompt as any).userChoice;
+    deferredPrompt.prompt();
+    const result = await deferredPrompt.userChoice;
     if (result.outcome === 'accepted') {
       setIsInstallable(false);
     }

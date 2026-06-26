@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { uploadToImageKit } from '@/lib/imagekit';
 
 interface UseImageUploadOptions {
@@ -16,7 +16,7 @@ export function useImageUpload(options?: UseImageUploadOptions): UseImageUploadR
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function upload(file: File): Promise<string | null> {
+  const upload = useCallback(async (file: File): Promise<string | null> => {
     if (!file) return null;
     setIsUploading(true);
     setError(null);
@@ -37,12 +37,12 @@ export function useImageUpload(options?: UseImageUploadOptions): UseImageUploadR
     } finally {
       setIsUploading(false);
     }
-  }
+  }, [options?.folder]);
 
-  function reset() {
+  const reset = useCallback(() => {
     setIsUploading(false);
     setError(null);
-  }
+  }, []);
 
   return { upload, isUploading, error, reset };
 }

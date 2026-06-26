@@ -61,7 +61,7 @@ export default function FinancePage() {
         />
       </div>
 
-      <FinanceCharts transactions={transactions ?? []} isLoading={txnLoading} />
+      <FinanceCharts transactions={transactions ?? []} />
     </div>
   );
 }

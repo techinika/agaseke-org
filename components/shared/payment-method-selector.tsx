@@ -24,7 +24,7 @@ const OPTIONS: { value: PaymentMethod; label: string; icon: typeof Smartphone; d
 
 export function PaymentMethodSelector({ value, onChange }: PaymentMethodSelectorProps) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Payment method">
       {OPTIONS.map((opt) => {
         const Icon = opt.icon;
         const isSelected = value === opt.value;
@@ -32,6 +32,8 @@ export function PaymentMethodSelector({ value, onChange }: PaymentMethodSelector
           <button
             key={opt.value}
             type="button"
+            role="radio"
+            aria-checked={isSelected}
             onClick={() => onChange(opt.value)}
             className={`flex flex-col items-center gap-2 rounded-lg border p-4 text-center transition-all ${
               isSelected

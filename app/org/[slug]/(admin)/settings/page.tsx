@@ -29,7 +29,6 @@ export default function SettingsPage() {
   const [description, setDescription] = useState('');
   const [logoURL, setLogoURL] = useState('');
   const [coverURL, setCoverURL] = useState('');
-  const [initialized, setInitialized] = useState(false);
 
   const [smtpHost, setSmtpHost] = useState('');
   const [smtpPort, setSmtpPort] = useState('587');
@@ -55,7 +54,10 @@ export default function SettingsPage() {
   const [roomDialogOpen, setRoomDialogOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
 
-  if (!initialized && org) {
+  const prevOrgIdRef = useRef(org?.id);
+
+  if (org && org.id !== prevOrgIdRef.current) {
+    prevOrgIdRef.current = org.id;
     setName(org.name);
     setDescription(org.description);
     setLogoURL(org.logoURL ?? '');
@@ -67,7 +69,6 @@ export default function SettingsPage() {
     setSmtpFromEmail(org.smtpFromEmail ?? '');
     setSmtpFromName(org.smtpFromName ?? '');
     setBrandColor(org.brandColor ?? '#FF0000');
-    setInitialized(true);
   }
 
   async function handleSave() {

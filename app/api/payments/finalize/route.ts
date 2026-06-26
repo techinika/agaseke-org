@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const paymentMethod = (tx?.paymentMethod as string) || 'pawapay';
 
     if (paymentMethod === 'pesapal') {
-      return await handlePesaPalFinalize(depositId);
+      return await handlePesaPalFinalize(depositId, tx);
     }
 
     return await handlePawaPayFinalize(depositId);
@@ -40,7 +40,7 @@ async function handlePawaPayFinalize(depositId: string): Promise<NextResponse> {
   const result = await checkDepositStatus(depositId);
 
   if (result.status === 'NOT_FOUND') {
-    return NextResponse.json({ status: 'not_found' });
+    return NextResponse.json({ status: 'not_found' }, { status: 404 });
   }
 
   const deposit = result.data!;
@@ -63,13 +63,11 @@ async function handlePawaPayFinalize(depositId: string): Promise<NextResponse> {
   });
 }
 
-async function handlePesaPalFinalize(depositId: string): Promise<NextResponse> {
-  const txs = await queryFirestoreDocuments(COLLECTIONS.TRANSACTIONS, 'depositId', 'EQUAL', depositId);
-  const tx = txs[0];
+async function handlePesaPalFinalize(depositId: string, tx?: Record<string, unknown>): Promise<NextResponse> {
   const orderTrackingId = tx?.orderTrackingId as string | undefined;
 
   if (!orderTrackingId) {
-    return NextResponse.json({ status: 'processing', message: 'Order is being created...' });
+    return NextResponse.json({ status: 'processing', message: 'Payment is still being processed...' });
   }
 
   try {

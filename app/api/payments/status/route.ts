@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const result = await checkDepositStatus(depositId);
 
     if (result.status === 'NOT_FOUND') {
-      return NextResponse.json({ status: 'NOT_FOUND' });
+      return NextResponse.json({ status: 'NOT_FOUND' }, { status: 404 });
     }
 
     return NextResponse.json({

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { queryDocuments, addDocument, updateDocument, deleteDocument } from '@/lib/firebase/firestore';
+import { queryDocuments, getDocument, addDocument, updateDocument, deleteDocument } from '@/lib/firebase/firestore';
 import { COLLECTIONS, SUBCOLLECTIONS } from '@/lib/constants';
 import { Campaign } from '@/types/campaign';
 import { orderBy, where } from 'firebase/firestore';
@@ -21,9 +21,7 @@ export function useCampaign(orgId: string, campaignId: string) {
   return useQuery({
     queryKey: ['campaign', orgId, campaignId],
     queryFn: () =>
-      queryDocuments<Campaign>(campaignsPath(orgId)).then((docs) =>
-        docs.find((d) => d.id === campaignId) ?? null
-      ),
+      getDocument<Campaign>(`${campaignsPath(orgId)}/${campaignId}`),
     enabled: !!orgId && !!campaignId,
   });
 }
