@@ -46,7 +46,7 @@ export type TxnStatus = (typeof TXN_STATUSES)[number];
 export const TXN_TYPES = ['donation', 'membership'] as const;
 export type TxnType = (typeof TXN_TYPES)[number];
 
-export const PAYMENT_METHODS = ['pawapay', 'pesapal', 'momo', 'airtel', 'visa', 'mastercard', 'amex'] as const;
+export const PAYMENT_METHODS = ['flutterwave_mobile_money', 'flutterwave_card', 'momo', 'airtel', 'visa', 'mastercard'] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 export const MEMBERSHIP_STATUSES = ['active', 'expired', 'cancelled', 'pending'] as const;

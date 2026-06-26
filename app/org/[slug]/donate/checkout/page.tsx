@@ -20,7 +20,7 @@ import { useCampaigns } from '@/hooks/use-campaigns';
 import { CURRENCY, COLLECTIONS } from '@/lib/constants';
 import { calculateFee } from '@/lib/fees';
 import { addDocument } from '@/lib/firebase/firestore';
-import { generateDepositId, convertToRwf, getReturnUrl } from '@/lib/pawapay';
+import { generateDepositId, getReturnUrl } from '@/lib/flutterwave';
 import { toast } from 'sonner';
 import { Timestamp } from 'firebase/firestore';
 
@@ -43,6 +43,7 @@ export default function DonationCheckoutPage() {
     if (!amount) return null;
     return calculateFee(amount, feePayer);
   }, [amount, feePayer]);
+
   const frequency = (searchParams.get('frequency') || 'one_time') as string;
   const donorName = searchParams.get('donorName') || 'Anonymous';
   const donorEmail = searchParams.get('donorEmail') || '';
@@ -72,8 +73,6 @@ export default function DonationCheckoutPage() {
     try {
       const now = Timestamp.now();
       const totalToPay = feeBreakdown.totalToPay;
-      const orgReceives = feeBreakdown.orgReceives;
-      const rwfAmount = convertToRwf(totalToPay);
       const returnUrl = getReturnUrl(slug, depositId, 'donation');
 
       donationId = await addDocument(COLLECTIONS.DONATIONS, {
@@ -84,7 +83,7 @@ export default function DonationCheckoutPage() {
         campaignId: campaignId || null,
         amount: totalToPay,
         platformFee: feeBreakdown.platformFee,
-        orgReceives,
+        orgReceives: feeBreakdown.orgReceives,
         frequency,
         status: 'pending',
         depositId,
@@ -94,67 +93,46 @@ export default function DonationCheckoutPage() {
         createdAt: now,
       });
 
-      const pm = paymentMethod === 'card' ? 'pesapal' : 'pawapay';
-
       const txData: Record<string, unknown> = {
         orgId: org.id,
         userId: user?.uid ?? null,
         amount: totalToPay,
         platformFee: feeBreakdown.platformFee,
-        orgReceives,
-        currency: 'RWF',
+        orgReceives: feeBreakdown.orgReceives,
+        currency: 'USD',
         type: 'donation',
         referenceId: depositId,
         depositId,
         status: 'pending',
-        paymentMethod: pm,
+        paymentMethod: paymentMethod === 'card' ? 'flutterwave_card' : 'flutterwave_mobile_money',
         createdAt: now,
       };
 
       await addDocument(COLLECTIONS.TRANSACTIONS, txData);
 
-      if (paymentMethod === 'card') {
-        const res = await fetch('/api/payments/initiate-card', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            depositId,
-            amount: rwfAmount,
-            returnUrl,
-            reason: `Donation to ${org.name}${campaignId ? ` for ${campaign?.title || 'campaign'}` : ''}`,
-            email: donorEmail || user?.email || undefined,
-            firstName: donorName || 'Supporter',
-            lastName: org.name,
-          }),
-        });
+      const res = await fetch('/api/payments/initiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          depositId,
+          amount: totalToPay,
+          returnUrl,
+          reason: `Donation to ${org.name}${campaignId ? ` for ${campaign?.title || 'campaign'}` : ''}`,
+          email: donorEmail || user?.email || undefined,
+          name: donorName || 'Supporter',
+          paymentMethod,
+          slug,
+          orgName: org.name,
+        }),
+      });
 
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || 'Failed to initiate card payment');
-        }
-
-        const { redirectUrl } = await res.json();
-        window.location.href = redirectUrl;
-      } else {
-        const res = await fetch('/api/payments/initiate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            depositId,
-            amount: rwfAmount,
-            returnUrl,
-            reason: `Donation to ${org.name}${campaignId ? ` for ${campaign?.title || 'campaign'}` : ''}`,
-          }),
-        });
-
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || 'Failed to initiate payment');
-        }
-
-        const { redirectUrl } = await res.json();
-        window.location.href = redirectUrl;
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to initiate payment');
       }
+
+      const { redirectUrl } = await res.json();
+      window.location.href = redirectUrl;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Payment initiation failed');
       setIsProcessing(false);
@@ -195,9 +173,6 @@ export default function DonationCheckoutPage() {
                 <div className="text-left sm:text-right">
                   <p className="text-xl font-bold">
                     {feeBreakdown?.totalToPay.toLocaleString()} {CURRENCY}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    ≈ {feeBreakdown ? convertToRwf(feeBreakdown.totalToPay).toLocaleString() : '0'} RWF
                   </p>
                 </div>
               </div>

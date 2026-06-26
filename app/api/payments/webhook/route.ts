@@ -1,26 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
-import { checkDepositStatus } from '@/lib/pawapay';
+import { verifyWebhookSignature } from '@/lib/flutterwave';
 import { completeDeposit, failDeposit } from '@/lib/payments';
-
-const WEBHOOK_SECRET = process.env.PAWAPAY_WEBHOOK_SECRET;
-
-function verifyWebhookSignature(payload: string, signature: string): boolean {
-  if (!WEBHOOK_SECRET) return true;
-  try {
-    const expected = crypto.createHmac('sha256', WEBHOOK_SECRET).update(payload).digest('hex');
-    return expected === signature;
-  } catch {
-    return false;
-  }
-}
 
 export async function POST(request: NextRequest) {
   try {
     const textBody = await request.text();
-    const signature = request.headers.get('x-pawapay-signature') || '';
+    const signature = request.headers.get('Flutterwave-Verify-Hash') || '';
 
-    if (WEBHOOK_SECRET && !verifyWebhookSignature(textBody, signature)) {
+    if (!verifyWebhookSignature(textBody, signature)) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
@@ -30,34 +17,34 @@ export async function POST(request: NextRequest) {
     } catch {
       return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
     }
-    const depositId = typeof body.depositId === 'string' ? body.depositId : undefined;
 
-    if (!depositId) {
-      return NextResponse.json({ error: 'Missing depositId' }, { status: 400 });
+    const event = body.event as string | undefined;
+    if (event !== 'charge.completed') {
+      return NextResponse.json({ status: 'ignored', message: `Event type ${event} not processed` });
     }
 
-    const result = await checkDepositStatus(depositId);
+    const data = body.data as Record<string, unknown> | undefined;
+    const txRef = data?.tx_ref as string | undefined;
+    const flwStatus = data?.status as string | undefined;
 
-    if (result.status === 'NOT_FOUND') {
-      return NextResponse.json({ error: 'Deposit not found' }, { status: 404 });
+    if (!txRef) {
+      return NextResponse.json({ error: 'Missing tx_ref in webhook data' }, { status: 400 });
     }
 
-    const deposit = result.data!;
-
-    if (deposit.status === 'COMPLETED') {
-      await completeDeposit(depositId);
+    if (flwStatus === 'successful') {
+      await completeDeposit(txRef);
       return NextResponse.json({ status: 'completed' });
     }
 
-    if (deposit.status === 'FAILED') {
-      const failureReason = deposit.failureReason?.failureMessage || 'Payment was declined.';
-      await failDeposit(depositId, failureReason);
+    if (flwStatus === 'failed') {
+      const failureReason = (data?.failure_reason as string) || 'Payment was declined.';
+      await failDeposit(txRef, failureReason);
       return NextResponse.json({ status: 'failed' });
     }
 
-    return NextResponse.json({ status: deposit.status, message: 'Not a final status, no action taken' });
+    return NextResponse.json({ status: flwStatus, message: 'Not a final status, no action taken' });
   } catch (error) {
-    console.error('pawaPay webhook error:', error);
+    console.error('Flutterwave webhook error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Webhook processing failed' },
       { status: 500 }

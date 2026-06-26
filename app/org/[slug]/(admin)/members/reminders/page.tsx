@@ -35,7 +35,7 @@ export default function RemindersPage() {
   const cronJobs = [
     {
       title: 'Payment Reconciliation',
-      description: 'Checks pending transactions against pawaPay and updates their status automatically.',
+      description: 'Checks pending transactions against Flutterwave and updates their status automatically.',
       icon: RefreshCw,
       schedule: 'Every 15 minutes',
       endpoint: '/api/cron/reconcile',

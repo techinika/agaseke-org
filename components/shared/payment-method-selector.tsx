@@ -12,13 +12,13 @@ const OPTIONS: { value: PaymentMethod; label: string; icon: typeof Smartphone; d
     value: 'mobile_money',
     label: 'Mobile Money',
     icon: Smartphone,
-    description: 'Pay with MTN MoMo, Airtel Money, or other mobile money providers via pawaPay.',
+    description: 'Pay with MTN MoMo, Airtel Money, or other mobile money providers.',
   },
   {
     value: 'card',
     label: 'Bank Card',
     icon: CreditCard,
-    description: 'Pay with Visa, Mastercard, or other bank cards via PesaPal.',
+    description: 'Pay with Visa, Mastercard, or other bank cards.',
   },
 ];
 

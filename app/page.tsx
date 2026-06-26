@@ -92,7 +92,7 @@ const faqs = [
   },
   {
     q: 'What payment methods do you support?',
-    a: 'We support Mobile Money through pawaPay (MTN MoMo, Airtel Money, and others across Africa) and bank cards through PesaPal (Visa, Mastercard, and more). Your members and donors can use whichever is easiest for them.',
+    a: 'We support Mobile Money (MTN MoMo, Airtel Money) and bank cards (Visa, Mastercard) through Flutterwave. Your members and donors can use whichever is easiest for them.',
   },
   {
     q: 'Can members use Agaseke without downloading an app?',
@@ -100,7 +100,7 @@ const faqs = [
   },
   {
     q: 'Is my organization\'s data safe?',
-    a: 'Yes. We use industry-standard encryption for all data. Chat messages are encrypted so only the intended recipients can read them. Payment processing is handled by pawaPay and PesaPal — your payment details never touch our servers.',
+    a: 'Yes. We use industry-standard encryption for all data. Chat messages are encrypted so only the intended recipients can read them. Payment processing is handled by Flutterwave — your payment details never touch our servers.',
   },
   {
     q: 'Can I use my own domain and branding?',
