@@ -25,7 +25,7 @@ function LoginForm() {
 
   function getRedirectPath(): string {
     if (redirectTo && !redirectTo.startsWith('/auth/')) return redirectTo;
-    return '/org/create';
+    return '/org';
   }
 
   async function handleSubmit(e: React.FormEvent) {

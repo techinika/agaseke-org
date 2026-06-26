@@ -56,7 +56,7 @@ export default function SignupPage() {
         displayName: user.displayName || 'User',
         photoURL: user.photoURL,
       });
-      router.push('/org/create');
+      router.push('/org');
     }
   }
 

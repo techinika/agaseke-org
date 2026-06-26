@@ -72,6 +72,8 @@ app/
     payments/      — initiate, finalize, webhook, reconcile, status
     cron/          — reconcile, payment-reminders, membership-expiry
     org/           — smtp (encrypt and store SMTP credentials)
+  org/             — User's organization listing (card grid with dashboard + public page links)
+  org/create/      — Create organization wizard (3 steps)
   org/[slug]/
     (admin)/       — Dashboard, settings, campaigns (new/[campaignId]/edit), members, finance, rooms
     (member)/      — Chat rooms

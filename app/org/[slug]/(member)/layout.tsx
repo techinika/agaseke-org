@@ -1,5 +1,7 @@
 import { AuthGuard } from '@/components/shared/auth-guard';
 import { OrgSidebar } from '@/components/shared/org-sidebar';
+import { AdminMainContent } from '@/components/shared/admin-main-content';
+import { fetchOrgBySlug } from '@/lib/firebase/server';
 
 interface MemberLayoutProps {
   children: React.ReactNode;
@@ -8,13 +10,13 @@ interface MemberLayoutProps {
 
 export default async function MemberLayout({ children, params }: MemberLayoutProps) {
   const { slug } = await params;
+  const org = await fetchOrgBySlug(slug);
+  const orgName = org?.name || slug;
   return (
     <AuthGuard>
       <div className="flex min-h-screen">
-        <OrgSidebar orgSlug={slug} />
-        <main className="flex-1 overflow-auto">
-          <div className="mx-auto max-w-7xl p-4 pt-20 lg:px-8 lg:pt-8">{children}</div>
-        </main>
+        <OrgSidebar orgSlug={slug} orgName={orgName} />
+        <AdminMainContent>{children}</AdminMainContent>
       </div>
     </AuthGuard>
   );

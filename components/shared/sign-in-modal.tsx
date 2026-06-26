@@ -29,7 +29,7 @@ export function SignInModal({ open, onOpenChange, redirectPath }: SignInModalPro
 
   function getRedirectPath(): string {
     if (redirectPath && !redirectPath.startsWith('/auth/')) return redirectPath;
-    return '/org/create';
+    return '/org';
   }
 
   async function handleSubmit(e: React.FormEvent) {

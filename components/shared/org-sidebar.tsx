@@ -27,6 +27,7 @@ import { useRouter } from "next/navigation";
 
 interface OrgSidebarProps {
   orgSlug: string;
+  orgName: string;
 }
 
 const navItems = (slug: string) => [
@@ -39,7 +40,7 @@ const navItems = (slug: string) => [
   { label: "Settings", href: `/org/${slug}/settings`, icon: Settings },
 ];
 
-export function OrgSidebar({ orgSlug }: OrgSidebarProps) {
+export function OrgSidebar({ orgSlug, orgName }: OrgSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { sidebarOpen, setSidebarOpen } = useUIStore();
@@ -54,12 +55,13 @@ export function OrgSidebar({ orgSlug }: OrgSidebarProps) {
     <>
       <button
         className={cn(
-          "fixed left-4 top-4 z-50 flex size-10 items-center justify-center rounded-xl border bg-background shadow-sm transition-all duration-200",
-          sidebarOpen && "lg:left-[272px]",
+          "fixed left-3 top-3 z-50 flex size-9 items-center justify-center rounded-lg border bg-background shadow-sm transition-opacity duration-200 hover:opacity-80",
+          sidebarOpen && "hidden",
         )}
-        onClick={() => setSidebarOpen(!sidebarOpen)}
+        onClick={() => setSidebarOpen(true)}
+        aria-label="Open sidebar"
       >
-        {sidebarOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+        <Menu className="size-4" />
       </button>
 
       <aside
@@ -68,15 +70,22 @@ export function OrgSidebar({ orgSlug }: OrgSidebarProps) {
           sidebarOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex h-16 items-center justify-between border-b px-4">
+        <div className="flex h-14 items-center gap-2 border-b px-4">
           <Link
             href={`/org/${orgSlug}/dashboard`}
-            className="flex items-center gap-2.5"
+            className="min-w-0 flex-1"
           >
-            <span className="text-sm font-bold tracking-tight">
-              Agaseke4Org
+            <span className="block text-sm font-bold leading-tight break-words [word-break:break-word]">
+              {orgName}
             </span>
           </Link>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            aria-label="Close sidebar"
+          >
+            <X className="size-4" />
+          </button>
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
@@ -89,7 +98,7 @@ export function OrgSidebar({ orgSlug }: OrgSidebarProps) {
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
                   isActive
                     ? "bg-gradient-to-r from-primary/10 to-primary/5 text-primary shadow-sm"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -104,10 +113,10 @@ export function OrgSidebar({ orgSlug }: OrgSidebarProps) {
           })}
         </nav>
 
-        <div className="border-t p-3 space-y-1">
+        <div className="border-t p-3 space-y-0.5">
           {user && (
-            <div className="flex items-center gap-3 rounded-xl px-3 py-2.5">
-              <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
+            <div className="flex items-center gap-3 rounded-lg px-3 py-2">
+              <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
                 {profile?.displayName?.charAt(0)?.toUpperCase() ||
                   user.email?.charAt(0)?.toUpperCase() ||
                   "?"}
@@ -122,59 +131,60 @@ export function OrgSidebar({ orgSlug }: OrgSidebarProps) {
               </div>
             </div>
           )}
-          <Link href={`/org/${orgSlug}/my-membership`}>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start text-muted-foreground"
-            >
-              <User className="mr-2 size-4" />
-              My membership
-            </Button>
-          </Link>
-          <Link href={`/org/${orgSlug}`} target="_blank">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start text-muted-foreground"
-            >
-              <ExternalLink className="mr-2 size-4" />
-              View public page
-            </Button>
-          </Link>
-          {profile?.isAdmin && (
-            <Link href="/admin/organizations">
+          <div className="space-y-0.5 pt-1">
+            <Link href={`/org/${orgSlug}/my-membership`}>
               <Button
                 variant="ghost"
                 size="sm"
-                className="w-full justify-start text-primary"
+                className="w-full justify-start text-muted-foreground h-8"
               >
-                <Shield className="mr-2 size-4" />
-                Admin panel
+                <User className="mr-2 size-3.5" />
+                My membership
               </Button>
             </Link>
-          )}
-          {profile?.isAdmin && (
-            <Link href="/">
+            <Link href={`/org/${orgSlug}`} target="_blank">
               <Button
                 variant="ghost"
                 size="sm"
-                className="w-full justify-start text-muted-foreground"
+                className="w-full justify-start text-muted-foreground h-8"
               >
-                <ChevronLeft className="mr-2 size-4" />
+                <ExternalLink className="mr-2 size-3.5" />
+                View public page
+              </Button>
+            </Link>
+            {profile?.isAdmin && (
+              <Link href="/admin/organizations">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start text-primary h-8"
+                >
+                  <Shield className="mr-2 size-3.5" />
+                  Admin panel
+                </Button>
+              </Link>
+            )}
+            {profile?.isAdmin && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start text-muted-foreground h-8"
+                onClick={() => router.push("/")}
+              >
+                <ChevronLeft className="mr-2 size-3.5" />
                 All organizations
               </Button>
-            </Link>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start text-muted-foreground hover:text-destructive"
-            onClick={handleLogout}
-          >
-            <LogOut className="mr-2 size-4" />
-            Sign out
-          </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start text-muted-foreground hover:text-destructive h-8"
+              onClick={handleLogout}
+            >
+              <LogOut className="mr-2 size-3.5" />
+              Sign out
+            </Button>
+          </div>
         </div>
       </aside>
 

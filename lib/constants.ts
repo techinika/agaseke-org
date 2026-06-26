@@ -20,6 +20,7 @@ export const ROUTES = {
   SIGNUP: '/auth/signup',
   FORGOT_PASSWORD: '/auth/forgot-password',
   VERIFY_EMAIL: '/auth/verify-email',
+  MY_ORGANIZATIONS: '/org',
   ORG_CREATE: '/org/create',
   ORG_DASHBOARD: (slug: string) => `/org/${slug}/dashboard`,
   ORG_MEMBERS: (slug: string) => `/org/${slug}/members`,
