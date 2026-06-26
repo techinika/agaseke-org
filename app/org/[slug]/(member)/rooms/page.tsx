@@ -133,28 +133,40 @@ export default function RoomsPage() {
         </div>
 
         <div className={`flex flex-1 flex-col ${showMobileList ? 'hidden sm:block' : 'block'}`}>
-          {isAdmin && selectedRoom && (
-            <div className="flex items-center justify-end gap-1 border-b px-3 py-1.5">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => {
-                  setEditingRoom(selectedRoom);
-                  setDialogOpen(true);
-                }}
-                title="Edit room"
+          {selectedRoom && (
+            <div className="flex items-center justify-between border-b px-3 py-1.5">
+              <button
+                onClick={() => { setSelectedRoom(null); setShowMobileList(true); }}
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+                title="All rooms"
               >
-                <Pencil className="size-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => handleDeleteRoom(selectedRoom)}
-                title="Delete room"
-                className="hover:text-destructive"
-              >
-                <Trash2 className="size-3.5" />
-              </Button>
+                <ArrowLeft className="size-3.5" />
+                All rooms
+              </button>
+              {isAdmin && (
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => {
+                      setEditingRoom(selectedRoom);
+                      setDialogOpen(true);
+                    }}
+                    title="Edit room"
+                  >
+                    <Pencil className="size-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => handleDeleteRoom(selectedRoom)}
+                    title="Delete room"
+                    className="hover:text-destructive"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </div>
+              )}
             </div>
           )}
           <div className="flex-1">

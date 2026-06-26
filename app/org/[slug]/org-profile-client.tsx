@@ -73,7 +73,9 @@ export default function OrgProfileClient({ slug }: OrgProfileClientProps) {
               className="absolute inset-0 size-full object-cover"
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+          {org.coverURL && (
+            <div className="absolute inset-0 bg-black/50" />
+          )}
           <div className="absolute inset-x-0 bottom-0 px-4 pb-8 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-6xl">
               <div className="flex items-end gap-6">

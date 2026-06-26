@@ -12,7 +12,7 @@ Built with Next.js 16 (App Router), Firebase (Firestore, Auth, Storage), Tailwin
 - **Mobile money payments** — Pay with MTN MoMo, Airtel Money, and other providers via pawaPay
 - **Card payments** — Pay with Visa, Mastercard, and other bank cards via PesaPal
 - **Admin dashboard** — Revenue breakdown, member lists, campaign progress
-- **Public organization pages** — White-labeled profile, join, and donate pages
+- **Public organization pages** — White-labeled profile (with cover image overlay for readability), join, and donate pages
 - **Rich text content** — Org bios and campaign descriptions support images, video embeds, links, and formatted text via tiptap editor
 - **Google Analytics** — GA4 page view tracking via measurement ID
 - **Email notifications** — Payment confirmations, reminders, expiry alerts, and failure notices via Resend or org-configured SMTP
@@ -81,8 +81,8 @@ app/
   org/             — User's organization listing (card grid with dashboard + public page links)
   org/create/      — Create organization wizard (3 steps)
   org/[slug]/
-    (admin)/       — Dashboard, settings, campaigns (new/[campaignId]/edit), members, finance, rooms
-    (member)/      — Chat rooms
+    (admin)/       — Dashboard, settings, campaigns (new/[campaignId]/edit), members (tiers/new/[tierId]/edit), finance, rooms
+    (member)/      — Chat rooms (with back button when room selected)
     join/          — Join flow with checkout
     donate/        — Donation flow with checkout
     chat/          — Public chat

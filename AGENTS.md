@@ -53,6 +53,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - `app/api/cron/membership-expiry/` — GET/POST, marks expired memberships and sends expiry notifications
 - GA4 page view tracking via `GoogleAnalytics` component in root layout
 - Campaign create/edit moved from modals to dedicated pages: `campaigns/new/`, `campaigns/[campaignId]/edit/`
+- Tier create/edit moved from modals to dedicated pages: `members/tiers/new/`, `members/tiers/[tierId]/edit/`
 - **Sidebar improvements**: Fixed toggle on all screens, "View public page" link, "All organizations" hidden from non-admins ✅
 
 ### Key Patterns
@@ -80,6 +81,9 @@ A web app for nonprofits to manage memberships and collect donations.
 - **Org logo as favicon**: Root layout metadata sets default `icons: '/favicon.svg'` (red "A" on white). `BrandColorWrapper` overrides via DOM — sets `<link rel="icon">` to `org.logoURL` on mount, restores `/favicon.svg` on cleanup. Server profile page uses `generateMetadata` with `icons: org.logoURL` for initial server render.
 - **PesaPal IPN**: If `PESAPAL_IPN_ID` is set in env, it's reused; otherwise `initiate-card` auto-registers a new one. IPN endpoint is `/api/payments/pesapal-ipn`. Uses `IPNCHANGE` notification type.
 - **Payment method selector**: `PaymentMethodSelector` component on checkout pages — user picks between Mobile Money (pawaPay) and Bank Card (PesaPal). Transaction `paymentMethod` field set to `'pawapay'` or `'pesapal'`. Finalize/reconcile routes detect method and call the correct status API.
+- **Cover image overlay**: Public org profile hero adds `bg-black/50` overlay on top of cover image (only rendered when `org.coverURL` is set) to ensure org logo, name, and metadata remain readable against any cover image.
+- **Tier form pages**: `TierFormFields` extracted as reusable component (same pattern as `CampaignFormFields`); `TierForm` dialog wrapper kept for backward compat; full-screen create/edit at `members/tiers/new/` and `members/tiers/[tierId]/edit/`.
+- **Room back button**: Chat room dashboard shows "All rooms" button in toolbar (before edit/delete) when a room is selected on both mobile and desktop — always visible, not admin-only.
 
 ### Server Helpers (lib/firebase/server.ts)
 - `getAccessToken()` — RS256 JWT assertion → OAuth2 token
@@ -127,3 +131,4 @@ A web app for nonprofits to manage memberships and collect donations.
 4. Test full payment flow: donate → pawaPay sandbox → webhook → email receipt → cron reconciliation
 5. Add PesaPal keys to `.env.local` and test card payment flow: donate → PesaPal sandbox → IPN → email receipt
 6. Add pawaPay production credentials and remove sandbox mode
+7. (complete — tier pages and room back button are done)
