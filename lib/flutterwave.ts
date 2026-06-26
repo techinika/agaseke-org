@@ -134,11 +134,6 @@ export function generateDepositId(): string {
   });
 }
 
-export function getFlutterwavePaymentOptions(paymentMethod: 'mobile_money' | 'card'): FlutterwavePaymentOption {
-  if (paymentMethod === 'card') return 'card';
-  return 'mobilemoneyrwanda';
-}
-
 export function getReturnUrl(slug: string, depositId: string, type: 'donation' | 'membership'): string {
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
   return `${baseUrl}/org/${slug}/payment/return/${depositId}/${type}`;

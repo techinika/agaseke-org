@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { Loader2, ArrowLeft, Smartphone, CreditCard, Heart } from 'lucide-react';
+import { Loader2, ArrowLeft, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,8 +12,6 @@ import PublicOrgHeader from '@/components/shared/public-org-header';
 import PublicOrgFooter from '@/components/shared/public-org-footer';
 import { OrgNotFound } from '@/components/shared/org-not-found';
 import { BrandColorWrapper } from '@/components/shared/brand-color-wrapper';
-import { PaymentMethodSelector } from '@/components/shared/payment-method-selector';
-import type { PaymentMethod } from '@/components/shared/payment-method-selector';
 import { useOrganizationBySlug } from '@/hooks/use-organization';
 import { useAuthStore } from '@/store/auth-store';
 import { useCampaigns } from '@/hooks/use-campaigns';
@@ -50,7 +48,6 @@ export default function DonationCheckoutPage() {
   const message = searchParams.get('message') || '';
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('mobile_money');
 
   function PageLayout({ children }: { children: React.ReactNode }) {
     if (!org) return <>{children}</>;
@@ -104,7 +101,7 @@ export default function DonationCheckoutPage() {
         referenceId: depositId,
         depositId,
         status: 'pending',
-        paymentMethod: paymentMethod === 'card' ? 'flutterwave_card' : 'flutterwave_mobile_money',
+        paymentMethod: 'flutterwave',
         createdAt: now,
       };
 
@@ -120,7 +117,6 @@ export default function DonationCheckoutPage() {
           reason: `Donation to ${org.name}${campaignId ? ` for ${campaign?.title || 'campaign'}` : ''}`,
           email: donorEmail || user?.email || undefined,
           name: donorName || 'Supporter',
-          paymentMethod,
           slug,
           orgName: org.name,
         }),
@@ -181,13 +177,6 @@ export default function DonationCheckoutPage() {
                 {message && <Badge variant="outline" className="max-w-40 truncate text-xs">"{message}"</Badge>}
               </div>
             </div>
-
-            <Separator />
-
-            <div>
-              <p className="mb-3 text-sm font-medium">Select payment method</p>
-              <PaymentMethodSelector value={paymentMethod} onChange={setPaymentMethod} />
-            </div>
           </CardContent>
           <div className="flex flex-col gap-3 border-t p-4 sm:flex-row sm:p-6">
             <Button
@@ -204,13 +193,7 @@ export default function DonationCheckoutPage() {
               disabled={isProcessing}
               onClick={handlePay}
             >
-              {isProcessing ? (
-                <Loader2 className="mr-2 size-4 animate-spin" />
-              ) : paymentMethod === 'card' ? (
-                <CreditCard className="mr-2 size-4" />
-              ) : (
-                <Smartphone className="mr-2 size-4" />
-              )}
+              {isProcessing && <Loader2 className="mr-2 size-4 animate-spin" />}
               Pay {feeBreakdown?.totalToPay.toLocaleString()} {CURRENCY}
             </Button>
           </div>

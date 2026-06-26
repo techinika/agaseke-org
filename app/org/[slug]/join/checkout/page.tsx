@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { Loader2, ArrowLeft, CheckCircle2, Smartphone, CreditCard, Users } from 'lucide-react';
+import { Loader2, ArrowLeft, CheckCircle2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,8 +12,6 @@ import PublicOrgHeader from '@/components/shared/public-org-header';
 import PublicOrgFooter from '@/components/shared/public-org-footer';
 import { OrgNotFound } from '@/components/shared/org-not-found';
 import { BrandColorWrapper } from '@/components/shared/brand-color-wrapper';
-import { PaymentMethodSelector } from '@/components/shared/payment-method-selector';
-import type { PaymentMethod } from '@/components/shared/payment-method-selector';
 import { useActiveTiers } from '@/hooks/use-tiers';
 import { useOrganizationBySlug } from '@/hooks/use-organization';
 import { useAuthStore } from '@/store/auth-store';
@@ -46,7 +44,6 @@ export default function CheckoutPage() {
   }, [tier, feePayer]);
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('mobile_money');
 
   function PageLayout({ children }: { children: React.ReactNode }) {
     if (!org) return <>{children}</>;
@@ -110,7 +107,7 @@ export default function CheckoutPage() {
         referenceId: depositId,
         depositId,
         status: 'pending',
-        paymentMethod: paymentMethod === 'card' ? 'flutterwave_card' : 'flutterwave_mobile_money',
+        paymentMethod: 'flutterwave',
         createdAt: now,
       };
 
@@ -126,7 +123,6 @@ export default function CheckoutPage() {
           reason: `Membership ${tier.name} for ${org.name}`,
           email: user.email || profile?.email,
           name: profile?.displayName || user.displayName || 'Member',
-          paymentMethod,
           slug,
           orgName: org.name,
         }),
@@ -224,13 +220,6 @@ export default function CheckoutPage() {
                 ))}
               </div>
             </div>
-
-            <Separator />
-
-            <div>
-              <p className="mb-3 text-sm font-medium">Select payment method</p>
-              <PaymentMethodSelector value={paymentMethod} onChange={setPaymentMethod} />
-            </div>
           </CardContent>
           <div className="flex flex-col gap-3 border-t p-4 sm:flex-row sm:p-6">
             <Button
@@ -247,13 +236,7 @@ export default function CheckoutPage() {
               disabled={isProcessing}
               onClick={handlePayment}
             >
-              {isProcessing ? (
-                <Loader2 className="mr-2 size-4 animate-spin" />
-              ) : paymentMethod === 'card' ? (
-                <CreditCard className="mr-2 size-4" />
-              ) : (
-                <Smartphone className="mr-2 size-4" />
-              )}
+              {isProcessing && <Loader2 className="mr-2 size-4 animate-spin" />}
               Pay {feeBreakdown?.totalToPay.toLocaleString()} {CURRENCY}
             </Button>
           </div>
