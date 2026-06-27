@@ -5,7 +5,7 @@ import PublicOrgHeader from '@/components/shared/public-org-header';
 import PublicOrgFooter from '@/components/shared/public-org-footer';
 
 interface OrgCheckoutLayoutProps {
-  org: Organization | null;
+  org: Organization | null | undefined;
   slug: string;
   children: ReactNode;
 }

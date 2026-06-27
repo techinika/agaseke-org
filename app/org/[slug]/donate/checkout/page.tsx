@@ -55,7 +55,7 @@ export default function DonationCheckoutPage() {
       const totalToPay = feeBreakdown.totalToPay;
       const returnUrl = getReturnUrl(slug, depositId, 'donation');
 
-      donationId = await addDocument(COLLECTIONS.DONATIONS, {
+      await addDocument(COLLECTIONS.DONATIONS, {
         orgId: org.id,
         userId: user?.uid ?? null,
         donorName,
