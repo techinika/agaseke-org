@@ -37,7 +37,7 @@ export function useImageUpload(options?: UseImageUploadOptions): UseImageUploadR
     } finally {
       setIsUploading(false);
     }
-  }, [options?.folder]);
+  }, [options]);
 
   const reset = useCallback(() => {
     setIsUploading(false);

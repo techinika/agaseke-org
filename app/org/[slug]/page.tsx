@@ -14,17 +14,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!org) {
     return {
       title: 'Organization Not Found',
-      description: 'This organization does not exist on Agaseke.',
+      description: 'This organization does not exist on Quorum.',
     };
   }
 
   return {
     title: org.name,
-    description: org.description || `${org.name} - ${org.category} organization on Agaseke. Join, donate, or learn more.`,
+    description: org.description || `${org.name} - ${org.category} organization on Quorum. Join, donate, or learn more.`,
     icons: org.logoURL ? { icon: org.logoURL } : undefined,
     openGraph: {
       title: org.name,
-      description: org.description || `${org.name} - ${org.category} organization on Agaseke.`,
+      description: org.description || `${org.name} - ${org.category} organization on Quorum.`,
       images: org.logoURL ? [{ url: org.logoURL }] : [],
     },
   };

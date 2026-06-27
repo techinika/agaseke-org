@@ -24,7 +24,6 @@ export function getAdminConfig(): FirebaseAdminConfig {
 
 export async function verifyFirebaseToken(token: string): Promise<{ uid: string; email?: string } | null> {
   try {
-    const config = getAdminConfig();
     const response = await fetch(
       `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}`,
       {

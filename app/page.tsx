@@ -87,7 +87,7 @@ const audiences = [
 
 const faqs = [
   {
-    q: 'How much does Agaseke cost?',
+    q: 'How much does Quorum cost?',
     a: 'It is free to create your organization and start collecting. We charge a small 10% platform fee on donations and memberships. You choose whether your organization pays the fee or passes it to the donor. No monthly subscription fees.',
   },
   {
@@ -95,7 +95,7 @@ const faqs = [
     a: 'We support Mobile Money (MTN MoMo, Airtel Money) and bank cards (Visa, Mastercard) through Flutterwave. Your members and donors can use whichever is easiest for them.',
   },
   {
-    q: 'Can members use Agaseke without downloading an app?',
+    q: 'Can members use Quorum without downloading an app?',
     a: 'Yes. Everything works in a web browser on any phone, tablet, or computer. There is nothing to download. Members can join, donate, and chat right from their browser.',
   },
   {
@@ -104,7 +104,7 @@ const faqs = [
   },
   {
     q: 'Can I use my own domain and branding?',
-    a: 'Yes. Your organization gets a public page with your logo, brand colors, and custom URL. The page shows your name — not Agaseke\'s. You can also configure your own email sender so emails come from your domain.',
+    a: 'Yes. Your organization gets a public page with your logo, brand colors, and custom URL. The page shows your name — not Quorum\'s. You can also configure your own email sender so emails come from your domain.',
   },
   {
     q: 'What if someone in my community does not have a smartphone?',
@@ -206,7 +206,7 @@ export default function LandingPage() {
             <div className="mx-auto mt-12 max-w-2xl text-center">
               <div className="inline-flex items-center gap-2 rounded-full border bg-primary/5 px-5 py-2 text-sm font-medium text-primary">
                 <Zap className="size-4" />
-                Agaseke brings everything together in one place
+                Quorum brings everything together in one place
               </div>
             </div>
           </div>
@@ -276,7 +276,7 @@ export default function LandingPage() {
             <div className="mx-auto mb-16 max-w-2xl text-center">
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Built for organizations like yours</h2>
               <p className="mt-4 text-lg text-muted-foreground">
-                Whether you run a small community group or a growing nonprofit, Agaseke fits the way you work.
+                Whether you run a small community group or a growing nonprofit, Quorum fits the way you work.
               </p>
             </div>
             <div className="grid gap-6 lg:grid-cols-4">
@@ -334,7 +334,7 @@ export default function LandingPage() {
         <section className="border-t py-20 sm:py-28">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto mb-16 max-w-2xl text-center">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Why organizations choose Agaseke</h2>
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Why organizations choose Quorum</h2>
             </div>
             <div className="mx-auto grid max-w-4xl gap-8 sm:grid-cols-2">
               <div className="flex gap-4">
@@ -388,7 +388,7 @@ export default function LandingPage() {
                 <div>
                   <h3 className="font-semibold">White-labeled pages</h3>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Your logo, your colors, your domain. No Agaseke branding on your public page.
+                    Your logo, your colors, your domain. No Quorum branding on your public page.
                   </p>
                 </div>
               </div>
@@ -449,7 +449,7 @@ export default function LandingPage() {
                     Ready to bring your organization online?
                   </h2>
                   <p className="mt-4 text-lg text-muted-foreground">
-                    Join organizations that use Agaseke to manage members, collect donations, and stay connected. 
+                    Join organizations that use Quorum to manage members, collect donations, and stay connected. 
                     It is free to start and takes minutes to set up.
                   </p>
                   <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">

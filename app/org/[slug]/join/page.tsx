@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: `Become a member of ${org.name}. Choose a membership tier and start enjoying benefits. ${org.description || ''}`,
     openGraph: {
       title: `Join ${org.name}`,
-      description: org.description || `Become a member of ${org.name} on Agaseke.`,
+      description: org.description || `Become a member of ${org.name} on Quorum.`,
     },
   };
 }

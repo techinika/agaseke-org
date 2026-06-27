@@ -31,14 +31,14 @@ export default function PublicOrgFooter({ orgName }: PublicOrgFooterProps) {
             href="/"
             className="inline-flex items-center gap-1.5 text-center text-sm text-muted-foreground transition-colors hover:text-primary"
           >
-            Powered by <span className="font-semibold text-primary">Agaseke</span>
+            Powered by <span className="font-semibold text-primary">Quorum</span>
             <Heart className="size-3.5 fill-primary/20 text-primary" />
           </Link>
         </div>
       </div>
       <div className="border-t border-border/20 bg-muted/30 py-3">
         <p className="px-4 text-center text-xs text-muted-foreground">
-          Agaseke helps nonprofits and associations manage memberships and collect donations.{' '}
+          Quorum helps nonprofits and associations manage memberships and collect donations.{' '}
           <Link href="/" className="font-medium text-primary hover:underline">
             Start your organization today
           </Link>

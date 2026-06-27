@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Agaseke for Organizations',
-    short_name: 'Agaseke',
+    name: 'Quorum.',
+    short_name: 'Quorum',
     description:
       'Manage memberships, collect donations, and connect with your community. Built for African nonprofits and associations.',
     start_url: '/org',

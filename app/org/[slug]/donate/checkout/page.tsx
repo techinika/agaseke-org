@@ -7,11 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import PublicOrgHeader from '@/components/shared/public-org-header';
-import PublicOrgFooter from '@/components/shared/public-org-footer';
+import { OrgCheckoutLayout } from '@/components/shared/org-checkout-layout';
 import { OrgNotFound } from '@/components/shared/org-not-found';
-import { BrandColorWrapper } from '@/components/shared/brand-color-wrapper';
 import { useOrganizationBySlug } from '@/hooks/use-organization';
 import { useAuthStore } from '@/store/auth-store';
 import { useCampaigns } from '@/hooks/use-campaigns';
@@ -49,24 +46,10 @@ export default function DonationCheckoutPage() {
 
   const [isProcessing, setIsProcessing] = useState(false);
 
-  function PageLayout({ children }: { children: React.ReactNode }) {
-    if (!org) return <>{children}</>;
-    return (
-      <BrandColorWrapper org={org}>
-        <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/[0.02]">
-          <PublicOrgHeader org={org} slug={slug} />
-          {children}
-          <PublicOrgFooter orgName={org.name} />
-        </div>
-      </BrandColorWrapper>
-    );
-  }
-
   async function handlePay() {
     if (!org || amount < 100 || !feeBreakdown) return;
     setIsProcessing(true);
     const depositId = generateDepositId();
-    let donationId: string | null = null;
     try {
       const now = Timestamp.now();
       const totalToPay = feeBreakdown.totalToPay;
@@ -137,11 +120,11 @@ export default function DonationCheckoutPage() {
 
   if (orgLoading) {
     return (
-      <PageLayout>
+      <OrgCheckoutLayout org={org} slug={slug}>
         <div className="mx-auto max-w-lg px-4 py-12">
           <Skeleton className="h-96 rounded-xl" />
         </div>
-      </PageLayout>
+      </OrgCheckoutLayout>
     );
   }
 
@@ -150,7 +133,7 @@ export default function DonationCheckoutPage() {
   }
 
   return (
-    <PageLayout>
+    <OrgCheckoutLayout org={org} slug={slug}>
       <div className="mx-auto w-full max-w-lg px-4 py-8 sm:py-12">
         <Card className="overflow-hidden">
           <CardHeader className="space-y-1 border-b bg-muted/30 pb-4 sm:pb-6">
@@ -174,7 +157,7 @@ export default function DonationCheckoutPage() {
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Badge variant="outline" className="text-xs">{donorName}</Badge>
-                {message && <Badge variant="outline" className="max-w-40 truncate text-xs">"{message}"</Badge>}
+                {message && <Badge variant="outline" className="max-w-40 truncate text-xs">&ldquo;{message}&rdquo;</Badge>}
               </div>
             </div>
           </CardContent>
@@ -199,6 +182,6 @@ export default function DonationCheckoutPage() {
           </div>
         </Card>
       </div>
-    </PageLayout>
+      </OrgCheckoutLayout>
   );
 }

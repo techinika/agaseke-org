@@ -16,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tier } from '@/types/membership';
 import { BillingCycle } from '@/lib/constants';
 
 const tierSchema = z.object({
@@ -67,7 +66,6 @@ export function TierFormFields({
     },
   });
 
-  const platformFeePayer = watch('platformFeePayer');
   const price = watch('price');
 
   function addBenefit() {
@@ -129,7 +127,7 @@ export function TierFormFields({
       <div className="space-y-2">
         <Label>Platform fee payer</Label>
         <p className="text-xs text-muted-foreground">
-          Agaseke charges a 10% platform fee. Choose who pays it.
+          Quorum charges a 10% platform fee. Choose who pays it.
         </p>
         <div className="flex gap-4">
           <label className="flex items-center gap-2 rounded-lg border p-3 flex-1 cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/5">

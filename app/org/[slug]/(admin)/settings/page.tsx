@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { Save, Loader2, Upload, Plus, Pencil, Trash2, MessageSquare, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,6 @@ import { useTiers } from '@/hooks/use-tiers';
 import { CreateRoomDialog } from '@/components/rooms/create-room-dialog';
 import { Room } from '@/types/room';
 import { toast } from 'sonner';
-import { Separator } from '@/components/ui/separator';
 
 export default function SettingsPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -56,7 +55,8 @@ export default function SettingsPage() {
 
   const prevOrgIdRef = useRef(org?.id);
 
-  if (org && org.id !== prevOrgIdRef.current) {
+  useEffect(() => {
+    if (!org || org.id === prevOrgIdRef.current) return;
     prevOrgIdRef.current = org.id;
     setName(org.name);
     setDescription(org.description);
@@ -69,7 +69,7 @@ export default function SettingsPage() {
     setSmtpFromEmail(org.smtpFromEmail ?? '');
     setSmtpFromName(org.smtpFromName ?? '');
     setBrandColor(org.brandColor ?? '#FF0000');
-  }
+  }, [org]);
 
   async function handleSave() {
     if (!org) return;

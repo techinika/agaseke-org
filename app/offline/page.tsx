@@ -7,7 +7,7 @@ export default function OfflinePage() {
       <div className="flex size-16 items-center justify-center rounded-full bg-muted">
         <WifiOff className="size-8 text-muted-foreground" />
       </div>
-      <h1 className="mt-4 text-xl font-bold">You're offline</h1>
+      <h1 className="mt-4 text-xl font-bold">You&apos;re offline</h1>
       <p className="mt-2 max-w-sm text-center text-sm text-muted-foreground">
         Check your internet connection and try again. Some pages may be available
         offline.

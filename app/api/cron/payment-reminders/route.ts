@@ -56,7 +56,7 @@ async function handleCron(request: NextRequest): Promise<NextResponse> {
 
         const userId = membership.userId as string;
         const orgId = membership.orgId as string;
-        const membershipId = (membership as any).id as string;
+        const membershipId = membership.id as string;
         const tierId = membership.tierId as string;
 
         const org = await readFirestoreDocument(COLLECTIONS.ORGANIZATIONS, orgId);
@@ -127,7 +127,7 @@ async function handleCron(request: NextRequest): Promise<NextResponse> {
         const nextBillingDate = donation.nextBillingDate as string | undefined;
         if (!nextBillingDate) continue;
 
-        const donationId = (donation as any).id as string;
+        const donationId = donation.id as string;
         const lastReminderDate = donation.lastReminderDate as string | undefined;
         if (lastReminderDate === today) {
           results.skippedDuplicates++;

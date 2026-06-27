@@ -14,8 +14,8 @@ export async function POST(request: NextRequest) {
       tx_ref: depositId,
       amount,
       redirect_url: returnUrl,
-      customer: { email: email || 'supporter@agaseke.org', name: name || 'Supporter' },
-      title: orgName || 'Agaseke',
+      customer: { email: email || 'support@quorum.app', name: name || 'Supporter' },
+      title: orgName || 'Quorum',
       description: reason || 'Payment',
       meta: {
         slug: slug || '',

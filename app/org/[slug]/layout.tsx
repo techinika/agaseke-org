@@ -16,13 +16,13 @@ export async function generateMetadata({ params }: OrgLayoutProps): Promise<Meta
 
   return {
     title: org.name,
-    description: org.description || `${org.name} - ${org.category} organization on Agaseke.`,
+    description: org.description || `${org.name} - ${org.category} organization on Quorum.`,
     icons: org.logoURL
       ? { icon: org.logoURL, apple: org.logoURL }
       : undefined,
     openGraph: {
       title: org.name,
-      description: org.description || `${org.name} on Agaseke.`,
+      description: org.description || `${org.name} on Quorum.`,
       images: org.logoURL ? [{ url: org.logoURL }] : [],
     },
   };

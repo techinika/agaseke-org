@@ -10,7 +10,6 @@ import {
   ArrowRight,
   Wallet,
   TrendingUp,
-  CreditCard,
   UserPlus,
   DollarSign,
   Calendar,

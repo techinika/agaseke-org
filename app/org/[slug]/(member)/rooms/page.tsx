@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
-import { MessageSquare, ArrowLeft, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { RoomList } from '@/components/rooms/room-list';
 import { ChatView } from '@/components/rooms/chat-view';

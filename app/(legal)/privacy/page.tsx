@@ -6,7 +6,7 @@ import { PublicFooter } from '@/components/shared/public-footer';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
-  description: 'Agaseke for Organizations Privacy Policy',
+  description: 'Quorum. Privacy Policy',
 };
 
 export default function PrivacyPage() {
@@ -60,7 +60,7 @@ export default function PrivacyPage() {
             <section>
               <h2 className="mb-3 text-lg font-semibold text-foreground">5. Your Rights</h2>
               <p>
-                You have the right to access, correct, or delete your personal data. You can request a copy of your data or ask us to stop processing it. Contact us at support@agaseke.me to exercise these rights.
+                You have the right to access, correct, or delete your personal data. You can request a copy of your data or ask us to stop processing it. Contact us at support@quorum.app to exercise these rights.
               </p>
             </section>
 
@@ -109,7 +109,7 @@ export default function PrivacyPage() {
             <section>
               <h2 className="mb-3 text-lg font-semibold text-foreground">12. Contact</h2>
               <p>
-                For privacy-related inquiries, contact us at support@agaseke.me.
+                For privacy-related inquiries, contact us at support@quorum.app.
               </p>
             </section>
           </div>

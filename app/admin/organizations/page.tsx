@@ -45,7 +45,7 @@ export default function AdminOrganizationsPage() {
         <CardHeader>
           <CardTitle className="text-lg">Organizations ({organizations?.length ?? 0})</CardTitle>
           <CardDescription>
-            View and manage all organizations registered on Agaseke.
+            View and manage all organizations registered on Quorum.
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">

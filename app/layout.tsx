@@ -19,18 +19,18 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Agaseke for Organizations',
-    template: '%s | Agaseke for Organizations',
+    default: 'Quorum.',
+    template: '%s | Quorum.',
   },
   description:
-    'Agaseke helps nonprofits, churches, schools, and associations manage memberships, collect donations, and connect with their community. Simple tools for African organizations.',
-  metadataBase: new URL('https://agaseke.co'),
+    'Quorum helps nonprofits, churches, schools, and associations manage memberships, collect donations, and connect with their community. Simple tools for African organizations.',
+  metadataBase: new URL('https://quorum.app'),
   manifest: '/manifest.webmanifest',
   icons: { icon: '/favicon.svg' },
   keywords: ['membership management', 'donation platform', 'nonprofit tools', 'Africa', 'organization management', 'member engagement'],
   appleWebApp: {
     capable: true,
-    title: 'Agaseke',
+    title: 'Quorum',
     statusBarStyle: 'default',
   },
   formatDetection: {
@@ -42,8 +42,8 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    siteName: 'Agaseke for Organizations',
-    title: 'Agaseke for Organizations',
+    siteName: 'Quorum.',
+    title: 'Quorum.',
     description: 'Manage memberships, collect donations, and connect with your community. Built for African nonprofits and associations.',
   },
 };

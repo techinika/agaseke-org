@@ -43,7 +43,7 @@ export function PWARegister() {
 
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-sm rounded-xl border bg-card p-4 shadow-lg">
-      <p className="text-sm font-medium">Install Agaseke</p>
+      <p className="text-sm font-medium">Install Quorum</p>
       <p className="mt-1 text-xs text-muted-foreground">
         Add to your home screen for a better experience.
       </p>

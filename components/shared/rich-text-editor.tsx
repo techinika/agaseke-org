@@ -29,6 +29,21 @@ interface RichTextEditorProps {
   minHeight?: string;
 }
 
+function ToolbarButton({ onClick, isActive, children, title }: { onClick: () => void; isActive?: boolean; children: React.ReactNode; title: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className={`rounded-md p-1.5 transition-colors ${
+        isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function RichTextEditor({ value, onChange, placeholder = 'Start writing...', minHeight = '200px' }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
@@ -96,19 +111,6 @@ export function RichTextEditor({ value, onChange, placeholder = 'Start writing..
   }, [editor]);
 
   if (!editor) return null;
-
-  const ToolbarButton = ({ onClick, isActive, children, title }: { onClick: () => void; isActive?: boolean; children: React.ReactNode; title: string }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      className={`rounded-md p-1.5 transition-colors ${
-        isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-      }`}
-    >
-      {children}
-    </button>
-  );
 
   return (
     <div className="overflow-hidden rounded-xl border bg-card">

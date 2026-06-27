@@ -16,8 +16,8 @@ interface EmailOptions {
   from?: EmailAddress;
 }
 
-const DEFAULT_FROM_EMAIL = process.env.DEFAULT_FROM_EMAIL || 'noreply@agaseke.org';
-const DEFAULT_FROM_NAME = process.env.DEFAULT_FROM_NAME || 'Agaseke';
+const DEFAULT_FROM_EMAIL = process.env.DEFAULT_FROM_EMAIL || 'noreply@quorum.app';
+const DEFAULT_FROM_NAME = process.env.DEFAULT_FROM_NAME || 'Quorum';
 
 export async function sendEmail(options: EmailOptions, orgId?: string): Promise<void> {
   let from = options.from || { email: DEFAULT_FROM_EMAIL, name: DEFAULT_FROM_NAME };

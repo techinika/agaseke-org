@@ -1,4 +1,4 @@
-const CACHE_NAME = 'agaseke-cache-v1'
+const CACHE_NAME = 'quorum-cache-v1'
 const STATIC_ASSETS = [
   '/',
   '/org',

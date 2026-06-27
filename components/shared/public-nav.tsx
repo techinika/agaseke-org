@@ -14,9 +14,9 @@ export function PublicNav() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2.5">
           <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-sm">
-            <span className="text-base font-bold text-primary-foreground">A</span>
+            <span className="text-base font-bold text-primary-foreground">Q</span>
           </div>
-          <span className="text-lg font-bold tracking-tight">Agaseke</span>
+          <span className="text-lg font-bold tracking-tight"><span className="text-primary">Q</span>uorum.</span>
         </Link>
         <nav className="hidden items-center gap-8 md:flex">
           {navLinks.map((link) => (

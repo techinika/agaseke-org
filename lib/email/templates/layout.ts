@@ -44,7 +44,7 @@ export function emailLayout(
             <td style="padding: 0 0 24px 0; text-align: center;">
               ${options.orgLogoURL
                 ? `<img src="${options.orgLogoURL}" alt="${options.orgName || ''}" style="height: 40px; width: auto; border: 0; display: inline-block; outline: none;" />`
-                : `<div style="font-size: 20px; font-weight: 700; color: ${brand}; letter-spacing: -0.02em;">${options.orgName || 'Agaseke'}</div>`
+                : `<div style="font-size: 20px; font-weight: 700; color: ${brand}; letter-spacing: -0.02em;">${options.orgName || 'Quorum'}</div>`
               }
             </td>
           </tr>
@@ -64,10 +64,10 @@ export function emailLayout(
           <tr>
             <td style="padding: 24px 16px 0; text-align: center;">
               <p style="margin: 0 0 4px; font-size: 12px; color: ${TEXT_SECONDARY}; line-height: 1.5;">
-                Powered by <a href="https://agaseke.co" style="color: ${brand}; text-decoration: underline;">Agaseke</a>
+                Powered by <a href="https://quorum.app" style="color: ${brand}; text-decoration: underline;">Quorum</a>
               </p>
               <p style="margin: 0; font-size: 11px; color: ${TEXT_SECONDARY}; line-height: 1.5;">
-                &copy; ${new Date().getFullYear()} Agaseke. All rights reserved.
+                &copy; ${new Date().getFullYear()} Quorum. All rights reserved.
               </p>
             </td>
           </tr>

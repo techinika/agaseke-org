@@ -6,7 +6,7 @@ import { PublicFooter } from '@/components/shared/public-footer';
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
-  description: 'Agaseke for Organizations Terms of Service',
+  description: 'Quorum. Terms of Service',
 };
 
 export default function TermsPage() {
@@ -32,7 +32,7 @@ export default function TermsPage() {
             <section>
               <h2 className="mb-3 text-lg font-semibold text-foreground">1. Acceptance of Terms</h2>
               <p>
-                By accessing or using Agaseke for Organizations (&ldquo;the Platform&rdquo;), you agree to be bound by these Terms of Service. If you do not agree, do not use the Platform.
+                By accessing or using Quorum. (&ldquo;the Platform&rdquo;), you agree to be bound by these Terms of Service. If you do not agree, do not use the Platform.
               </p>
             </section>
 
@@ -109,7 +109,7 @@ export default function TermsPage() {
             <section>
               <h2 className="mb-3 text-lg font-semibold text-foreground">12. Contact</h2>
               <p>
-                For questions about these terms, contact us at support@agaseke.me.
+                For questions about these terms, contact us at support@quorum.app.
               </p>
             </section>
           </div>

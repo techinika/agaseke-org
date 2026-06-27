@@ -40,15 +40,8 @@ export function useRoomMessages(orgId: string, roomId: string | null) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!orgId || !roomId) {
-      setMessages([]);
-      setIsLoading(false);
-      setError(null);
-      return;
-    }
+    if (!orgId || !roomId) return;
 
-    setIsLoading(true);
-    setError(null);
     const db = getDb();
     const q = query(
       collection(db, messagesPath(orgId, roomId)),
@@ -83,6 +76,10 @@ export function useRoomMessages(orgId: string, roomId: string | null) {
 
     return unsubscribe;
   }, [orgId, roomId]);
+
+  if (!orgId || !roomId) {
+    return { messages: [], isLoading: false, error: null };
+  }
 
   return { messages, isLoading, error };
 }

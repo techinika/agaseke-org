@@ -1,4 +1,4 @@
-# Agaseke for Organizations
+# Quorum for Organizations
 
 A web application for nonprofits to manage memberships and collect donations.
 

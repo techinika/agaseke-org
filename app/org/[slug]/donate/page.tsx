@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: `Support ${org.name} with a donation. Your contribution helps them achieve their mission. ${org.description || ''}`,
     openGraph: {
       title: `Donate to ${org.name}`,
-      description: org.description || `Support ${org.name} with a donation on Agaseke.`,
+      description: org.description || `Support ${org.name} with a donation on Quorum.`,
     },
   };
 }

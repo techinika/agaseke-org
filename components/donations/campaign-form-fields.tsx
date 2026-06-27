@@ -58,7 +58,6 @@ export function CampaignFormFields({ defaultValues, onSubmit, onCancel, submitLa
     },
   });
 
-  const platformFeePayer = watch('platformFeePayer');
   const goalAmount = watch('goalAmount');
   const descriptionValue = watch('description');
 
@@ -106,7 +105,7 @@ export function CampaignFormFields({ defaultValues, onSubmit, onCancel, submitLa
       <div className="space-y-2">
         <Label>Platform fee payer</Label>
         <p className="text-xs text-muted-foreground">
-          Agaseke charges a 10% platform fee. Choose who pays it.
+          Quorum charges a 10% platform fee. Choose who pays it.
         </p>
         <div className="flex gap-4">
           <label className="flex items-center gap-2 rounded-lg border p-3 flex-1 cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/5">

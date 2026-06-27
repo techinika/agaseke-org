@@ -15,7 +15,7 @@ export default function FinancePage() {
   const { slug } = useParams<{ slug: string }>();
   const { data: org } = useOrganizationBySlug(slug);
   const orgId = org?.id ?? '';
-  const { data: transactions, isLoading: txnLoading } = useTransactions(orgId);
+  const { data: transactions } = useTransactions(orgId);
   const { data: memberships } = useMemberships(orgId);
 
   const stats = useMemo(() => {

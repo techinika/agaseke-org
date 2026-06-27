@@ -15,7 +15,7 @@ export function welcomeTemplate(params: {
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       </div>
       <h1 style="margin: 0 0 4px; font-size: 20px; font-weight: 700; color: #18181b;">
-        Welcome to Agaseke!
+        Welcome to Quorum!
       </h1>
       <p style="margin: 0; font-size: 14px; color: #71717a;">
         ${params.orgName ? `You're now part of ${params.orgName}` : "We're glad to have you"}
@@ -45,7 +45,7 @@ export function welcomeTemplate(params: {
   `;
 
   return emailLayout(content, {
-    previewText: `Welcome to${params.orgName ? ` ${params.orgName}` : ' Agaseke'}!`,
+    previewText: `Welcome to${params.orgName ? ` ${params.orgName}` : ' Quorum'}!`,
     orgName: params.orgName,
     orgLogoURL: params.orgLogoURL,
     brandColor: params.brandColor,

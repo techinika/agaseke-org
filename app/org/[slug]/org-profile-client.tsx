@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Users,
@@ -12,7 +11,6 @@ import {
   Shield,
   CreditCard,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import PublicOrgHeader from '@/components/shared/public-org-header';
@@ -32,8 +30,6 @@ interface OrgProfileClientProps {
 }
 
 export default function OrgProfileClient({ slug }: OrgProfileClientProps) {
-  const router = useRouter();
-
   const { data: org, isLoading: orgLoading } = useOrganizationBySlug(slug);
   const { data: members } = useOrgMembers(org?.id ?? '');
   const { data: campaigns } = useActiveCampaigns(org?.id ?? '');

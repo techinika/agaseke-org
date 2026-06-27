@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { ChevronRight, Shield, Lock, CreditCard, Smartphone, Info } from 'lucide-react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { ChevronRight, Shield, Lock, Smartphone, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,7 +32,6 @@ interface DonateClientProps {
 
 export default function DonateClient({ slug }: DonateClientProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { user, profile } = useAuthStore();
   const { data: org, isLoading: orgLoading } = useOrganizationBySlug(slug);
   const { data: campaigns, isLoading: campaignsLoading } = useActiveCampaigns(org?.id ?? '');
@@ -41,13 +40,14 @@ export default function DonateClient({ slug }: DonateClientProps) {
   const [amount, setAmount] = useState(10000);
   const [customAmount, setCustomAmount] = useState('');
   const [frequency, setFrequency] = useState<Frequency>('one_time');
-  const [campaignId, setCampaignId] = useState<string>('');
+  const [campaignId, setCampaignId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search).get('campaignId') ?? '';
+    }
+    return '';
+  });
   const [detailCampaign, setDetailCampaign] = useState<Campaign | null>(null);
 
-  useEffect(() => {
-    const fromUrl = searchParams?.get('campaignId');
-    if (fromUrl) setCampaignId(fromUrl);
-  }, [searchParams]);
   const [donorName, setDonorName] = useState(user ? (profile?.displayName || user.displayName || '') : '');
   const [donorEmail, setDonorEmail] = useState(user ? (profile?.email || user.email || '') : '');
   const [isAnonymous, setIsAnonymous] = useState(false);
