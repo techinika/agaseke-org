@@ -50,6 +50,9 @@ export async function failDeposit(depositId: string, failureReason?: string): Pr
     if (txType === 'donation') {
       const donations = await queryFirestoreDocuments(COLLECTIONS.DONATIONS, 'depositId', 'EQUAL', depositId);
       for (const donation of donations) {
+        if (donation.status === 'failed') continue;
+        if (donation.status === 'active') continue;
+        await updateFirestoreDocument(COLLECTIONS.DONATIONS, donation.id, { status: 'failed' });
         await sendDonationFailedEmails(donation, tx.orgId as string | undefined, failureReason);
       }
     }

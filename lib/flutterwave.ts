@@ -110,15 +110,14 @@ export async function verifyTransaction(tx_ref: string): Promise<FlwTransaction>
   return data.data;
 }
 
-export function verifyWebhookSignature(payload: string, signature: string): boolean {
+export function verifyWebhookHash(verifHash: string): boolean {
   const secret = process.env.FLUTTERWAVE_WEBHOOK_HASH;
   if (!secret) return true;
   try {
-    const expected = crypto.createHmac('sha256', secret).update(payload).digest('hex');
-    const expectedBuffer = Buffer.from(expected);
-    const signatureBuffer = Buffer.from(signature);
-    if (expectedBuffer.length !== signatureBuffer.length) return false;
-    return crypto.timingSafeEqual(expectedBuffer, signatureBuffer);
+    const secretBuffer = Buffer.from(secret);
+    const hashBuffer = Buffer.from(verifHash);
+    if (secretBuffer.length !== hashBuffer.length) return false;
+    return crypto.timingSafeEqual(secretBuffer, hashBuffer);
   } catch {
     return false;
   }

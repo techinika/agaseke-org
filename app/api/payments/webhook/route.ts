@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyWebhookSignature } from '@/lib/flutterwave';
+import { verifyWebhookHash } from '@/lib/flutterwave';
 import { completeDeposit, failDeposit } from '@/lib/payments';
+
+const WEBHOOK_HASH = process.env.FLUTTERWAVE_WEBHOOK_HASH;
 
 export async function POST(request: NextRequest) {
   try {
     const textBody = await request.text();
-    const signature = request.headers.get('Flutterwave-Verify-Hash') || '';
+    const verifHash = request.headers.get('verif-hash') || '';
 
-    if (!verifyWebhookSignature(textBody, signature)) {
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+    if (WEBHOOK_HASH && !verifyWebhookHash(verifHash)) {
+      return NextResponse.json({ error: 'Invalid webhook hash' }, { status: 401 });
     }
 
     let body: Record<string, unknown>;

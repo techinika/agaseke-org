@@ -13,7 +13,7 @@ export interface Donation {
   orgReceives: number;
   depositId?: string;
   frequency: DonationFrequency;
-  status: 'pending' | 'active' | 'cancelled' | 'completed';
+  status: 'pending' | 'active' | 'failed' | 'cancelled' | 'completed';
   nextBillingDate: Timestamp | null;
   createdAt: Timestamp;
 }
