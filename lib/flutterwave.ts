@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { getAppUrl } from '@/lib/app-url';
 
 const FLW_BASE_URL = process.env.FLUTTERWAVE_BASE_URL || 'https://api.flutterwave.com';
 const FLW_SECRET_KEY = process.env.FLUTTERWAVE_SECRET_KEY;
@@ -112,7 +113,9 @@ export async function verifyTransaction(tx_ref: string): Promise<FlwTransaction>
 
 export function verifyWebhookHash(verifHash: string): boolean {
   const secret = process.env.FLUTTERWAVE_WEBHOOK_HASH;
-  if (!secret) return true;
+  if (!secret) {
+    throw new Error('FLUTTERWAVE_WEBHOOK_HASH is not configured');
+  }
   try {
     const secretBuffer = Buffer.from(secret);
     const hashBuffer = Buffer.from(verifHash);
@@ -134,6 +137,6 @@ export function generateDepositId(): string {
 }
 
 export function getReturnUrl(slug: string, depositId: string, type: 'donation' | 'membership'): string {
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : getAppUrl();
   return `${baseUrl}/org/${slug}/payment/return/${depositId}/${type}`;
 }

@@ -29,7 +29,7 @@ function decodeFields(fields?: Record<string, FirestoreFieldValue>): Record<stri
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(fields)) {
     if (value.stringValue !== undefined) result[key] = value.stringValue;
-    else if (value.integerValue !== undefined) result[key] = parseInt(value.integerValue);
+    else if (value.integerValue !== undefined) result[key] = parseInt(value.integerValue, 10);
     else if (value.doubleValue !== undefined) result[key] = value.doubleValue;
     else if (value.booleanValue !== undefined) result[key] = value.booleanValue;
     else if (value.timestampValue !== undefined) result[key] = value.timestampValue;
@@ -138,11 +138,15 @@ export async function readFirestoreDocument(collection: string, docId: string, s
 
     const response = await fetch(url, { headers });
     if (response.status === 404) return null;
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.error(`Firestore read failed: ${response.status} for ${collection}/${docId}`);
+      return null;
+    }
 
     const data = await response.json();
     return { id: data.name.split('/').pop(), ...decodeFields(data.fields) };
-  } catch {
+  } catch (err) {
+    console.error(`Firestore read error for ${collection}/${docId}:`, err);
     return null;
   }
 }
@@ -294,7 +298,10 @@ export async function fetchOrgBySlug(slug: string): Promise<{ id: string; name: 
       headers: getHeaders(),
       body: JSON.stringify(body),
     });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.error(`fetchOrgBySlug: Firestore query failed with status ${response.status}`);
+      return null;
+    }
     const data = await response.json();
     const doc = data?.[0]?.document as FirestoreDocument | undefined;
     if (!doc) return null;
@@ -309,7 +316,8 @@ export async function fetchOrgBySlug(slug: string): Promise<{ id: string; name: 
       logoURL: fields.logoURL as string | undefined,
       coverURL: fields.coverURL as string | undefined,
     };
-  } catch {
+  } catch (err) {
+    console.error('fetchOrgBySlug error:', err);
     return null;
   }
 }

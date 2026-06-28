@@ -128,7 +128,7 @@ export async function createUserDocument(
     createdAt: Timestamp.now(),
     type: 'member',
   };
-  await setDoc(userRef, userDoc);
+  await setDoc(userRef, userDoc, { merge: true });
   return userDoc;
 }
 

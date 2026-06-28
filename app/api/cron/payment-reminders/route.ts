@@ -28,10 +28,6 @@ async function handleCron(request: NextRequest): Promise<NextResponse> {
     const results = { remindersSent: 0, membershipsChecked: 0, donationsChecked: 0, errors: 0, skippedDuplicates: 0 };
     const appUrl = getAppUrl();
 
-    const now = Date.now();
-    const threeDaysFromNow = now + 3 * 24 * 60 * 60 * 1000;
-    const today = new Date().toISOString().slice(0, 10);
-
     const memberships = await queryFirestoreDocuments(
       COLLECTIONS.MEMBERSHIPS,
       'status',
@@ -43,7 +39,11 @@ async function handleCron(request: NextRequest): Promise<NextResponse> {
       results.membershipsChecked++;
       try {
         const renewsAt = membership.renewsAt as string | undefined;
-        if (!renewsAt) continue;
+        if (!renewsAt || renewsAt === 'null') continue;
+
+        const today = new Date().toISOString().slice(0, 10);
+        const now = Date.now();
+        const threeDaysFromNow = now + 3 * 24 * 60 * 60 * 1000;
 
         const lastReminderDate = membership.lastReminderDate as string | undefined;
         if (lastReminderDate === today) {
@@ -123,6 +123,10 @@ async function handleCron(request: NextRequest): Promise<NextResponse> {
       try {
         const frequency = donation.frequency as string | undefined;
         if (frequency === 'one_time') continue;
+
+        const today = new Date().toISOString().slice(0, 10);
+        const now = Date.now();
+        const threeDaysFromNow = now + 3 * 24 * 60 * 60 * 1000;
 
         const nextBillingDate = donation.nextBillingDate as string | undefined;
         if (!nextBillingDate) continue;

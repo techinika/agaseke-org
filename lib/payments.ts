@@ -13,10 +13,14 @@ export async function completeDeposit(depositId: string): Promise<{ completed: n
   let failed = 0;
 
   for (const tx of txs) {
+    if (tx.processedAt) { completed++; continue; }
     if (tx.status === 'completed') { completed++; continue; }
     if (tx.status === 'failed') { failed++; continue; }
 
-    await updateFirestoreDocument(COLLECTIONS.TRANSACTIONS, tx.id, { status: 'completed' });
+    await updateFirestoreDocument(COLLECTIONS.TRANSACTIONS, tx.id, {
+      status: 'completed',
+      processedAt: new Date().toISOString(),
+    });
     const txType = tx.type as string;
     const orgId = tx.orgId as string | undefined;
 
@@ -39,9 +43,13 @@ export async function failDeposit(depositId: string, failureReason?: string): Pr
   const processed = new Set<string>();
 
   for (const tx of txs) {
+    if (tx.processedAt) continue;
     if (tx.status === 'completed') continue;
     if (tx.status === 'failed') continue;
-    await updateFirestoreDocument(COLLECTIONS.TRANSACTIONS, tx.id, { status: 'failed' });
+    await updateFirestoreDocument(COLLECTIONS.TRANSACTIONS, tx.id, {
+      status: 'failed',
+      processedAt: new Date().toISOString(),
+    });
 
     const txType = tx.type as string;
     if (processed.has(txType)) continue;

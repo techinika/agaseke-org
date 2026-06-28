@@ -3,6 +3,7 @@ import { updateFirestoreDocument, readFirestoreDocument } from '@/lib/firebase/s
 import { COLLECTIONS } from '@/lib/constants';
 import { encryptSmtpPass } from '@/lib/email/encrypt-smtp';
 import { verifyFirebaseToken } from '@/lib/firebase/admin';
+import { smtpSettingsSchema } from '@/lib/api-validations';
 
 export async function POST(request: Request) {
   try {
@@ -18,11 +19,15 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { orgId, smtpHost, smtpPort, smtpUser, smtpPass, smtpFromEmail, smtpFromName } = body;
-
-    if (!orgId) {
-      return NextResponse.json({ error: 'orgId is required' }, { status: 400 });
+    const parsed = smtpSettingsSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
     }
+
+    const { orgId, smtpHost, smtpPort, smtpUser, smtpPass, smtpFromEmail, smtpFromName } = parsed.data;
 
     const org = await readFirestoreDocument(COLLECTIONS.ORGANIZATIONS, orgId);
     const adminIds = (org?.adminIds as string[]) || [];
@@ -33,7 +38,8 @@ export async function POST(request: Request) {
     const data: Record<string, unknown> = {};
     if (smtpHost !== undefined) data.smtpHost = smtpHost || null;
     if (smtpPort !== undefined) {
-      const port = smtpPort ? parseInt(smtpPort, 10) : null;
+      const portStr = smtpPort !== '' && smtpPort != null ? String(smtpPort) : '';
+      const port = portStr ? parseInt(portStr, 10) : null;
       if (port !== null && (isNaN(port) || port < 1 || port > 65535)) {
         return NextResponse.json({ error: 'SMTP port must be between 1 and 65535' }, { status: 400 });
       }

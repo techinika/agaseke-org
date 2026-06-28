@@ -29,7 +29,7 @@ export async function sendEmail(options: EmailOptions, orgId?: string): Promise<
     let smtpPass = org?.smtpPass as string | undefined;
 
     if (smtpPass && smtpPass.includes(':')) {
-      try { smtpPass = decryptSmtpPass(smtpPass); } catch { }
+      try { smtpPass = decryptSmtpPass(smtpPass); } catch (err) { console.error('Failed to decrypt SMTP password:', err); }
     }
 
     if (smtpHost && smtpUser && smtpPass) {

@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initiatePayment } from '@/lib/flutterwave';
+import { paymentInitiateSchema } from '@/lib/api-validations';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { depositId, amount, returnUrl, reason, email, name, slug, orgName } = body;
-
-    if (!depositId || !amount || !returnUrl) {
-      return NextResponse.json({ error: 'Missing required fields: depositId, amount, returnUrl' }, { status: 400 });
+    const parsed = paymentInitiateSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
     }
+
+    const { depositId, amount, returnUrl, reason, email, name, slug, orgName } = parsed.data;
 
     const { link } = await initiatePayment({
       tx_ref: depositId,

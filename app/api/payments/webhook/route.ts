@@ -3,14 +3,20 @@ import { verifyWebhookHash } from '@/lib/flutterwave';
 import { completeDeposit, failDeposit } from '@/lib/payments';
 
 const WEBHOOK_HASH = process.env.FLUTTERWAVE_WEBHOOK_HASH;
+const RECENT_EVENTS = new Set<string>();
 
 export async function POST(request: NextRequest) {
   try {
     const textBody = await request.text();
     const verifHash = request.headers.get('verif-hash') || '';
 
-    if (WEBHOOK_HASH && !verifyWebhookHash(verifHash)) {
-      return NextResponse.json({ error: 'Invalid webhook hash' }, { status: 401 });
+    try {
+      if (WEBHOOK_HASH && !verifyWebhookHash(verifHash)) {
+        return NextResponse.json({ error: 'Invalid webhook hash' }, { status: 401 });
+      }
+    } catch (err) {
+      console.error('Webhook verification error:', err);
+      return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 });
     }
 
     let body: Record<string, unknown>;
@@ -22,6 +28,7 @@ export async function POST(request: NextRequest) {
 
     const event = body.event as string | undefined;
     if (event !== 'charge.completed') {
+      console.warn(`Webhook received unhandled event type: ${event}`);
       return NextResponse.json({ status: 'ignored', message: `Event type ${event} not processed` });
     }
 
@@ -32,6 +39,13 @@ export async function POST(request: NextRequest) {
     if (!txRef) {
       return NextResponse.json({ error: 'Missing tx_ref in webhook data' }, { status: 400 });
     }
+
+    // Idempotency guard: skip if we've already processed this tx_ref recently
+    if (RECENT_EVENTS.has(txRef)) {
+      return NextResponse.json({ status: 'already_processed', message: 'Duplicate webhook, skipped' });
+    }
+    RECENT_EVENTS.add(txRef);
+    setTimeout(() => RECENT_EVENTS.delete(txRef), 60000);
 
     if (flwStatus === 'successful') {
       await completeDeposit(txRef);

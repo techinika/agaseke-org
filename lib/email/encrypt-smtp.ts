@@ -21,7 +21,7 @@ export function encryptSmtpPass(plaintext: string): string {
 export function decryptSmtpPass(encrypted: string): string {
   const key = getKey();
   const parts = encrypted.split(':');
-  if (parts.length !== 3) return encrypted;
+  if (parts.length !== 3) throw new Error('Invalid encrypted SMTP password format');
   const [ivHex, authTagHex, ciphertext] = parts;
   const decipher = crypto.createDecipheriv(ALGORITHM, key, Buffer.from(ivHex, 'hex'));
   decipher.setAuthTag(Buffer.from(authTagHex, 'hex'));

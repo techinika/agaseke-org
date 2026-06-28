@@ -27,6 +27,7 @@ export async function GET() {
   response.headers.set('Access-Control-Allow-Origin', '*');
   response.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  response.headers.set('Cache-Control', 'no-store, max-age=0');
 
   return response;
 }

@@ -112,7 +112,7 @@ export default function MyMembershipPage() {
             <div>
               <p className="text-sm text-muted-foreground">Renewal date</p>
               <p className="text-lg font-semibold">
-                {format(membership.renewsAt.toDate(), 'MMM d, yyyy')}
+                {membership.renewsAt ? format(membership.renewsAt.toDate(), 'MMM d, yyyy') : '—'}
               </p>
             </div>
             <div>

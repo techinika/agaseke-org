@@ -56,7 +56,7 @@ export default function CheckoutPage() {
         ? new Timestamp(now.seconds + 30 * 24 * 3600, 0)
         : tier.billingCycle === 'annual'
           ? new Timestamp(now.seconds + 365 * 24 * 3600, 0)
-          : now;
+          : null;
 
       membershipId = await createMembership.mutateAsync({
         orgId: org.id,

@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyTransaction } from '@/lib/flutterwave';
 import { completeDeposit, failDeposit } from '@/lib/payments';
+import { paymentFinalizeSchema } from '@/lib/api-validations';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { depositId, type } = body;
-
-    if (!depositId || !type) {
-      return NextResponse.json({ error: 'Missing depositId or type' }, { status: 400 });
+    const parsed = paymentFinalizeSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
     }
 
-    if (type !== 'donation' && type !== 'membership') {
-      return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
-    }
+    const { depositId } = parsed.data;
 
     try {
       const tx = await verifyTransaction(depositId);

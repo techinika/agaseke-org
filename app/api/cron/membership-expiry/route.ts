@@ -38,7 +38,7 @@ async function handleCron(request: NextRequest): Promise<NextResponse> {
     for (const membership of memberships) {
       try {
         const renewsAt = membership.renewsAt as string | undefined;
-        if (!renewsAt) continue;
+        if (!renewsAt || renewsAt === 'null') continue; // one-time memberships never expire
 
         const renewsAtTime = new Date(renewsAt).getTime();
         if (renewsAtTime > Date.now()) continue;

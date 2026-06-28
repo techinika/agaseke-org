@@ -61,6 +61,7 @@ export default function DonationCheckoutPage() {
         donorName,
         donorEmail: donorEmail || null,
         campaignId: campaignId || null,
+        intendedAmount: amount,
         amount: totalToPay,
         platformFee: feeBreakdown.platformFee,
         orgReceives: feeBreakdown.orgReceives,

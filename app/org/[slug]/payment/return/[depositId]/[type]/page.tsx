@@ -23,6 +23,8 @@ export default function PaymentReturnPage() {
   useEffect(() => {
     if (!depositId || finalized) return;
 
+    let cancelled = false;
+
     async function checkAndFinalize() {
       try {
         const res = await fetch('/api/payments/finalize', {
@@ -31,6 +33,8 @@ export default function PaymentReturnPage() {
           body: JSON.stringify({ depositId, type: paymentType }),
         });
         const data = await res.json();
+
+        if (cancelled) return;
 
         if (data.status === 'completed') {
           setStatus('success');
@@ -44,13 +48,15 @@ export default function PaymentReturnPage() {
           setStatus('processing');
         }
       } catch {
-        setStatus('processing');
+        if (!cancelled) setStatus('processing');
       } finally {
-        setFinalized(true);
+        if (!cancelled) setFinalized(true);
       }
     }
 
     checkAndFinalize();
+
+    return () => { cancelled = true; };
   }, [depositId, finalized, paymentType]);
 
   if (orgLoading) {

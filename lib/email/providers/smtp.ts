@@ -16,8 +16,8 @@ let cachedTransporter: nodemailer.Transporter | null = null;
 let cachedConfigKey = '';
 
 function getConfigKey(config?: SmtpConfig): string {
-  if (config) return `${config.host}:${config.port}:${config.user}`;
-  return `${process.env.SMTP_HOST}:${process.env.SMTP_PORT}:${process.env.SMTP_USER}`;
+  if (config) return `${config.host}:${config.port}:${config.user}:${config.pass}`;
+  return `${process.env.SMTP_HOST}:${process.env.SMTP_PORT}:${process.env.SMTP_USER}:${process.env.SMTP_PASS}`;
 }
 
 function createTransporter(config?: SmtpConfig): nodemailer.Transporter {

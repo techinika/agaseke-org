@@ -68,7 +68,7 @@ export async function addDocument<T extends DocumentData>(
     const db = getDb();
     const ref = await addDoc(collection(db, path), {
       ...data,
-      createdAt: serverTimestamp(),
+      ...('createdAt' in data ? {} : { createdAt: serverTimestamp() }),
     });
     return ref.id;
   } catch (error) {

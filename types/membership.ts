@@ -21,7 +21,7 @@ export interface Membership {
   tierId: string;
   status: MembershipStatus;
   startDate: Timestamp;
-  renewsAt: Timestamp;
+  renewsAt: Timestamp | null;
   autoRenew: boolean;
   depositId?: string;
   createdAt: Timestamp;
