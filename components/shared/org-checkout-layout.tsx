@@ -17,7 +17,7 @@ export function OrgCheckoutLayout({ org, slug, children }: OrgCheckoutLayoutProp
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/[0.02]">
         <PublicOrgHeader org={org} slug={slug} />
         {children}
-        <PublicOrgFooter orgName={org.name} />
+        <PublicOrgFooter />
       </div>
     </BrandColorWrapper>
   );

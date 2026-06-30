@@ -2,17 +2,20 @@ import { useQuery } from '@tanstack/react-query';
 import { queryDocuments } from '@/lib/firebase/firestore';
 import { COLLECTIONS, SUBCOLLECTIONS } from '@/lib/constants';
 import { OrgMember } from '@/types/membership';
-import { orderBy, where } from 'firebase/firestore';
+import { orderBy, where, QueryConstraint } from 'firebase/firestore';
 
 function membersPath(orgId: string) {
   return `${COLLECTIONS.ORGANIZATIONS}/${orgId}/${SUBCOLLECTIONS.MEMBERS}`;
 }
 
-export function useOrgMembers(orgId: string) {
+export function useOrgMembers(orgId: string, statusFilter?: string) {
   return useQuery({
-    queryKey: ['org-members', orgId],
-    queryFn: () =>
-      queryDocuments<OrgMember>(membersPath(orgId), orderBy('joinedAt', 'desc')),
+    queryKey: ['org-members', orgId, statusFilter ?? 'all'],
+    queryFn: () => {
+      const constraints: QueryConstraint[] = [orderBy('joinedAt', 'desc')];
+      if (statusFilter) constraints.unshift(where('status', '==', statusFilter));
+      return queryDocuments<OrgMember>(membersPath(orgId), ...constraints);
+    },
     enabled: !!orgId,
   });
 }

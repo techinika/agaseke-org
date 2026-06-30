@@ -16,6 +16,7 @@ type FirestoreFieldValue = {
   doubleValue?: number;
   booleanValue?: boolean;
   timestampValue?: string;
+  arrayValue?: { values?: FirestoreFieldValue[] };
 };
 
 function decodeFields(fields?: Record<string, FirestoreFieldValue>): Record<string, unknown> {
@@ -27,6 +28,7 @@ function decodeFields(fields?: Record<string, FirestoreFieldValue>): Record<stri
     else if (value.doubleValue !== undefined) result[key] = value.doubleValue;
     else if (value.booleanValue !== undefined) result[key] = value.booleanValue;
     else if (value.timestampValue !== undefined) result[key] = value.timestampValue;
+    else if (value.arrayValue?.values) result[key] = value.arrayValue.values.map((v) => v.stringValue ?? '');
   }
   return result;
 }
@@ -172,6 +174,32 @@ export async function updateFirestoreDocument(
   }
 }
 
+export async function createFirestoreDocument(
+  collection: string,
+  data: Record<string, unknown>
+): Promise<string | null> {
+  try {
+    const config = getAdminConfig();
+    const headers = await getAuthHeaders();
+    const url = `${FIRESTORE_BASE}/projects/${config.projectId}/databases/(default)/documents/${collection}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ fields: toFirestoreFields(data) }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Firestore create failed for ${collection}: ${response.status} ${errorText}`);
+      return null;
+    }
+    const result = await response.json();
+    return result.name?.split('/').pop() || null;
+  } catch (err) {
+    console.error(`Firestore create error for ${collection}:`, err);
+    return null;
+  }
+}
+
 export async function queryFirestoreDocuments(
   collection: string,
   field: string,
@@ -270,7 +298,22 @@ export async function incrementFirestoreField(
   }
 }
 
-export async function fetchOrgBySlug(slug: string): Promise<{ id: string; name: string; description: string; category: string; country: string; logoURL?: string; coverURL?: string } | null> {
+export interface OrgServerData {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  category: string;
+  country: string;
+  logoURL: string | null;
+  coverURL: string | null;
+  adminIds: string[];
+  createdAt: string;
+  status: string;
+  brandColor?: string;
+}
+
+export async function fetchOrgBySlug(slug: string): Promise<OrgServerData | null> {
   try {
     const config = getAdminConfig();
     const url = `${FIRESTORE_BASE}/projects/${config.projectId}/databases/(default)/documents:runQuery`;
@@ -304,11 +347,16 @@ export async function fetchOrgBySlug(slug: string): Promise<{ id: string; name: 
     return {
       id,
       name: (fields.name as string) || '',
+      slug,
       description: (fields.description as string) || '',
       category: (fields.category as string) || '',
       country: (fields.country as string) || '',
-      logoURL: fields.logoURL as string | undefined,
-      coverURL: fields.coverURL as string | undefined,
+      logoURL: (fields.logoURL as string | null) ?? null,
+      coverURL: (fields.coverURL as string | null) ?? null,
+      adminIds: (fields.adminIds as string[]) || [],
+      createdAt: (fields.createdAt as string) ?? '',
+      status: (fields.status as string) ?? '',
+      brandColor: fields.brandColor as string | undefined,
     };
   } catch (err) {
     console.error('fetchOrgBySlug error:', err);

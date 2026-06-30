@@ -14,18 +14,22 @@ import { useAuthStore } from '@/store/auth-store';
 import { CURRENCY_SYMBOL } from '@/lib/constants';
 import { BrandColorWrapper } from '@/components/shared/brand-color-wrapper';
 import { OrgNotFound } from '@/components/shared/org-not-found';
+import type { OrgServerData } from '@/lib/firebase/server';
+import type { Organization } from '@/types/organization';
 
 interface JoinClientProps {
   slug: string;
+  initialOrg: OrgServerData | null;
 }
 
-export default function JoinClient({ slug }: JoinClientProps) {
+export default function JoinClient({ slug, initialOrg }: JoinClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuthStore();
-  const { data: org, isLoading: orgLoading } = useOrganizationBySlug(slug);
+  const { data: queryOrg, isLoading: orgLoading } = useOrganizationBySlug(slug);
+  const org = (queryOrg ?? initialOrg) as Organization | null | undefined;
   const { data: tiers, isLoading: tiersLoading } = useActiveTiers(org?.id ?? '');
-  const { data: members } = useOrgMembers(org?.id ?? '');
+  const { data: members } = useOrgMembers(org?.id ?? '', 'active');
 
   const preselectedTierId = searchParams.get('tierId');
 
@@ -167,7 +171,7 @@ export default function JoinClient({ slug }: JoinClientProps) {
             </div>
           )}
         </div>
-        <PublicOrgFooter orgName={org.name} />
+        <PublicOrgFooter />
       </div>
     </BrandColorWrapper>
   );

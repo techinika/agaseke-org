@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { WifiOff } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 export default function OfflinePage() {
+  logger.warn('page:offline', 'Offline page rendered — user is offline');
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4">
       <div className="flex size-16 items-center justify-center rounded-full bg-muted">

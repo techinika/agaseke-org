@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
@@ -10,12 +10,20 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { logInWithEmail, logInWithGoogle } from '@/lib/firebase/auth';
+import { useAuthStore } from '@/store/auth-store';
 import { toast } from 'sonner';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect');
+  const { user, isLoading } = useAuthStore();
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.push('/org');
+    }
+  }, [user, isLoading, router]);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

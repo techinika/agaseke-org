@@ -5,14 +5,20 @@ import { sendEmail, getOrgAdmins } from '@/lib/email';
 import { pendingTransactionAlertTemplate } from '@/lib/email/templates/pending-transaction-alert';
 import { getAppUrl } from '@/lib/app-url';
 import { reconcilePendingTransaction } from '@/lib/payments';
+import { logger } from '@/lib/logger';
 
 const CRON_SECRET = process.env.CRON_SECRET;
 
 export async function POST(request: Request) {
+  const correlationId = `rec_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  logger.info('payment-reconcile', `Request received [${correlationId}]`);
+
   try {
     if (!CRON_SECRET || request.headers.get('authorization') !== `Bearer ${CRON_SECRET}`) {
+      logger.warn('payment-reconcile', `Unauthorized attempt [${correlationId}]`);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    logger.info('payment-reconcile', `Auth passed [${correlationId}]`);
 
     const pendingTxs = await queryFirestoreDocuments(
       COLLECTIONS.TRANSACTIONS,
@@ -20,6 +26,7 @@ export async function POST(request: Request) {
       'EQUAL',
       'pending'
     );
+    logger.info('payment-reconcile', `Found ${pendingTxs.length} pending transactions [${correlationId}]`);
 
     const results = { checked: 0, completed: 0, failed: 0, skipped: 0, errors: 0 };
     const orgPendingMap = new Map<string, { count: number; totalAmount: number }>();
@@ -27,6 +34,7 @@ export async function POST(request: Request) {
     for (const tx of pendingTxs) {
       const depositId = tx.depositId as string | undefined;
       if (!depositId) {
+        logger.warn('payment-reconcile', `Transaction ${tx.id} has no depositId, skipping [${correlationId}]`);
         results.skipped++;
         continue;
       }
@@ -34,6 +42,7 @@ export async function POST(request: Request) {
       try {
         const result = await reconcilePendingTransaction(depositId);
         results.checked++;
+        logger.info('payment-reconcile', `Deposit ${depositId}: result=${result} [${correlationId}]`);
         if (result === 'completed') results.completed++;
         else if (result === 'failed') results.failed++;
         else {
@@ -47,51 +56,68 @@ export async function POST(request: Request) {
           }
           results.skipped++;
         }
-      } catch {
+      } catch (reconcileErr) {
+        logger.error('payment-reconcile', `Reconcile error for deposit ${depositId} [${correlationId}]`, reconcileErr);
         results.errors++;
       }
     }
 
-    if (process.env.RESEND_API_KEY || process.env.SMTP_HOST) {
+    if (hasEmailConfigured()) {
+      logger.info('payment-reconcile', `Sending pending alerts for ${orgPendingMap.size} orgs [${correlationId}]`);
       const appUrl = getAppUrl();
       for (const [orgId, pending] of orgPendingMap) {
         try {
           const orgData = await readFirestoreDocument(COLLECTIONS.ORGANIZATIONS, orgId);
-          if (!orgData) continue;
+          if (!orgData) {
+            logger.warn('payment-reconcile', `Org ${orgId} not found, skipping alert [${correlationId}]`);
+            continue;
+          }
 
           const admins = await getOrgAdmins(orgId);
           const brandColor = (orgData.brandColor as string) || '#FF0000';
 
           for (const admin of admins) {
-            await sendEmail(
-              {
-                to: admin,
-                subject: `Pending Transactions — ${orgData.name as string}`,
-                html: pendingTransactionAlertTemplate({
-                  adminName: admin.name || 'Admin',
-                  orgName: orgData.name as string,
-                  pendingCount: pending.count,
-                  totalAmount: pending.totalAmount.toFixed(2),
-                  currency: 'USD',
-                  brandColor,
-                  reconcileUrl: `${appUrl}/org/${orgData.slug as string}/finance`,
-                }),
-              },
-              orgId
-            );
+            try {
+              await sendEmail(
+                {
+                  to: admin,
+                  subject: `Pending Transactions — ${orgData.name as string}`,
+                  html: pendingTransactionAlertTemplate({
+                    adminName: admin.name || 'Admin',
+                    orgName: orgData.name as string,
+                    pendingCount: pending.count,
+                    totalAmount: pending.totalAmount.toFixed(2),
+                    currency: 'USD',
+                    brandColor,
+                    reconcileUrl: `${appUrl}/org/${orgData.slug as string}/finance`,
+                  }),
+                },
+                orgId
+              );
+            } catch (emailErr) {
+              logger.error('payment-reconcile', `Failed to send alert email to admin ${admin.email || admin} [${correlationId}]`, emailErr);
+            }
           }
-        } catch {
+        } catch (orgErr) {
+          logger.error('payment-reconcile', `Failed to process org ${orgId} for alerts [${correlationId}]`, orgErr);
           results.errors++;
         }
       }
+    } else {
+      logger.info('payment-reconcile', `No email provider configured, skipping alerts [${correlationId}]`);
     }
 
+    logger.info('payment-reconcile', `Complete [${correlationId}]: ${JSON.stringify(results)}`);
     return NextResponse.json(results);
   } catch (error) {
-    console.error('Reconciliation error:', error);
+    logger.error('payment-reconcile', `Top-level error [${correlationId}]`, error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Reconciliation failed' },
       { status: 500 }
     );
   }
+}
+
+function hasEmailConfigured(): boolean {
+  return !!process.env.RESEND_API_KEY || !!process.env.SMTP_HOST;
 }

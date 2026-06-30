@@ -6,10 +6,12 @@ import { Save, Loader2, Upload, Plus, Pencil, Trash2, MessageSquare, Mail } from
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/shared/page-header';
 import { RichTextEditor } from '@/components/shared/rich-text-editor';
 import { useOrganizationBySlug, useUpdateOrganization } from '@/hooks/use-organization';
+import { CATEGORIES, COUNTRIES } from '@/lib/constants';
 import { useAuthStore } from '@/store/auth-store';
 import { useImageUpload } from '@/hooks/use-image-upload';
 import { useRooms, useCreateRoom, useUpdateRoom, useDeleteRoom } from '@/hooks/use-rooms';
@@ -36,11 +38,15 @@ export default function SettingsPage() {
   const [smtpFromEmail, setSmtpFromEmail] = useState('');
   const [smtpFromName, setSmtpFromName] = useState('');
   const [brandColor, setBrandColor] = useState('#FF0000');
+  const [category, setCategory] = useState('');
+  const [country, setCountry] = useState('');
+  const [hasSmtpPass, setHasSmtpPass] = useState(false);
 
   const [savingSmtp, setSavingSmtp] = useState(false);
 
   const logoInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const smtpPassChangedRef = useRef(false);
   const { upload: uploadLogo, isUploading: logoUploading } = useImageUpload({ folder: 'logos' });
   const { upload: uploadCover, isUploading: coverUploading } = useImageUpload({ folder: 'covers' });
 
@@ -65,10 +71,14 @@ export default function SettingsPage() {
     setSmtpHost(org.smtpHost ?? '');
     setSmtpPort(String(org.smtpPort ?? 587));
     setSmtpUser(org.smtpUser ?? '');
-    setSmtpPass(org.smtpPass ?? '');
+    setSmtpPass('');
+    setHasSmtpPass(!!org.smtpPass);
+    smtpPassChangedRef.current = false;
     setSmtpFromEmail(org.smtpFromEmail ?? '');
     setSmtpFromName(org.smtpFromName ?? '');
     setBrandColor(org.brandColor ?? '#FF0000');
+    setCategory(org.category ?? '');
+    setCountry(org.country ?? '');
   }, [org]);
 
   async function handleSave() {
@@ -77,6 +87,8 @@ export default function SettingsPage() {
       await updateOrg.mutateAsync({
         name,
         description,
+        category,
+        country,
         logoURL: logoURL || null,
         coverURL: coverURL || null,
         brandColor: brandColor || '#FF0000',
@@ -91,20 +103,27 @@ export default function SettingsPage() {
     if (!org) return;
     setSavingSmtp(true);
     try {
+      const body: Record<string, unknown> = {
+        orgId: org.id,
+        smtpHost,
+        smtpPort: smtpPort ? parseInt(smtpPort) : null,
+        smtpUser,
+        smtpFromEmail,
+        smtpFromName,
+      };
+      if (smtpPassChangedRef.current) {
+        body.smtpPass = smtpPass || '';
+      }
       const res = await fetch('/api/org/smtp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orgId: org.id,
-          smtpHost,
-          smtpPort: smtpPort ? parseInt(smtpPort) : null,
-          smtpUser,
-          smtpPass,
-          smtpFromEmail,
-          smtpFromName,
-        }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error('Failed to save');
+      setHasSmtpPass(smtpPassChangedRef.current ? !!smtpPass : hasSmtpPass);
+      if (smtpPassChangedRef.current) {
+        smtpPassChangedRef.current = false;
+      }
       toast.success('Email settings saved');
     } catch {
       toast.error('Failed to save email settings');
@@ -223,6 +242,38 @@ export default function SettingsPage() {
               placeholder="Tell visitors about your organization..."
               minHeight="200px"
             />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <Select value={category} onValueChange={(v) => v && setCategory(v)} disabled={!isAdmin}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="country">Country</Label>
+              <Select value={country} onValueChange={(v) => v && setCountry(v)} disabled={!isAdmin}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a country" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COUNTRIES.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           {isAdmin && (
             <Button onClick={handleSave} disabled={updateOrg.isPending}>
@@ -390,9 +441,14 @@ export default function SettingsPage() {
                     id="smtpPass"
                     type="password"
                     value={smtpPass}
-                    onChange={(e) => setSmtpPass(e.target.value)}
-                    placeholder="••••••••"
+                    onChange={(e) => { setSmtpPass(e.target.value); smtpPassChangedRef.current = true; }}
+                    placeholder={hasSmtpPass ? 'Leave empty to keep current password' : '••••••••'}
                   />
+                  {hasSmtpPass && (
+                    <p className="text-xs text-muted-foreground">
+                      An SMTP password is currently configured. Leave empty to keep it.
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="smtpFromEmail">From Email</Label>

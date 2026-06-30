@@ -24,14 +24,18 @@ import { useCampaignDonationTotals } from '@/hooks/use-campaign-donations';
 import { format } from 'date-fns';
 import { BrandColorWrapper } from '@/components/shared/brand-color-wrapper';
 import { OrgNotFound } from '@/components/shared/org-not-found';
+import type { OrgServerData } from '@/lib/firebase/server';
+import type { Organization } from '@/types/organization';
 
 interface OrgProfileClientProps {
   slug: string;
+  initialOrg: OrgServerData;
 }
 
-export default function OrgProfileClient({ slug }: OrgProfileClientProps) {
-  const { data: org, isLoading: orgLoading } = useOrganizationBySlug(slug);
-  const { data: members } = useOrgMembers(org?.id ?? '');
+export default function OrgProfileClient({ slug, initialOrg }: OrgProfileClientProps) {
+  const { data: queryOrg, isLoading: orgLoading } = useOrganizationBySlug(slug);
+  const org = (queryOrg ?? initialOrg) as Organization | null | undefined;
+  const { data: members } = useOrgMembers(org?.id ?? '', 'active');
   const { data: campaigns } = useActiveCampaigns(org?.id ?? '');
   const { data: campaignTotals } = useCampaignDonationTotals(org?.id ?? '');
   const { data: tiers } = useActiveTiers(org?.id ?? '');
@@ -266,7 +270,7 @@ export default function OrgProfileClient({ slug }: OrgProfileClientProps) {
           </div>
         </div>
       </div>
-      <PublicOrgFooter orgName={org.name} />
+      <PublicOrgFooter />
     </BrandColorWrapper>
   );
 }

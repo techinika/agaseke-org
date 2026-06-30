@@ -1,147 +1,35 @@
-'use client';
+import type { Metadata } from 'next';
+import { fetchOrgBySlug } from '@/lib/firebase/server';
+import { logger } from '@/lib/logger';
+import PublicChatClient from './chat-client';
 
-import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, MessageSquare } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import PublicOrgHeader from '@/components/shared/public-org-header';
-import PublicOrgFooter from '@/components/shared/public-org-footer';
-import { RoomList } from '@/components/rooms/room-list';
-import { ChatView } from '@/components/rooms/chat-view';
-import { useRooms, useRoomMessages, useSendMessage } from '@/hooks/use-rooms';
-import { useOrganizationBySlug } from '@/hooks/use-organization';
-import { useAuthStore } from '@/store/auth-store';
-import { useUserMembership } from '@/hooks/use-memberships';
-import { Room } from '@/types/room';
-import { toast } from 'sonner';
-import { BrandColorWrapper } from '@/components/shared/brand-color-wrapper';
-import { OrgNotFound } from '@/components/shared/org-not-found';
+interface Props {
+  params: Promise<{ slug: string }>;
+}
 
-export default function PublicChatPage() {
-  const { slug } = useParams<{ slug: string }>();
-  const router = useRouter();
-  const { user } = useAuthStore();
-  const { data: org, isLoading: orgLoading } = useOrganizationBySlug(slug);
-  const orgId = org?.id ?? '';
-  const { data: membership, isLoading: membershipLoading } = useUserMembership(orgId, user?.uid ?? '');
-  const isMember = !!membership && membership.status === 'active';
-
-  const { data: rooms, isLoading: roomsLoading } = useRooms(orgId);
-  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
-  const [showMobileList, setShowMobileList] = useState(true);
-
-  const { messages, isLoading: messagesLoading } = useRoomMessages(
-    orgId,
-    selectedRoom?.id ?? null
-  );
-
-  const sendMessage = useSendMessage(orgId, selectedRoom?.id ?? '');
-
-  async function handleSendMessage(content: string, imageURL?: string) {
-    if (!user || !selectedRoom) return;
-    await sendMessage.mutateAsync({
-      senderId: user.uid,
-      senderName: user.displayName || 'Anonymous',
-      senderPhotoURL: user.photoURL,
-      content,
-      imageURL,
-      edited: false,
-    });
-  }
-
-  function handleSelectRoom(room: Room) {
-    setSelectedRoom(room);
-    setShowMobileList(false);
-  }
-
-  if (orgLoading || membershipLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/[0.02]">
-        <div className="mx-auto max-w-6xl px-4 py-12">
-          <Skeleton className="h-96 rounded-xl" />
-        </div>
-      </div>
-    );
-  }
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  logger.info('page:chat', `generateMetadata: slug=${slug}`);
+  const org = await fetchOrgBySlug(slug);
 
   if (!org) {
-    return <OrgNotFound />;
+    logger.warn('page:chat', `generateMetadata: org not found for slug=${slug}`);
+    return { title: 'Organization Not Found' };
   }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/[0.02]">
-        <PublicOrgHeader org={org} slug={slug} />
-        <div className="mx-auto flex max-w-lg flex-col items-center justify-center px-4 py-24 text-center">
-          <MessageSquare className="mb-6 size-16 text-muted-foreground/50" />
-          <h1 className="text-2xl font-bold">Sign in required</h1>
-          <p className="mt-2 text-muted-foreground">Please sign in to access chat rooms.</p>
-          <Button className="mt-6" onClick={() => router.push(`/auth/login?redirect=/org/${slug}/chat`)}>
-            Sign in
-          </Button>
-        </div>
-        <PublicOrgFooter orgName={org.name} />
-      </div>
-    );
-  }
+  logger.info('page:chat', `generateMetadata: org=${org.id} name=${org.name}`);
+  return {
+    title: `${org.name} Chat`,
+    description: `Join the conversation at ${org.name}. ${org.description || ''}`,
+  };
+}
 
-  if (!isMember) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/[0.02]">
-        <PublicOrgHeader org={org} slug={slug} />
-        <div className="mx-auto flex max-w-lg flex-col items-center justify-center px-4 py-24 text-center">
-          <MessageSquare className="mb-6 size-16 text-muted-foreground/50" />
-          <h1 className="text-2xl font-bold">Members only</h1>
-          <p className="mt-2 text-muted-foreground">
-            You need to be a member of {org.name} to access chat rooms.
-          </p>
-          <Button className="mt-6" onClick={() => router.push(`/org/${slug}/join`)}>
-            Join {org.name}
-          </Button>
-        </div>
-        <PublicOrgFooter orgName={org.name} />
-      </div>
-    );
+export default async function PublicChatPage({ params }: Props) {
+  const { slug } = await params;
+  logger.info('page:chat', `Rendering page: slug=${slug}`);
+  const org = await fetchOrgBySlug(slug);
+  if (!org) {
+    logger.warn('page:chat', `Org not found for slug=${slug}`);
   }
-
-  return (
-    <BrandColorWrapper org={org}>
-      <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/[0.02]">
-        <PublicOrgHeader org={org} slug={slug} />
-        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-          {!showMobileList && selectedRoom && (
-            <button
-              onClick={() => setShowMobileList(true)}
-              className="mb-3 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground sm:hidden"
-            >
-              <ArrowLeft className="size-4" />
-              All rooms
-            </button>
-          )}
-          <div className="flex h-[calc(100vh-12rem)] overflow-hidden rounded-xl border">
-            <div className={`w-full shrink-0 border-r bg-muted/30 sm:w-64 ${showMobileList ? 'block' : 'hidden sm:block'}`}>
-              <RoomList
-                rooms={rooms ?? []}
-                selectedRoomId={selectedRoom?.id ?? null}
-                onSelect={handleSelectRoom}
-                onCreateClick={() => toast.info('Create rooms from the admin panel')}
-                isLoading={roomsLoading}
-              />
-            </div>
-            <div className={`flex-1 ${showMobileList ? 'hidden sm:block' : 'block'}`}>
-              <ChatView
-                room={selectedRoom}
-                messages={messages}
-                isMessagesLoading={messagesLoading}
-                onSendMessage={handleSendMessage}
-                isSending={sendMessage.isPending}
-              />
-            </div>
-          </div>
-        </div>
-        <PublicOrgFooter orgName={org.name} />
-      </div>
-    </BrandColorWrapper>
-  );
+  return <PublicChatClient slug={slug} initialOrg={org} />;
 }

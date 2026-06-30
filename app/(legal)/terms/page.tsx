@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { PublicNav } from '@/components/shared/public-nav';
-import { PublicFooter } from '@/components/shared/public-footer';
+import { logger } from '@/lib/logger';
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
@@ -10,11 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function TermsPage() {
+  logger.info('page:terms', 'Rendering Terms of Service page');
   return (
-    <div className="flex min-h-screen flex-col">
-      <PublicNav />
-      <main className="flex-1">
-        <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8 sm:py-16">
+    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8 sm:py-16">
           <div className="mb-8">
             <Link
               href="/"
@@ -113,9 +110,6 @@ export default function TermsPage() {
               </p>
             </section>
           </div>
-        </div>
-      </main>
-      <PublicFooter />
     </div>
   );
 }

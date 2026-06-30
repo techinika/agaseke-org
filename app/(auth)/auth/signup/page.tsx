@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
@@ -10,10 +10,18 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { signUpWithEmail, logInWithGoogle, createUserDocument } from '@/lib/firebase/auth';
+import { useAuthStore } from '@/store/auth-store';
 import { toast } from 'sonner';
 
 export default function SignupPage() {
   const router = useRouter();
+  const { user, isLoading: authLoading } = useAuthStore();
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push('/org');
+    }
+  }, [user, authLoading, router]);
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

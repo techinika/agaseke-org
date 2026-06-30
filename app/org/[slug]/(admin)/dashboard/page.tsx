@@ -40,7 +40,7 @@ export default function OrgDashboardPage() {
   const { data: org, isLoading: orgLoading } = useOrganizationBySlug(slug);
   const orgId = org?.id ?? '';
 
-  const { data: members, isLoading: membersLoading } = useOrgMembers(orgId);
+  const { data: members, isLoading: membersLoading } = useOrgMembers(orgId, 'active');
   const { data: donations, isLoading: donationsLoading } = useDonations(orgId);
   const { data: campaigns, isLoading: campaignsLoading } = useCampaigns(orgId);
   const { data: campaignTotals } = useCampaignDonationTotals(orgId);

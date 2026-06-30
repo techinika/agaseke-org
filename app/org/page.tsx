@@ -1,26 +1,43 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ExternalLink, LayoutDashboard, Loader2, Plus, Building2, Globe, Tag } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { PageHeader } from '@/components/shared/page-header';
-import { useAuthStore } from '@/store/auth-store';
-import { useUserOrganizations } from '@/hooks/use-user-organizations';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  ExternalLink,
+  LayoutDashboard,
+  Loader2,
+  Plus,
+  Building2,
+  Globe,
+  Tag,
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/shared/page-header";
+import { useAuthStore } from "@/store/auth-store";
+import { useUserOrganizations } from "@/hooks/use-user-organizations";
 
 export default function MyOrganizationsPage() {
   const router = useRouter();
   const { user, profile, isLoading: authLoading } = useAuthStore();
-  const { data: organizations, isLoading: orgsLoading } = useUserOrganizations(user?.uid);
+  const { data: organizations, isLoading: orgsLoading } = useUserOrganizations(
+    user?.uid,
+  );
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.replace('/auth/login');
+      router.replace("/auth/login");
     }
   }, [authLoading, user, router]);
 
@@ -37,7 +54,11 @@ export default function MyOrganizationsPage() {
       <div className="flex items-center justify-between">
         <PageHeader
           title="My Organizations"
-          description={profile?.displayName ? `Welcome, ${profile.displayName}` : 'Manage your organizations'}
+          description={
+            profile?.displayName
+              ? `Welcome, ${profile.displayName}`
+              : "Manage your organizations"
+          }
         />
         <Link href="/org/create">
           <Button className="gap-2">
@@ -89,9 +110,10 @@ export default function MyOrganizationsPage() {
                 </div>
               </CardHeader>
               <CardContent className="flex-1 space-y-3 pt-0">
-                <p className="line-clamp-2 text-sm text-muted-foreground">
-                  {org.description}
-                </p>
+                <p
+                  dangerouslySetInnerHTML={{ __html: org.description }}
+                  className="line-clamp-2 text-sm text-muted-foreground"
+                ></p>
                 <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                   {org.country && (
                     <span className="inline-flex items-center gap-1">
@@ -112,8 +134,16 @@ export default function MyOrganizationsPage() {
                 </div>
               </CardContent>
               <CardFooter className="flex gap-2 border-t pt-4">
-                <Link href={`/org/${org.slug}`} target="_blank" className="flex-1">
-                  <Button variant="outline" size="sm" className="w-full gap-1.5">
+                <Link
+                  href={`/org/${org.slug}`}
+                  target="_blank"
+                  className="flex-1"
+                >
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-1.5"
+                  >
                     <ExternalLink className="size-3.5" />
                     View page
                   </Button>
@@ -135,7 +165,9 @@ export default function MyOrganizationsPage() {
                   <Building2 className="size-8 text-muted-foreground" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold">No organizations yet</h3>
+                  <h3 className="text-lg font-semibold">
+                    No organizations yet
+                  </h3>
                   <p className="mt-1 text-sm text-muted-foreground">
                     Create your first organization to get started.
                   </p>

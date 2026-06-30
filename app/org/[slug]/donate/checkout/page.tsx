@@ -1,188 +1,35 @@
-'use client';
+import type { Metadata } from 'next';
+import { fetchOrgBySlug } from '@/lib/firebase/server';
+import { logger } from '@/lib/logger';
+import DonationCheckoutClient from './checkout-client';
 
-import { useState, useMemo } from 'react';
-import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { Loader2, ArrowLeft, Heart } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
-import { OrgCheckoutLayout } from '@/components/shared/org-checkout-layout';
-import { OrgNotFound } from '@/components/shared/org-not-found';
-import { useOrganizationBySlug } from '@/hooks/use-organization';
-import { useAuthStore } from '@/store/auth-store';
-import { useCampaigns } from '@/hooks/use-campaigns';
-import { CURRENCY, COLLECTIONS } from '@/lib/constants';
-import { calculateFee } from '@/lib/fees';
-import { addDocument } from '@/lib/firebase/firestore';
-import { generateDepositId, getReturnUrl } from '@/lib/flutterwave';
-import { toast } from 'sonner';
-import { Timestamp } from 'firebase/firestore';
+interface Props {
+  params: Promise<{ slug: string }>;
+}
 
-export default function DonationCheckoutPage() {
-  const { slug } = useParams<{ slug: string }>();
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const { user } = useAuthStore();
-
-  const { data: org, isLoading: orgLoading } = useOrganizationBySlug(slug);
-  const { data: campaigns } = useCampaigns(org?.id ?? '');
-
-  const campaignId = searchParams.get('campaignId') || '';
-  const campaign = useMemo(() => campaigns?.find((c) => c.id === campaignId), [campaigns, campaignId]);
-  const feePayer = campaign?.platformFeePayer ?? 'org';
-
-  const amount = parseInt(searchParams.get('amount') || '0');
-
-  const feeBreakdown = useMemo(() => {
-    if (!amount) return null;
-    return calculateFee(amount, feePayer);
-  }, [amount, feePayer]);
-
-  const frequency = (searchParams.get('frequency') || 'one_time') as string;
-  const donorName = searchParams.get('donorName') || 'Anonymous';
-  const donorEmail = searchParams.get('donorEmail') || '';
-  const message = searchParams.get('message') || '';
-
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  async function handlePay() {
-    if (!org || amount < 100 || !feeBreakdown) return;
-    setIsProcessing(true);
-    const depositId = generateDepositId();
-    try {
-      const now = Timestamp.now();
-      const totalToPay = feeBreakdown.totalToPay;
-      const returnUrl = getReturnUrl(slug, depositId, 'donation');
-
-      await addDocument(COLLECTIONS.DONATIONS, {
-        orgId: org.id,
-        userId: user?.uid ?? null,
-        donorName,
-        donorEmail: donorEmail || null,
-        campaignId: campaignId || null,
-        intendedAmount: amount,
-        amount: totalToPay,
-        platformFee: feeBreakdown.platformFee,
-        orgReceives: feeBreakdown.orgReceives,
-        frequency,
-        status: 'pending',
-        depositId,
-        nextBillingDate: frequency !== 'one_time'
-          ? new Timestamp(now.seconds + (frequency === 'monthly' ? 30 : 365) * 86400, 0)
-          : null,
-        createdAt: now,
-      });
-
-      const txData: Record<string, unknown> = {
-        orgId: org.id,
-        userId: user?.uid ?? null,
-        amount: totalToPay,
-        platformFee: feeBreakdown.platformFee,
-        orgReceives: feeBreakdown.orgReceives,
-        currency: 'USD',
-        type: 'donation',
-        referenceId: depositId,
-        depositId,
-        status: 'pending',
-        paymentMethod: 'flutterwave',
-        createdAt: now,
-      };
-
-      await addDocument(COLLECTIONS.TRANSACTIONS, txData);
-
-      const res = await fetch('/api/payments/initiate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          depositId,
-          amount: totalToPay,
-          returnUrl,
-          reason: `Donation to ${org.name}${campaignId ? ` for ${campaign?.title || 'campaign'}` : ''}`,
-          email: donorEmail || user?.email || undefined,
-          name: donorName || 'Supporter',
-          slug,
-          orgName: org.name,
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to initiate payment');
-      }
-
-      const { redirectUrl } = await res.json();
-      window.location.href = redirectUrl;
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Payment initiation failed');
-      setIsProcessing(false);
-    }
-  }
-
-  if (orgLoading) {
-    return (
-      <OrgCheckoutLayout org={org} slug={slug}>
-        <div className="mx-auto max-w-lg px-4 py-12">
-          <Skeleton className="h-96 rounded-xl" />
-        </div>
-      </OrgCheckoutLayout>
-    );
-  }
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  logger.info('page:donate-checkout', `generateMetadata: slug=${slug}`);
+  const org = await fetchOrgBySlug(slug);
 
   if (!org) {
-    return <OrgNotFound icon={Heart} />;
+    logger.warn('page:donate-checkout', `generateMetadata: org not found for slug=${slug}`);
+    return { title: 'Organization Not Found' };
   }
 
-  return (
-    <OrgCheckoutLayout org={org} slug={slug}>
-      <div className="mx-auto w-full max-w-lg px-4 py-8 sm:py-12">
-        <Card className="overflow-hidden">
-          <CardHeader className="space-y-1 border-b bg-muted/30 pb-4 sm:pb-6">
-            <CardTitle className="text-lg sm:text-xl">Complete your donation</CardTitle>
-            <CardDescription>To {org.name}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6 p-4 sm:p-6">
-            <div className="rounded-lg border bg-muted/50 p-4">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="font-semibold">
-                    {frequency === 'one_time' ? 'One-time donation' : `${frequency === 'monthly' ? 'Monthly' : 'Annual'} donation`}
-                  </p>
-                  {campaignId && <p className="text-xs text-muted-foreground">Campaign donation</p>}
-                </div>
-                <div className="text-left sm:text-right">
-                  <p className="text-xl font-bold">
-                    {feeBreakdown?.totalToPay.toLocaleString()} {CURRENCY}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Badge variant="outline" className="text-xs">{donorName}</Badge>
-                {message && <Badge variant="outline" className="max-w-40 truncate text-xs">&ldquo;{message}&rdquo;</Badge>}
-              </div>
-            </div>
-          </CardContent>
-          <div className="flex flex-col gap-3 border-t p-4 sm:flex-row sm:p-6">
-            <Button
-              variant="outline"
-              className="order-2 sm:order-1"
-              onClick={() => router.push(`/org/${slug}/donate`)}
-            >
-              <ArrowLeft className="mr-2 size-4" />
-              Edit donation
-            </Button>
-            <Button
-              className="order-1 flex-1 sm:order-2"
-              size="lg"
-              disabled={isProcessing}
-              onClick={handlePay}
-            >
-              {isProcessing && <Loader2 className="mr-2 size-4 animate-spin" />}
-              Pay {feeBreakdown?.totalToPay.toLocaleString()} {CURRENCY}
-            </Button>
-          </div>
-        </Card>
-      </div>
-      </OrgCheckoutLayout>
-  );
+  logger.info('page:donate-checkout', `generateMetadata: org=${org.id} name=${org.name}`);
+  return {
+    title: `Donate to ${org.name} - Checkout`,
+    description: `Complete your donation to ${org.name}.`,
+  };
+}
+
+export default async function DonationCheckoutPage({ params }: Props) {
+  const { slug } = await params;
+  logger.info('page:donate-checkout', `Rendering page: slug=${slug}`);
+  const org = await fetchOrgBySlug(slug);
+  if (!org) {
+    logger.warn('page:donate-checkout', `Org not found for slug=${slug}`);
+  }
+  return <DonationCheckoutClient slug={slug} initialOrg={org} />;
 }

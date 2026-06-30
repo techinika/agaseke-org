@@ -20,20 +20,24 @@ import { useAuthStore } from '@/store/auth-store';
 import { CURRENCY, DONATION_FREQUENCIES } from '@/lib/constants';
 import { format } from 'date-fns';
 import type { Campaign } from '@/types/campaign';
+import type { Organization } from '@/types/organization';
 import { BrandColorWrapper } from '@/components/shared/brand-color-wrapper';
 import { OrgNotFound } from '@/components/shared/org-not-found';
+import type { OrgServerData } from '@/lib/firebase/server';
 
 const AMOUNT_PRESETS = [5000, 10000, 25000, 50000, 100000];
 type Frequency = (typeof DONATION_FREQUENCIES)[number];
 
 interface DonateClientProps {
   slug: string;
+  initialOrg: OrgServerData | null;
 }
 
-export default function DonateClient({ slug }: DonateClientProps) {
+export default function DonateClient({ slug, initialOrg }: DonateClientProps) {
   const router = useRouter();
   const { user, profile } = useAuthStore();
-  const { data: org, isLoading: orgLoading } = useOrganizationBySlug(slug);
+  const { data: queryOrg, isLoading: orgLoading } = useOrganizationBySlug(slug);
+  const org = (queryOrg ?? initialOrg) as Organization | null | undefined;
   const { data: campaigns, isLoading: campaignsLoading } = useActiveCampaigns(org?.id ?? '');
   const { data: campaignTotals } = useCampaignDonationTotals(org?.id ?? '');
 
@@ -293,7 +297,7 @@ export default function DonateClient({ slug }: DonateClientProps) {
             </CardContent>
           </Card>
         </div>
-        <PublicOrgFooter orgName={org.name} />
+        <PublicOrgFooter />
 
         <Dialog open={!!detailCampaign} onOpenChange={(open) => { if (!open) setDetailCampaign(null); }}>
           <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">

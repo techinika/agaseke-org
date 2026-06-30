@@ -3,6 +3,7 @@ import { ArrowRight, Heart, MessageSquare, Shield, CreditCard, CheckCircle2, Tar
 import { Button } from '@/components/ui/button';
 import { PublicNav } from '@/components/shared/public-nav';
 import { PublicFooter } from '@/components/shared/public-footer';
+import { logger } from '@/lib/logger';
 
 const features = [
   {
@@ -113,8 +114,9 @@ const faqs = [
 ];
 
 export default function LandingPage() {
+  logger.info('page:landing', 'Rendering landing page');
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col pb-16 md:pb-0">
       <PublicNav />
 
       <main className="flex-1">

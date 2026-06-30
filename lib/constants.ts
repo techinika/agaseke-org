@@ -68,6 +68,29 @@ export type PlatformFeePayer = (typeof PLATFORM_FEE_PAYERS)[number];
 export const CURRENCY = 'USD';
 export const CURRENCY_SYMBOL = '$';
 
+export const CATEGORIES = [
+  { value: 'NGO', label: 'NGO' },
+  { value: 'Association', label: 'Association' },
+  { value: 'Church', label: 'Church' },
+  { value: 'School', label: 'School' },
+  { value: 'Cooperative', label: 'Cooperative' },
+  { value: 'Foundation', label: 'Foundation' },
+  { value: 'Other', label: 'Other' },
+] as const;
+
+export const COUNTRIES = [
+  { value: 'RW', label: 'Rwanda' },
+  { value: 'UG', label: 'Uganda' },
+  { value: 'KE', label: 'Kenya' },
+  { value: 'TZ', label: 'Tanzania' },
+  { value: 'BI', label: 'Burundi' },
+  { value: 'CD', label: 'DR Congo' },
+  { value: 'NG', label: 'Nigeria' },
+  { value: 'GH', label: 'Ghana' },
+  { value: 'ZA', label: 'South Africa' },
+  { value: 'ET', label: 'Ethiopia' },
+] as const;
+
 // Email / Reminders
 export const REMINDER_DAYS_BEFORE = 3;
 export const MEMBERSHIP_GRACE_PERIOD_DAYS = 7;

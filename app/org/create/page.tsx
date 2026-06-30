@@ -12,35 +12,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuthStore } from '@/store/auth-store';
 import { addDocument, setDocument, queryDocuments } from '@/lib/firebase/firestore';
-import { COLLECTIONS } from '@/lib/constants';
+import { COLLECTIONS, CATEGORIES, COUNTRIES } from '@/lib/constants';
 import { useImageUpload } from '@/hooks/use-image-upload';
 import { toast } from 'sonner';
 import { Organization } from '@/types/organization';
 import { where } from 'firebase/firestore';
 import { createUserDocument, getUserDocument } from '@/lib/firebase/auth';
-
-const CATEGORIES = [
-  { value: 'NGO', label: 'NGO' },
-  { value: 'Association', label: 'Association' },
-  { value: 'Church', label: 'Church' },
-  { value: 'School', label: 'School' },
-  { value: 'Cooperative', label: 'Cooperative' },
-  { value: 'Foundation', label: 'Foundation' },
-  { value: 'Other', label: 'Other' },
-];
-
-const COUNTRIES = [
-  { value: 'RW', label: 'Rwanda' },
-  { value: 'UG', label: 'Uganda' },
-  { value: 'KE', label: 'Kenya' },
-  { value: 'TZ', label: 'Tanzania' },
-  { value: 'BI', label: 'Burundi' },
-  { value: 'CD', label: 'DR Congo' },
-  { value: 'NG', label: 'Nigeria' },
-  { value: 'GH', label: 'Ghana' },
-  { value: 'ZA', label: 'South Africa' },
-  { value: 'ET', label: 'Ethiopia' },
-];
 
 interface FormData {
   name: string;

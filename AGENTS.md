@@ -32,7 +32,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - `(legal)/` route group — Terms of Service, Privacy Policy (with PublicNav + PublicFooter)
 - `org/` — org listing page showing all orgs the user belongs to (with links to dashboard + public page)
 - `org/create/` — create organization wizard (3 steps: basic info, category/location, logo)
-- `org/[slug]/(admin)/` — dashboard, settings (brand color picker + encrypted SMTP), campaigns, members, finance, rooms
+- `org/[slug]/(admin)/` — dashboard, settings (brand color picker, category/country, encrypted SMTP), campaigns, members, finance, rooms
 - `org/[slug]/(member)/` — member-only rooms
 - `org/[slug]/join/` — join flow with Flutterwave checkout
 - `org/[slug]/donate/` — donation flow with Flutterwave checkout
@@ -75,7 +75,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - **Org not-found**: Shared `OrgNotFound` component with configurable icon; server component uses `notFound()`, all public client pages render `OrgNotFound` when org is null (fixes blank pages, infinite spinners, and misleading error messages on checkout/payment pages).
 - **Dashboard responsive**: Stat cards and Quick Actions grids use `auto-fill` with `minmax` for smooth responsive layout (cards wrap at 260px/240px) instead of fixed breakpoints.
 - **Org logo as favicon**: Root layout metadata sets default `icons: '/favicon.svg'` (red "Q" on white). `BrandColorWrapper` overrides via DOM — sets `<link rel="icon">` to `org.logoURL` on mount, restores `/favicon.svg` on cleanup. Server profile page uses `generateMetadata` with `icons: org.logoURL` for initial server render.
-- **Payment method selector**: `PaymentMethodSelector` component on checkout pages — user picks between Mobile Money and Bank Card. Transaction `paymentMethod` field set to `'flutterwave_mobile_money'` or `'flutterwave_card'`. Initiation passes `payment_options` to Flutterwave API to filter available methods on hosted page.
+- **Payment method selector**: `PaymentMethodSelector` component at `components/shared/payment-method-selector.tsx` — user picks between Mobile Money and Bank Card on checkout pages. Transaction `paymentMethod` field set to `'flutterwave_mobile_money'` or `'flutterwave_card'`. Initiation passes `payment_options` to Flutterwave API to filter available methods on hosted page.
 - **Cover image overlay**: Public org profile hero adds `bg-black/50` overlay on top of cover image (only rendered when `org.coverURL` is set) to ensure org logo, name, and metadata remain readable against any cover image.
 - **Tier form pages**: `TierFormFields` extracted as reusable component (same pattern as `CampaignFormFields`); `TierForm` dialog wrapper kept for backward compat; full-screen create/edit at `members/tiers/new/` and `members/tiers/[tierId]/edit/`.
 - **Room back button**: Chat room dashboard shows "All rooms" button in toolbar (before edit/delete) when a room is selected on both mobile and desktop — always visible, not admin-only.
@@ -84,11 +84,20 @@ A web app for nonprofits to manage memberships and collect donations.
 - **Sonner customization**: Toaster configured with `richColors`, `top-right` position, larger text/padding, styled success/error/warning/info backgrounds for better visibility
 - **Idempotency watermark**: Payment reminders cron tracks `lastReminderDate` per membership/donation doc to prevent duplicate reminder emails within the same day
 
+### Logging (lib/logger.ts)
+- Dual logger: console (synchronous) + Firestore `logs` collection (async, fire-and-forget)
+- Levels: `error`, `warn`, `info`, `debug` — each maps to `console.error/warn/info/debug`
+- Every log entry has: `timestamp`, `level`, `scope`, `message`, optional `data` (JSON-stringified)
+- Firestore writes are best-effort (caught and suppressed on failure) — never blocks the caller
+- Every API route uses a `correlationId` (`prefix_timestamp_random`) for tracing across logs
+- Used in: all API routes, all server component pages, `lib/payments.ts`, `lib/flutterwave.ts`
+
 ### Server Helpers (lib/firebase/server.ts)
 - `getAccessToken()` — RS256 JWT assertion → OAuth2 token
 - `getAuthHeaders()` — returns `{ Authorization: Bearer <token> }` for Firestore REST calls
 - `readFirestoreDocument(collection, docId, subcollection?, subDocId?)`
 - `updateFirestoreDocument(collection, docId, data, subcollection?, subDocId?)`
+- `createFirestoreDocument(collection, data)` — POST to auto-generate doc (used by logger)
 - `queryFirestoreDocuments(collection, field, operator, value, limit?)`
 - `incrementFirestoreField(collection, docId, field, amount, subcollection?, subDocId?)` — uses `doubleValue`
 - `fetchOrgBySlug(slug)` — for server-side SEO metadata (uses `getAuthHeaders()`)
@@ -98,12 +107,12 @@ A web app for nonprofits to manage memberships and collect donations.
 - `providers/resend.ts` — Resend SDK wrapper
 - `providers/smtp.ts` — Nodemailer singleton per config key
 - `encrypt-smtp.ts` — AES-GCM encrypt/decrypt for SMTP passwords
-- `templates/` — 8 templates: payment-confirmation, payment-failed, payment-reminder, membership-expiry, welcome, new-donation-notification, new-member-notification, pending-transaction-alert
+- `templates/` — 7 templates: payment-confirmation, payment-failed, payment-reminder, membership-expiry, new-donation-notification, new-member-notification, pending-transaction-alert
 - `payment-emails.ts` — shared email sending for donation/membership success and failure
 
 ### Shared Payment Logic (lib/payments.ts)
 - `completeDeposit(depositId)` — marks transactions completed, processes donations (increments campaigns) and memberships (activates member), sends success emails. Re-reads transaction before updating to prevent concurrent processing race.
-- `failDeposit(depositId, failureReason?)` — marks transactions failed, sends failure notifications. Also re-reads before update.
+- `failDeposit(depositId, failureReason?)` — marks transactions failed, sets membership + member status to 'failed', sends failure notifications. Also re-reads before update.
 - `reconcilePendingTransaction(depositId)` — checks Flutterwave transaction status, delegates to complete/fail
 - `reReadTransaction(txId)` — fetches latest transaction state to guard against concurrent webhook + client-side finalize double-processing
 - `safeSend(fn)` — wraps email sends in try-catch so failures are logged but don't cause data loss
@@ -140,6 +149,10 @@ A web app for nonprofits to manage memberships and collect donations.
 - **BrandColorWrapper on root**: Sets `--primary`/`--primary-foreground` CSS vars on `document.documentElement` via `useEffect` (not a wrapper div) so portal-rendered content (Dialog, Sheet) correctly inherits the org's brand color. Cleans up to defaults on unmount.
 - **Landing page**: 8-section scrollable page (hero, problem/solution, how-it-works, features, audience cards, stats/reasons, FAQ, CTA) with PublicNav links to sections. PublicNav + MobileNav share a `navLinks` array. Dialog/Sheet overlays omit `backdrop-blur-sm` to avoid visual distraction.
 - **MobileNav accepts navLinks**: `MobileNav` now accepts an optional `navLinks` prop for dynamic navigation links alongside the fixed Log in / Get started buttons.
+- **Auth-aware PublicNav**: `PublicNav` is now a client component that reads `useAuthStore` — shows avatar + dropdown (Organizations, Log out) when logged in, keeps Log in / Get started when logged out. `MobileNav` has matching auth-aware hamburger menu.
+- **Mobile sticky bottom nav**: `MobileNav` renders a fixed bottom nav bar on mobile with Home, nav section links, and Orgs/Log in button. Landing page and legal layout add `pb-16 md:pb-0` to prevent content overlap.
+- **Minimal org footer**: `PublicOrgFooter` shows only "Built with Quorum ❤" with muted background (`bg-muted/20`) for visual separation. Removed copyright, terms/privacy links, and promo bar.
+- **Login/signup auto-redirect**: Both login and signup pages redirect to `/org` via `useEffect` when `useAuthStore` reports an already-authenticated user.
 
 ### Completed — Deep Codebase Analysis Fixes ✅
 - Added missing `'use client'` directives (badge, chat-view, create-room-dialog)
@@ -162,6 +175,12 @@ A web app for nonprofits to manage memberships and collect donations.
 - **Fixed SignInModal hidden behind overlay**: Dialog + Sheet rendered simultaneously, each with a backdrop. Content panels had responsive visibility classes but overlays didn't — Sheet overlay on desktop covered Dialog content. Added `overlayClassName` prop to `DialogContent`/`SheetContent`, passed matching responsive classes.
 - **Fixed webhook race condition**: `completeDeposit`/`failDeposit` read stale `processedAt` data — concurrent webhook + client-side finalize could double-process (double campaign increment, double email). Added `reReadTransaction()` guard before each update.
 - **Fixed email failure causing silent data loss**: If `sendDonationEmails`/`sendMembershipEmails` threw, exception propagated to webhook (500). Firestore writes already committed, retry skipped as already processed → emails lost forever. Wrapped all email sends in `safeSend()` that catches and logs errors.
+- **Implemented `getFlutterwavePaymentOptions`** in `lib/flutterwave.ts` — maps `'mobile_money'` → `'mobilemoneyrwanda'`, `'card'` → `'card'` ✅
+- **Implemented `PaymentMethodSelector` component** at `components/shared/payment-method-selector.tsx` with radio group ARIA, integrated into both checkout pages with state and API payload ✅
+- **Created `(legal)/layout.tsx`** — deduplicates PublicNav/PublicFooter from privacy and terms pages ✅
+- **Fixed `failDeposit` membership status gap** — now marks membership docs and member subcollection docs as `'failed'` (was only sending failure emails) ✅
+- **Added `category`/`country` fields to settings page** with Select widgets, shared `CATEGORIES`/`COUNTRIES` constants extracted to `lib/constants.ts` ✅
+- **Removed unused welcome email template** (not referenced anywhere) ✅
 
 ### Next Steps
 1. Add `RESEND_API_KEY` to `.env.local` and register/verify sender domain in Resend
@@ -170,4 +189,4 @@ A web app for nonprofits to manage memberships and collect donations.
 4. Add `FLUTTERWAVE_SECRET_KEY`, `FLUTTERWAVE_PUBLIC_KEY`, and `FLUTTERWAVE_WEBHOOK_HASH` to `.env.local`
 5. Test full payment flow: donate → Flutterwave sandbox → webhook → email receipt → cron reconciliation
 6. Add Flutterwave production credentials
-7. (all tier pages, room back button, deep analysis codebase fixes, and Flutterwave migration done ✅)
+7. Test all public pages in incognito (logged-out) window after deployment
