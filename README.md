@@ -40,7 +40,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the result.
 | `FIREBASE_ADMIN_PRIVATE_KEY` | Yes | Firebase Admin SDK private key |
 | `FLUTTERWAVE_SECRET_KEY` | Yes | Flutterwave secret key |
 | `FLUTTERWAVE_PUBLIC_KEY` | Yes | Flutterwave public key |
-| `FLUTTERWAVE_WEBHOOK_HASH` | For webhooks | Flutterwave webhook HMAC verify hash |
+| `FLUTTERWAVE_WEBHOOK_HASH` | For webhooks | Flutterwave webhook verify hash (sent as `verif-hash` header) |
 | `FLUTTERWAVE_BASE_URL` | No | Defaults to `https://api.flutterwave.com` |
 | `NEXT_PUBLIC_APP_URL` | Yes | App base URL (for email links and return URLs) |
 | `CRON_SECRET` | Yes | Shared secret for cron job authorization |
@@ -97,7 +97,7 @@ app/
     firebase/        — Client + Admin SDK, Firestore helpers (server.ts has REST API helpers)
     email/           — Send dispatcher, Resend/SMTP providers, AES-GCM encrypt, 8 email templates
     fees.ts          — Shared calculateFee utility (eliminates 3x fee math duplication)
-    payments.ts      — Shared completeDeposit, failDeposit, reconcilePendingTransaction
+    payments.ts      — Shared completeDeposit, failDeposit, reconcilePendingTransaction, reReadTransaction (race guard), safeSend (email failure safety)
     flutterwave.ts   — Flutterwave API client (initiate, verify, webhook, helpers)
     app-url.ts       — Dynamic APP_URL helper
     imagekit.ts      — Image upload utilities (with auth)

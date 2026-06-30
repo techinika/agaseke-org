@@ -158,7 +158,7 @@ export function SignInModal({ open, onOpenChange, redirectPath }: SignInModalPro
     <>
       {/* Desktop: centered dialog */}
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="hidden sm:block sm:max-w-sm" showCloseButton>
+        <DialogContent className="hidden sm:block sm:max-w-sm" showCloseButton overlayClassName="hidden sm:block">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <LogIn className="size-4" />
@@ -176,7 +176,7 @@ export function SignInModal({ open, onOpenChange, redirectPath }: SignInModalPro
 
       {/* Mobile: bottom sheet with slide-up */}
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="block sm:hidden rounded-t-2xl px-6 pb-8 pt-6" showCloseButton>
+        <SheetContent side="bottom" className="block sm:hidden rounded-t-2xl px-6 pb-8 pt-6" showCloseButton overlayClassName="block sm:hidden">
           <SheetHeader className="px-0 pb-2">
             <SheetTitle className="flex items-center gap-2">
               <LogIn className="size-4" />

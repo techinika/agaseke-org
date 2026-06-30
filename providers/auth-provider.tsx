@@ -8,8 +8,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { setUser, setProfile, setLoading, reset } = useAuthStore();
 
   useEffect(() => {
+    let logoutTimer: ReturnType<typeof setTimeout> | null = null;
+
     const unsubscribe = onAuthChange(async (firebaseUser) => {
-      setLoading(true);
+      if (logoutTimer) {
+        clearTimeout(logoutTimer);
+        logoutTimer = null;
+      }
+
       if (firebaseUser) {
         setUser(firebaseUser);
         const profile = await getUserDocument(firebaseUser.uid);
@@ -18,12 +24,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setProfile(null);
         }
+        setLoading(false);
       } else {
-        reset();
+        setLoading(true);
+        logoutTimer = setTimeout(() => {
+          reset();
+        }, 3000);
       }
-      setLoading(false);
     });
-    return unsubscribe;
+
+    return () => {
+      if (logoutTimer) clearTimeout(logoutTimer);
+      unsubscribe();
+    };
   }, [setUser, setProfile, setLoading, reset]);
 
   return <>{children}</>;

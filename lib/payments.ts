@@ -1,11 +1,28 @@
 import { verifyTransaction } from '@/lib/flutterwave';
 import {
+  readFirestoreDocument,
   queryFirestoreDocuments,
   updateFirestoreDocument,
   incrementFirestoreField,
 } from '@/lib/firebase/server';
 import { COLLECTIONS, SUBCOLLECTIONS } from '@/lib/constants';
 import { sendDonationEmails, sendMembershipEmails, sendDonationFailedEmails, sendMembershipFailedEmails } from '@/lib/email/payment-emails';
+
+async function reReadTransaction(txId: string): Promise<{ processedAt?: string; status?: string } | null> {
+  try {
+    return (await readFirestoreDocument(COLLECTIONS.TRANSACTIONS, txId)) as { processedAt?: string; status?: string } | null;
+  } catch {
+    return null;
+  }
+}
+
+async function safeSend(fn: () => Promise<void>): Promise<void> {
+  try {
+    await fn();
+  } catch (err) {
+    console.error('Failed to send notification email:', err);
+  }
+}
 
 export async function completeDeposit(depositId: string): Promise<{ completed: number; failed: number }> {
   const txs = await queryFirestoreDocuments(COLLECTIONS.TRANSACTIONS, 'depositId', 'EQUAL', depositId);
@@ -16,6 +33,10 @@ export async function completeDeposit(depositId: string): Promise<{ completed: n
     if (tx.processedAt) { completed++; continue; }
     if (tx.status === 'completed') { completed++; continue; }
     if (tx.status === 'failed') { failed++; continue; }
+
+    const fresh = await reReadTransaction(tx.id);
+    if (!fresh || fresh.processedAt || fresh.status === 'completed') { completed++; continue; }
+    if (fresh.status === 'failed') { failed++; continue; }
 
     await updateFirestoreDocument(COLLECTIONS.TRANSACTIONS, tx.id, {
       status: 'completed',
@@ -46,6 +67,11 @@ export async function failDeposit(depositId: string, failureReason?: string): Pr
     if (tx.processedAt) continue;
     if (tx.status === 'completed') continue;
     if (tx.status === 'failed') continue;
+
+    const fresh = await reReadTransaction(tx.id);
+    if (!fresh || fresh.processedAt || fresh.status === 'completed') continue;
+    if (fresh.status === 'failed') continue;
+
     await updateFirestoreDocument(COLLECTIONS.TRANSACTIONS, tx.id, {
       status: 'failed',
       processedAt: new Date().toISOString(),
@@ -61,14 +87,14 @@ export async function failDeposit(depositId: string, failureReason?: string): Pr
         if (donation.status === 'failed') continue;
         if (donation.status === 'active') continue;
         await updateFirestoreDocument(COLLECTIONS.DONATIONS, donation.id, { status: 'failed' });
-        await sendDonationFailedEmails(donation, tx.orgId as string | undefined, failureReason);
+        await safeSend(() => sendDonationFailedEmails(donation, tx.orgId as string | undefined, failureReason));
       }
     }
 
     if (txType === 'membership') {
       const memberships = await queryFirestoreDocuments(COLLECTIONS.MEMBERSHIPS, 'depositId', 'EQUAL', depositId);
       for (const membership of memberships) {
-        await sendMembershipFailedEmails(membership, failureReason);
+        await safeSend(() => sendMembershipFailedEmails(membership, failureReason));
       }
     }
   }
@@ -94,7 +120,7 @@ async function processDonation(depositId: string, orgId?: string): Promise<void>
       }
     }
 
-    await sendDonationEmails(donation, orgId);
+    await safeSend(() => sendDonationEmails(donation, orgId));
   }
 }
 
@@ -114,7 +140,7 @@ async function processMembership(depositId: string): Promise<void> {
       );
     }
 
-    await sendMembershipEmails(membership);
+    await safeSend(() => sendMembershipEmails(membership));
   }
 }
 

@@ -3,12 +3,6 @@ import { getAdminConfig } from './admin';
 
 const FIRESTORE_BASE = 'https://firestore.googleapis.com/v1';
 
-function getHeaders() {
-  return {
-    'Content-Type': 'application/json',
-  };
-}
-
 interface FirestoreDocument {
   name: string;
   fields?: Record<string, { stringValue?: string; integerValue?: string; doubleValue?: number; booleanValue?: boolean; timestampValue?: string }>;
@@ -295,7 +289,7 @@ export async function fetchOrgBySlug(slug: string): Promise<{ id: string; name: 
     };
     const response = await fetch(url, {
       method: 'POST',
-      headers: getHeaders(),
+      headers: await getAuthHeaders(),
       body: JSON.stringify(body),
     });
     if (!response.ok) {

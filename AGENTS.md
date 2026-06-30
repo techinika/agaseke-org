@@ -102,14 +102,16 @@ A web app for nonprofits to manage memberships and collect donations.
 - `payment-emails.ts` — shared email sending for donation/membership success and failure
 
 ### Shared Payment Logic (lib/payments.ts)
-- `completeDeposit(depositId)` — marks transactions completed, processes donations (increments campaigns) and memberships (activates member), sends success emails
-- `failDeposit(depositId, failureReason?)` — marks transactions failed, sends failure notifications
+- `completeDeposit(depositId)` — marks transactions completed, processes donations (increments campaigns) and memberships (activates member), sends success emails. Re-reads transaction before updating to prevent concurrent processing race.
+- `failDeposit(depositId, failureReason?)` — marks transactions failed, sends failure notifications. Also re-reads before update.
 - `reconcilePendingTransaction(depositId)` — checks Flutterwave transaction status, delegates to complete/fail
+- `reReadTransaction(txId)` — fetches latest transaction state to guard against concurrent webhook + client-side finalize double-processing
+- `safeSend(fn)` — wraps email sends in try-catch so failures are logged but don't cause data loss
 
 ### Flutterwave (lib/flutterwave.ts)
 - `initiatePayment(params)` — POST `/v3/payments`, creates hosted payment link with `payment_options` (card/mobilemoneyrwanda)
 - `verifyTransaction(tx_ref)` — GET `/v3/transactions/by_reference`, checks payment status
-- `verifyWebhookSignature(payload, signature)` — HMAC-SHA256 webhook verification via `FLUTTERWAVE_WEBHOOK_HASH`
+- `verifyWebhookHash(verifHash)` — constant-time comparison of `verif-hash` header against `FLUTTERWAVE_WEBHOOK_HASH`
 - `generateDepositId()` — UUID v4 for `tx_ref`
 - `getFlutterwavePaymentOptions(paymentMethod)` — maps 'mobile_money' → 'mobilemoneyrwanda', 'card' → 'card'
 - `getReturnUrl(slug, depositId, type)` — builds path-based return URL
@@ -155,6 +157,11 @@ A web app for nonprofits to manage memberships and collect donations.
 - Added idempotency watermark to payment reminders cron (`lastReminderDate` per doc)
 - Fixed `unknown` type assertion in webhook route
 - **Migrated from pawaPay + PesaPal to Flutterwave** — single gateway integration, removed 2 lib clients + 3 API routes, simplified finalize/reconcile/cron to single code path, updated checkout pages and docs
+- **Fixed org name not showing server-side**: `fetchOrgBySlug` used unauthenticated `getHeaders()` — Firestore REST API rejected the request, returning `null`. Sidebar showed slug, metadata showed "Organization Not Found". Changed to `await getAuthHeaders()` and removed unused `getHeaders()`.
+- **Fixed phantom auto-logout**: `onAuthStateChanged` fired `null` during transient token refresh failures. `AuthProvider` immediately called `reset()`, `AuthGuard` redirected to login before Firebase retried. Added 3s grace timer — if token recovers within window, user restored seamlessly.
+- **Fixed SignInModal hidden behind overlay**: Dialog + Sheet rendered simultaneously, each with a backdrop. Content panels had responsive visibility classes but overlays didn't — Sheet overlay on desktop covered Dialog content. Added `overlayClassName` prop to `DialogContent`/`SheetContent`, passed matching responsive classes.
+- **Fixed webhook race condition**: `completeDeposit`/`failDeposit` read stale `processedAt` data — concurrent webhook + client-side finalize could double-process (double campaign increment, double email). Added `reReadTransaction()` guard before each update.
+- **Fixed email failure causing silent data loss**: If `sendDonationEmails`/`sendMembershipEmails` threw, exception propagated to webhook (500). Firestore writes already committed, retry skipped as already processed → emails lost forever. Wrapped all email sends in `safeSend()` that catches and logs errors.
 
 ### Next Steps
 1. Add `RESEND_API_KEY` to `.env.local` and register/verify sender domain in Resend
