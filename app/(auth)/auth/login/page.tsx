@@ -17,13 +17,13 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect');
-  const { user, isLoading } = useAuthStore();
+  const { user, isLoading: authLoading } = useAuthStore();
 
   useEffect(() => {
-    if (!isLoading && user) {
+    if (!authLoading && user) {
       router.push('/org');
     }
-  }, [user, isLoading, router]);
+  }, [user, authLoading, router]);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
