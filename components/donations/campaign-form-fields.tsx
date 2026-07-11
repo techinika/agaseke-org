@@ -17,6 +17,7 @@ const campaignSchema = z.object({
   goalAmount: z.coerce.number().min(100, 'Goal must be at least $100'),
   endDate: z.string().optional(),
   platformFeePayer: z.enum(['org', 'donor']),
+  withdrawalTrigger: z.enum(['target_reached', 'anytime']),
 });
 
 type CampaignFormData = z.infer<typeof campaignSchema>;
@@ -27,6 +28,7 @@ export interface CampaignSubmitData {
   goalAmount: number;
   endDate: string | null;
   platformFeePayer: PlatformFeePayer;
+  withdrawalTrigger: 'target_reached' | 'anytime';
 }
 
 interface CampaignFormFieldsProps {
@@ -54,6 +56,7 @@ export function CampaignFormFields({ defaultValues, onSubmit, onCancel, submitLa
       goalAmount: 0,
       endDate: '',
       platformFeePayer: 'org',
+      withdrawalTrigger: 'anytime',
       ...defaultValues,
     },
   });
@@ -69,6 +72,7 @@ export function CampaignFormFields({ defaultValues, onSubmit, onCancel, submitLa
       goalAmount: data.goalAmount,
       endDate: data.endDate ?? null,
       platformFeePayer: data.platformFeePayer,
+      withdrawalTrigger: data.withdrawalTrigger,
     });
     setIsSubmitting(false);
   }

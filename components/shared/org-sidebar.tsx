@@ -17,6 +17,7 @@ import {
   Menu,
   LogOut,
   User,
+  Crown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ const navItems = (slug: string) => [
   { label: "Campaigns", href: `/org/${slug}/campaigns`, icon: Megaphone },
   { label: "Finance", href: `/org/${slug}/finance`, icon: Wallet },
   { label: "Chat Rooms", href: `/org/${slug}/rooms`, icon: MessageSquare },
+  { label: "Subscription", href: `/org/${slug}/subscription`, icon: Crown },
   { label: "Settings", href: `/org/${slug}/settings`, icon: Settings },
 ];
 

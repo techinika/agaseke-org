@@ -1,6 +1,8 @@
 import { Timestamp } from 'firebase/firestore';
 import { PlatformFeePayer } from '@/lib/constants';
 
+export type WithdrawalTrigger = 'target_reached' | 'anytime';
+
 export interface Campaign {
   id: string;
   title: string;
@@ -13,4 +15,5 @@ export interface Campaign {
   isActive: boolean;
   createdAt: Timestamp;
   platformFeePayer: PlatformFeePayer;
+  withdrawalTrigger: WithdrawalTrigger;
 }

@@ -21,7 +21,7 @@ const tiers = [
     features: [
       'Unlimited admin users',
       'Membership tier management',
-      'Donation campaigns',
+      'Unlimited donation campaigns',
       'Chat rooms (public & private)',
       'Payment processing (cards)',
       'Dashboard & reports',
@@ -63,6 +63,7 @@ const tiers = [
     features: [
       'Everything in Growth',
       'Lower 5% transaction fee',
+      'Custom domain name',
       'Dedicated account manager',
       'Custom integrations',
       'Bulk member import',
@@ -196,9 +197,9 @@ export default function PricingPage() {
               <div className="mb-4 flex size-12 items-center justify-center rounded-xl bg-primary/10">
                 <Zap className="size-6 text-primary" />
               </div>
-              <h3 className="font-semibold">White-labeled pages</h3>
+              <h3 className="font-semibold">Unlimited campaigns</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Your logo, your colors, your brand. No Quorum branding on your public page.
+                Create as many donation campaigns as you need. No limits on any plan.
               </p>
             </div>
             <div className="flex flex-col items-center text-center">
