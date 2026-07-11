@@ -25,7 +25,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - CURRENCY = USD (all amounts in USD, PesaPal processes in USD)
 - Platform fee: 10% for Starter (free), 5% for Growth ($99/mo) and Enterprise ($199/mo) plans (payer configurable: org or donor)
 - Subscription plans: Starter (free, up to 500 members), Growth ($99/mo, 500–1,000 members), Enterprise ($199/mo, 1,000+ members)
-- All plans include white-labeled pages (logo, colors, custom URL)
+- All plans include white-labeled pages (logo, colors, custom URL), bank payout settings, and custom SMTP email
 - AES-GCM 256 + PBKDF2 for chat encryption
 - **Email**: Nodemailer SMTP only (org custom SMTP → system SMTP fallback); AES-GCM encrypted SMTP passwords
 - **Cron**: `quorum-cron` Cloudflare Worker (reconcile, payment-reminders, membership-expiry) authorized via `CRON_SECRET`
@@ -101,7 +101,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - **Shared fee utility**: `lib/fees.ts` — `calculateFee(amount, feePayer, plan)` returns `{ totalToPay, platformFee, orgReceives }`; eliminates duplicated fee math across checkout pages and tier form previews
 - **Sonner customization**: Toaster configured with `richColors`, `top-right` position, larger text/padding, styled success/error/warning/info backgrounds for better visibility
 - **Idempotency watermark**: Payment reminders cron tracks `lastReminderDate` per membership/donation doc to prevent duplicate reminder emails within the same day
-- **Org payout settings**: Settings page includes bank details (bank name, account name, account number, SWIFT/BIC code, bank address) for receiving payouts. Saved to organization Firestore doc.
+- **Org payout settings**: Settings page includes bank details (bank name, account name, account number, SWIFT/BIC code, bank address) for receiving payouts. Saved to organization Firestore doc. Available on all subscription plans.
 - **R2 uploads**: Image uploads go through `quorum-uploads` worker to R2 bucket `quorum-assets`. Returns public URL at `quorum-assets.r2.dev/files/{folder}/{uuid}.{ext}`.
 
 ### Logging (lib/logger.ts)

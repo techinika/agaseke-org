@@ -28,7 +28,7 @@ Built with Next.js 16 (App Router), Firebase (Firestore, Auth, Storage), Tailwin
 | Growth | $99 | 5% | 500–1,000 |
 | Enterprise | $199 | 5% | 1,000+ |
 
-All plans include white-labeled pages (logo, colors, custom URL).
+All plans include white-labeled pages (logo, colors, custom URL), bank payout settings, and custom SMTP email.
 
 ## Getting Started
 
