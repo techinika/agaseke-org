@@ -89,11 +89,11 @@ const audiences = [
 const faqs = [
   {
     q: 'How much does Quorum cost?',
-    a: 'It is free to create your organization and start collecting. We charge a small 10% platform fee on donations and memberships. You choose whether your organization pays the fee or passes it to the donor. No monthly subscription fees.',
+    a: 'It is free to create your organization with up to 500 members. We charge a 10% platform fee on donations and memberships. For organizations with 500+ members, Growth plan is $99/month with a reduced 5% fee. For 1,000+ members, Enterprise plan is $199/month with a 5% fee. You choose whether your organization pays the fee or passes it to the donor.',
   },
   {
     q: 'What payment methods do you support?',
-    a: 'We support Mobile Money (MTN MoMo, Airtel Money) and bank cards (Visa, Mastercard) through Flutterwave. Your members and donors can use whichever is easiest for them.',
+    a: 'We support bank cards (Visa, Mastercard) through PesaPal. Your members and donors can pay securely from anywhere in the world.',
   },
   {
     q: 'Can members use Quorum without downloading an app?',
@@ -101,11 +101,11 @@ const faqs = [
   },
   {
     q: 'Is my organization\'s data safe?',
-    a: 'Yes. We use industry-standard encryption for all data. Chat messages are encrypted so only the intended recipients can read them. Payment processing is handled by Flutterwave — your payment details never touch our servers.',
+    a: 'Yes. We use industry-standard encryption for all data. Chat messages are encrypted so only the intended recipients can read them. Payment processing is handled by PesaPal — your payment details never touch our servers.',
   },
   {
     q: 'Can I use my own domain and branding?',
-    a: 'Yes. Your organization gets a public page with your logo, brand colors, and custom URL. The page shows your name — not Quorum\'s. You can also configure your own email sender so emails come from your domain.',
+    a: 'Yes. All plans include white-labeled pages with your logo, brand colors, and custom URL. The page shows your name — not Quorum\'s. You can also configure your own email sender so emails come from your domain.',
   },
   {
     q: 'What if someone in my community does not have a smartphone?',
@@ -139,7 +139,7 @@ export default function LandingPage() {
               </h1>
               <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
                 Simple tools to manage members, collect donations, and keep everyone connected.
-                No complicated software. No monthly fees. Just what you need.
+                No complicated software. Free to start — pay only when you grow.
               </p>
               <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
                 <Link href="/auth/signup">
@@ -321,8 +321,8 @@ export default function LandingPage() {
                 <p className="mt-1 text-sm text-muted-foreground">Platform fee — or less</p>
               </div>
               <div className="text-center">
-                <div className="text-4xl font-bold text-primary">0</div>
-                <p className="mt-1 text-sm text-muted-foreground">Monthly subscription</p>
+                <div className="text-4xl font-bold text-primary">Free</div>
+                <p className="mt-1 text-sm text-muted-foreground">Up to 500 members</p>
               </div>
               <div className="text-center">
                 <div className="text-4xl font-bold text-primary">24/7</div>

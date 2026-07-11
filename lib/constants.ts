@@ -40,13 +40,22 @@ export type UserType = (typeof USER_TYPES)[number];
 export const ORG_STATUSES = ['active', 'inactive'] as const;
 export type OrgStatus = (typeof ORG_STATUSES)[number];
 
+export const SUBSCRIPTION_PLANS = ['starter', 'growth', 'enterprise'] as const;
+export type SubscriptionPlan = (typeof SUBSCRIPTION_PLANS)[number];
+
+export const SUBSCRIPTION_PRICING = {
+  starter: { price: 0, maxMembers: 500, label: 'Starter', platformFeeRate: 0.10 },
+  growth: { price: 99, maxMembers: 1000, label: 'Growth', platformFeeRate: 0.05 },
+  enterprise: { price: 199, maxMembers: Infinity, label: 'Enterprise', platformFeeRate: 0.05 },
+} as const;
+
 export const TXN_STATUSES = ['pending', 'completed', 'failed', 'refunded'] as const;
 export type TxnStatus = (typeof TXN_STATUSES)[number];
 
 export const TXN_TYPES = ['donation', 'membership'] as const;
 export type TxnType = (typeof TXN_TYPES)[number];
 
-export const PAYMENT_METHODS = ['flutterwave'] as const;
+export const PAYMENT_METHODS = ['pesapal'] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 export const MEMBERSHIP_STATUSES = ['active', 'expired', 'cancelled', 'pending'] as const;

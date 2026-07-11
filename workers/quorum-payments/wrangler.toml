@@ -1,0 +1,18 @@
+name = "quorum-payments"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+PESAPAL_BASE_URL = "https://cybqa.pesapal.com/pesapalv3"
+
+# Uncomment for production:
+# PESAPAL_BASE_URL = "https://pay.pesapal.com/v3"
+
+[secrets]
+PESAPAL_CONSUMER_KEY = ""
+PESAPAL_CONSUMER_SECRET = ""
+FIREBASE_ADMIN_CLIENT_EMAIL = ""
+FIREBASE_ADMIN_PRIVATE_KEY = ""
+CRON_SECRET = ""
+API_KEY = ""

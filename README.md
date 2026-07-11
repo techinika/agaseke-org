@@ -2,29 +2,39 @@
 
 A web application for nonprofits to manage memberships and collect donations.
 
-Built with Next.js 16 (App Router), Firebase (Firestore, Auth, Storage), Tailwind CSS v4, shadcn/ui, Zustand, React Query, Flutterwave, ImageKit, and Resend.
+Built with Next.js 16 (App Router), Firebase (Firestore, Auth, Storage), Tailwind CSS v4, shadcn/ui, Zustand, React Query, PesaPal, Cloudflare Workers, and Nodemailer.
 
 ## Features
 
 - **Landing page** — Full marketing site with problem/solution, how it works, audience targeting, FAQ, and CTAs
+- **Pricing page** — Transparent pricing tiers (Starter/Growth/Enterprise) with feature comparison and FAQ
 - **Membership management** — Create tiers with custom pricing, benefits, and billing cycles
 - **Donation collection** — One-time and recurring donations with campaign tracking
 - **Chat rooms** — Encrypted group chat for members, with public and private rooms
-- **Mobile money payments** — Pay with MTN MoMo, Airtel Money, and other providers via Flutterwave
-- **Card payments** — Pay with Visa, Mastercard, and other bank cards via Flutterwave
+- **Card payments** — Pay with Visa, Mastercard, and other bank cards via PesaPal
 - **Admin dashboard** — Revenue breakdown, member lists, campaign progress
 - **Public organization pages** — White-labeled profile (with cover image overlay for readability), join, and donate pages
 - **Rich text content** — Org bios and campaign descriptions support images, video embeds, links, and formatted text via tiptap editor
 - **Google Analytics** — GA4 page view tracking via measurement ID
-- **Email notifications** — Payment confirmations, reminders, expiry alerts, and failure notices via Resend or org-configured SMTP
+- **Email notifications** — Payment confirmations, reminders, expiry alerts, and failure notices via Nodemailer (org SMTP → system SMTP fallback)
 - **Automated reconciliation** — Cron-driven pending transaction checks with admin email alerts
 - **Progressive Web App** — Installable with offline support, push notifications, and home screen launch via web app manifest and service worker
+
+## Pricing
+
+| Plan | Monthly Fee | Transaction Fee | Members |
+|------|-------------|-----------------|---------|
+| Starter | Free | 10% | Up to 500 |
+| Growth | $99 | 5% | 500–1,000 |
+| Enterprise | $199 | 5% | 1,000+ |
+
+All plans include white-labeled pages (logo, colors, custom URL).
 
 ## Getting Started
 
 ```bash
 cp .env.example .env.local
-# Fill in Firebase, Flutterwave, Resend, and other credentials
+# Fill in Firebase, PesaPal, Cloudflare Workers, and other credentials
 npm install
 npm run dev
 ```
@@ -38,18 +48,18 @@ Open [http://localhost:3000](http://localhost:3000) to see the result.
 | `NEXT_PUBLIC_FIREBASE_*` | Yes | Firebase client SDK credentials |
 | `FIREBASE_ADMIN_CLIENT_EMAIL` | Yes | Firebase Admin SDK service account email |
 | `FIREBASE_ADMIN_PRIVATE_KEY` | Yes | Firebase Admin SDK private key |
-| `FLUTTERWAVE_SECRET_KEY` | Yes | Flutterwave secret key |
-| `FLUTTERWAVE_PUBLIC_KEY` | Yes | Flutterwave public key |
-| `FLUTTERWAVE_WEBHOOK_HASH` | For webhooks | Flutterwave webhook verify hash (sent as `verif-hash` header) |
-| `FLUTTERWAVE_BASE_URL` | No | Defaults to `https://api.flutterwave.com` |
+| `PESAPAL_CONSUMER_KEY` | Yes | PesaPal consumer key |
+| `PESAPAL_CONSUMER_SECRET` | Yes | PesaPal consumer secret |
+| `PESAPAL_BASE_URL` | Yes | PesaPal API base URL (sandbox or production) |
 | `NEXT_PUBLIC_APP_URL` | Yes | App base URL (for email links and return URLs) |
+| `QUORUM_PAYMENTS_URL` | Yes | quorum-payments worker URL |
+| `QUORUM_PAYMENTS_API_KEY` | Yes | API key for quorum-payments worker |
+| `NEXT_PUBLIC_QUORUM_UPLOADS_URL` | Yes | quorum-uploads worker URL |
+| `QUORUM_CRON_URL` | Yes | quorum-cron worker URL |
 | `CRON_SECRET` | Yes | Shared secret for cron job authorization |
-| `NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT` | For uploads | ImageKit URL endpoint |
-| `NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY` | For uploads | ImageKit public key |
-| `IMAGEKIT_PRIVATE_KEY` | For uploads | ImageKit private key |
-| `RESEND_API_KEY` | For email | Resend API key |
+| `SMTP_HOST/PORT/USER/PASS` | Fallback email | System SMTP provider |
+| `DEFAULT_FROM_EMAIL`, `DEFAULT_FROM_NAME` | Yes | Default email sender |
 | `SMTP_ENCRYPTION_KEY` | For email | 32-byte hex key for org SMTP password encryption |
-| `SMTP_HOST/PORT/USER/PASS` | Fallback email | System SMTP fallback when Resend not configured |
 | `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID` | Optional | Google Analytics measurement ID |
 
 ## Tech Stack
@@ -58,9 +68,10 @@ Open [http://localhost:3000](http://localhost:3000) to see the result.
 - **Styling**: Tailwind CSS v4, shadcn/ui (base-nova)
 - **Backend**: Firebase (Firestore, Auth, Storage)
 - **State**: Zustand, React Query
-- **Payments**: Flutterwave (mobile money + cards)
-- **Images**: ImageKit
-- **Email**: Resend + Nodemailer SMTP
+- **Payments**: PesaPal API v3 (Cards only, USD)
+- **Workers**: Cloudflare Workers (payments, uploads, cron)
+- **Storage**: Cloudflare R2 (`quorum-assets` bucket)
+- **Email**: Nodemailer SMTP (org custom → system fallback)
 - **Encryption**: AES-GCM 256
 - **Rich text**: tiptap editor with @tailwindcss/typography
 - **Analytics**: GA4 via next/script (gtag)
@@ -71,38 +82,40 @@ Open [http://localhost:3000](http://localhost:3000) to see the result.
 app/
   page.tsx         — Landing page (hero, features, how it works, audience cards, FAQ, CTA)
   (auth)/          — Login, signup, password reset
-  (legal)/         — Terms of Service, Privacy Policy
+  (legal)/         — Terms of Service, Privacy Policy, Pricing
   admin/
     organizations/ — Super admin: list all organizations (requires isAdmin)
   api/
-    payments/      — initiate, finalize, webhook, reconcile
-    cron/          — reconcile, payment-reminders, membership-expiry
     org/           — smtp (encrypt and store SMTP credentials)
   org/             — User's organization listing (card grid with dashboard + public page links)
   org/create/      — Create organization wizard (3 steps)
   org/[slug]/
-    (admin)/       — Dashboard, settings, campaigns (new/[campaignId]/edit), members (tiers/new/[tierId]/edit), finance, rooms
+    (admin)/       — Dashboard, settings (brand color, category/country, encrypted SMTP, payout bank details), campaigns (new/[campaignId]/edit), members (tiers/new/[tierId]/edit), finance, rooms
     (member)/      — Chat rooms (with back button when room selected)
     join/          — Join flow with checkout
     donate/        — Donation flow with checkout
     chat/          — Public chat
     payment/       — Payment return/confirmation
-  components/
-    shared/          — AuthGuard, AdminGuard, AdminMainContent, BrandColorWrapper, headers, footers, modals, RichTextEditor, RichTextContent, GoogleAnalytics
-    ui/              — shadcn/ui primitives
-    rooms/           — Chat components
-    members/         — Tier forms, cards
-    donations/       — Campaign forms, cards, campaign-form-fields
-  lib/
-    firebase/        — Client + Admin SDK, Firestore helpers (server.ts has REST API helpers)
-    email/           — Send dispatcher, Resend/SMTP providers, AES-GCM encrypt, 8 email templates
-    fees.ts          — Shared calculateFee utility (eliminates 3x fee math duplication)
-    payments.ts      — Shared completeDeposit, failDeposit, reconcilePendingTransaction, reReadTransaction (race guard), safeSend (email failure safety)
-    flutterwave.ts   — Flutterwave API client (initiate, verify, webhook, helpers)
-    app-url.ts       — Dynamic APP_URL helper
-    imagekit.ts      — Image upload utilities (with auth)
-    encryption.ts    — AES-GCM 256 chat encryption
-    constants.ts     — Collections, fee rates, types
+components/
+  shared/          — AuthGuard, AdminGuard, AdminMainContent, BrandColorWrapper, headers, footers, modals, RichTextEditor, RichTextContent, GoogleAnalytics
+  ui/              — shadcn/ui primitives
+  rooms/           — Chat components
+  members/         — Tier forms, cards
+  donations/       — Campaign forms, cards, campaign-form-fields
+lib/
+  firebase/        — Client + Admin SDK, Firestore helpers (server.ts has REST API helpers)
+  email/           — Send dispatcher, SMTP providers, AES-GCM encrypt, email templates
+  pesapal.ts       — PesaPal API client (token caching, initiate, verify, status mapping)
+  workers.ts       — Centralized worker URL configuration
+  fees.ts          — Shared calculateFee utility with plan-specific rates
+  payments.ts      — Shared completeDeposit, failDeposit, reconcilePendingTransaction, reReadTransaction (race guard), safeSend (email failure safety)
+  app-url.ts       — Dynamic APP_URL helper
+  encryption.ts    — AES-GCM 256 chat encryption
+  constants.ts     — Collections, fee rates, subscription plans, types
 types/             — TypeScript interfaces
 hooks/             — React Query hooks, custom hooks
+workers/
+  quorum-payments/ — PesaPal payment integration (initiate, webhook, finalize, reconcile)
+  quorum-uploads/  — R2 file upload/serving
+  quorum-cron/     — Scheduled tasks (reconcile, payment-reminders, membership-expiry)
 ```

@@ -1,5 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
-import { OrgStatus } from '@/lib/constants';
+import { OrgStatus, SubscriptionPlan } from '@/lib/constants';
 
 export interface Organization {
   id: string;
@@ -16,6 +16,11 @@ export interface Organization {
 
   brandColor?: string;
 
+  // Subscription settings
+  subscriptionPlan: SubscriptionPlan;
+  subscriptionStartDate?: Timestamp;
+  subscriptionEndDate?: Timestamp;
+
   // Email/SMTP settings (optional — org can configure custom SMTP)
   smtpHost?: string;
   smtpPort?: number;
@@ -23,4 +28,11 @@ export interface Organization {
   smtpPass?: string;
   smtpFromEmail?: string;
   smtpFromName?: string;
+
+  // Payout settings (org bank details for receiving funds)
+  bankName?: string;
+  bankAccountName?: string;
+  bankAccountNumber?: string;
+  swiftCode?: string;
+  bankAddress?: string;
 }

@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "ik.imagekit.io",
+        hostname: "quorum-assets.r2.dev",
       },
     ],
   },

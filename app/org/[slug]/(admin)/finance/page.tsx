@@ -205,7 +205,7 @@ export default function FinancePage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground capitalize">
-                        {txn.paymentMethod.replace('flutterwave_', '')}
+                        {txn.paymentMethod === 'pesapal' ? 'Card' : txn.paymentMethod}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {txn.createdAt?.toDate

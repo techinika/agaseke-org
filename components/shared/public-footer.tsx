@@ -12,6 +12,7 @@ export function PublicFooter() {
             </p>
           </div>
           <div className="flex gap-6 text-sm text-muted-foreground">
+            <Link href="/pricing" className="transition-colors hover:text-foreground">Pricing</Link>
             <Link href="/terms" className="transition-colors hover:text-foreground">Terms</Link>
             <Link href="/privacy" className="transition-colors hover:text-foreground">Privacy</Link>
             <Link href="/" className="transition-colors hover:text-foreground">quorum.app</Link>

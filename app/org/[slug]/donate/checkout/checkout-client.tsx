@@ -15,8 +15,8 @@ import { useCampaigns } from '@/hooks/use-campaigns';
 import { CURRENCY, COLLECTIONS } from '@/lib/constants';
 import { calculateFee } from '@/lib/fees';
 import { addDocument } from '@/lib/firebase/firestore';
-import { generateDepositId, getReturnUrl } from '@/lib/flutterwave';
-import { PaymentMethodSelector } from '@/components/shared/payment-method-selector';
+import { generateOrderId, getReturnUrl } from '@/lib/pesapal';
+import { WORKERS } from '@/lib/workers';
 import { toast } from 'sonner';
 import { Timestamp } from 'firebase/firestore';
 import type { Organization } from '@/types/organization';
@@ -52,17 +52,16 @@ export default function DonationCheckoutClient({ slug, initialOrg }: DonationChe
   const donorEmail = searchParams.get('donorEmail') || '';
   const message = searchParams.get('message') || '';
 
-  const [paymentMethod, setPaymentMethod] = useState<'mobile_money' | 'card'>('mobile_money');
   const [isProcessing, setIsProcessing] = useState(false);
 
   async function handlePay() {
     if (!org || amount < 100 || !feeBreakdown) return;
     setIsProcessing(true);
-    const depositId = generateDepositId();
+    const orderId = generateOrderId();
     try {
       const now = Timestamp.now();
       const totalToPay = feeBreakdown.totalToPay;
-      const returnUrl = getReturnUrl(slug, depositId, 'donation');
+      const returnUrl = getReturnUrl(slug, orderId, 'donation');
 
       await addDocument(COLLECTIONS.DONATIONS, {
         orgId: org.id,
@@ -76,7 +75,7 @@ export default function DonationCheckoutClient({ slug, initialOrg }: DonationChe
         orgReceives: feeBreakdown.orgReceives,
         frequency,
         status: 'pending',
-        depositId,
+        depositId: orderId,
         nextBillingDate: frequency !== 'one_time'
           ? new Timestamp(now.seconds + (frequency === 'monthly' ? 30 : 365) * 86400, 0)
           : null,
@@ -91,20 +90,23 @@ export default function DonationCheckoutClient({ slug, initialOrg }: DonationChe
         orgReceives: feeBreakdown.orgReceives,
         currency: 'USD',
         type: 'donation',
-        referenceId: depositId,
-        depositId,
+        referenceId: orderId,
+        depositId: orderId,
         status: 'pending',
-        paymentMethod: `flutterwave_${paymentMethod}`,
+        paymentMethod: 'pesapal_card',
         createdAt: now,
       };
 
       await addDocument(COLLECTIONS.TRANSACTIONS, txData);
 
-      const res = await fetch('/api/payments/initiate', {
+      const res = await fetch(`${WORKERS.payments.url}/initiate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': WORKERS.payments.apiKey,
+        },
         body: JSON.stringify({
-          depositId,
+          depositId: orderId,
           amount: totalToPay,
           returnUrl,
           reason: `Donation to ${org.name}${campaignId ? ` for ${campaign?.title || 'campaign'}` : ''}`,
@@ -112,7 +114,6 @@ export default function DonationCheckoutClient({ slug, initialOrg }: DonationChe
           name: donorName || 'Supporter',
           slug,
           orgName: org.name,
-          paymentMethod,
         }),
       });
 
@@ -172,9 +173,6 @@ export default function DonationCheckoutClient({ slug, initialOrg }: DonationChe
               </div>
             </div>
           </CardContent>
-          <div className="border-t p-4 sm:p-6">
-            <PaymentMethodSelector value={paymentMethod} onChange={setPaymentMethod} />
-          </div>
           <div className="flex flex-col gap-3 border-t p-4 sm:flex-row sm:p-6">
             <Button
               variant="outline"

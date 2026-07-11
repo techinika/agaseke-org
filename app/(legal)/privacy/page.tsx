@@ -71,7 +71,7 @@ export default function PrivacyPage() {
             <section>
               <h2 className="mb-3 text-lg font-semibold text-foreground">7. Third-Party Services</h2>
               <p>
-                We use Firebase (Google) for authentication, database, and storage. We use Flutterwave for payment processing and ImageKit for image management. These services have their own privacy policies.
+                We use Firebase (Google) for authentication, database, and storage. We use PesaPal for payment processing and Cloudflare R2 for image storage. These services have their own privacy policies.
               </p>
             </section>
 

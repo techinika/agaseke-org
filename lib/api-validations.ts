@@ -15,7 +15,6 @@ export const paymentInitiateSchema = z.object({
   name: z.string().optional(),
   slug: z.string().min(1, 'slug is required'),
   orgName: z.string().optional(),
-  paymentMethod: z.enum(['mobile_money', 'card']).optional(),
 });
 
 export const paymentFinalizeSchema = z.object({

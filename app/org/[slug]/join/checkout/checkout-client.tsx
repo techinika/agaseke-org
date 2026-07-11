@@ -16,8 +16,8 @@ import { useCreateMembership } from '@/hooks/use-memberships';
 import { CURRENCY, COLLECTIONS, SUBCOLLECTIONS } from '@/lib/constants';
 import { calculateFee } from '@/lib/fees';
 import { addDocument, setDocument } from '@/lib/firebase/firestore';
-import { generateDepositId, getReturnUrl } from '@/lib/flutterwave';
-import { PaymentMethodSelector } from '@/components/shared/payment-method-selector';
+import { generateOrderId, getReturnUrl } from '@/lib/pesapal';
+import { WORKERS } from '@/lib/workers';
 import { toast } from 'sonner';
 import { Timestamp } from 'firebase/firestore';
 import type { Organization } from '@/types/organization';
@@ -48,18 +48,17 @@ export default function JoinCheckoutClient({ slug, initialOrg }: JoinCheckoutCli
     return calculateFee(tier.price, feePayer);
   }, [tier, feePayer]);
 
-  const [paymentMethod, setPaymentMethod] = useState<'mobile_money' | 'card'>('mobile_money');
   const [isProcessing, setIsProcessing] = useState(false);
 
   async function handlePayment() {
     if (!user || !org || !tier) return;
     setIsProcessing(true);
-    const depositId = generateDepositId();
+    const orderId = generateOrderId();
     let membershipId: string | null = null;
     try {
       const now = Timestamp.now();
       const totalToPay = feeBreakdown!.totalToPay;
-      const returnUrl = getReturnUrl(slug, depositId, 'membership');
+      const returnUrl = getReturnUrl(slug, orderId, 'membership');
 
       const renewsAt = tier.billingCycle === 'monthly'
         ? new Timestamp(now.seconds + 30 * 24 * 3600, 0)
@@ -83,7 +82,7 @@ export default function JoinCheckoutClient({ slug, initialOrg }: JoinCheckoutCli
         membershipId,
         tierId: tier.id,
         status: 'pending',
-        depositId,
+        depositId: orderId,
         joinedAt: now,
         displayName: profile?.displayName || user.displayName || 'Member',
         photoURL: profile?.photoURL || user.photoURL,
@@ -97,20 +96,23 @@ export default function JoinCheckoutClient({ slug, initialOrg }: JoinCheckoutCli
         orgReceives: feeBreakdown!.orgReceives,
         currency: 'USD',
         type: 'membership',
-        referenceId: depositId,
-        depositId,
+        referenceId: orderId,
+        depositId: orderId,
         status: 'pending',
-        paymentMethod: `flutterwave_${paymentMethod}`,
+        paymentMethod: 'pesapal_card',
         createdAt: now,
       };
 
       await addDocument(COLLECTIONS.TRANSACTIONS, txData);
 
-      const res = await fetch('/api/payments/initiate', {
+      const res = await fetch(`${WORKERS.payments.url}/initiate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': WORKERS.payments.apiKey,
+        },
         body: JSON.stringify({
-          depositId,
+          depositId: orderId,
           amount: totalToPay,
           returnUrl,
           reason: `Membership ${tier.name} for ${org.name}`,
@@ -118,7 +120,6 @@ export default function JoinCheckoutClient({ slug, initialOrg }: JoinCheckoutCli
           name: profile?.displayName || user.displayName || 'Member',
           slug,
           orgName: org.name,
-          paymentMethod,
         }),
       });
 
@@ -215,9 +216,6 @@ export default function JoinCheckoutClient({ slug, initialOrg }: JoinCheckoutCli
               </div>
             </div>
           </CardContent>
-          <div className="border-t p-4 sm:p-6">
-            <PaymentMethodSelector value={paymentMethod} onChange={setPaymentMethod} />
-          </div>
           <div className="flex flex-col gap-3 border-t p-4 sm:flex-row sm:p-6">
             <Button
               variant="outline"

@@ -9,7 +9,7 @@ import { EmptyState } from '@/components/shared/empty-state';
 import { MessageBubble } from './message-bubble';
 import { Room, ChatMessage } from '@/types/room';
 import { useAuthStore } from '@/store/auth-store';
-import { useImageUpload } from '@/hooks/use-image-upload';
+import { WORKERS } from '@/lib/workers';
 import { encryptMessage, decryptMessage } from '@/lib/encryption';
 
 interface ChatViewProps {
@@ -43,7 +43,8 @@ export function ChatView({
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { upload, isUploading, error: uploadError, reset: resetUpload } = useImageUpload({ folder: 'chat' });
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [pendingImage, setPendingImage] = useState<{ file: File; preview: string } | null>(null);
 
   const [decryptedMessages, setDecryptedMessages] = useState<Record<string, string>>({});
@@ -84,16 +85,29 @@ export function ChatView({
 
     let imageURL: string | undefined;
     if (pendingImage) {
-      const url = await upload(pendingImage.file);
-      if (!url) return;
-      imageURL = url;
+      setIsUploading(true);
+      setUploadError(null);
+      try {
+        const formData = new FormData();
+        formData.append('file', pendingImage.file);
+        formData.append('folder', 'chat');
+        const res = await fetch(`${WORKERS.uploads.url}/upload`, { method: 'POST', body: formData });
+        if (!res.ok) throw new Error('Upload failed');
+        const data = await res.json();
+        imageURL = data.url;
+      } catch {
+        setUploadError('Image upload failed');
+        setIsUploading(false);
+        return;
+      }
+      setIsUploading(false);
     }
 
     const encrypted = trimmed ? await encryptMessage(trimmed, room.id, user.uid) : '';
 
     setInput('');
     setPendingImage(null);
-    resetUpload();
+    setUploadError(null);
     await onSendMessage(encrypted, imageURL);
   }
 
@@ -111,7 +125,7 @@ export function ChatView({
   function removePendingImage() {
     if (pendingImage) URL.revokeObjectURL(pendingImage.preview);
     setPendingImage(null);
-    resetUpload();
+    setUploadError(null);
   }
 
   if (!room) {

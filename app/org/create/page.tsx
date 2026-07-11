@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuthStore } from '@/store/auth-store';
 import { addDocument, setDocument, queryDocuments } from '@/lib/firebase/firestore';
 import { COLLECTIONS, CATEGORIES, COUNTRIES } from '@/lib/constants';
-import { useImageUpload } from '@/hooks/use-image-upload';
+import { WORKERS } from '@/lib/workers';
 import { toast } from 'sonner';
 import { Organization } from '@/types/organization';
 import { where } from 'firebase/firestore';
@@ -47,7 +47,7 @@ export default function CreateOrgPage() {
     logoURL: '',
   });
   const logoInputRef = useRef<HTMLInputElement>(null);
-  const { upload: uploadLogo, isUploading: logoUploading } = useImageUpload({ folder: 'logos' });
+  const [logoUploading, setLogoUploading] = useState(false);
 
   function updateField(field: keyof FormData, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -276,9 +276,21 @@ export default function CreateOrgPage() {
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
-                      const url = await uploadLogo(file);
-                      if (url) updateField('logoURL', url);
-                      if (logoInputRef.current) logoInputRef.current.value = '';
+                      setLogoUploading(true);
+                      try {
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('folder', 'logos');
+                        const res = await fetch(`${WORKERS.uploads.url}/upload`, { method: 'POST', body: formData });
+                        if (!res.ok) throw new Error('Upload failed');
+                        const data = await res.json();
+                        updateField('logoURL', data.url);
+                      } catch {
+                        toast.error('Upload failed');
+                      } finally {
+                        setLogoUploading(false);
+                        if (logoInputRef.current) logoInputRef.current.value = '';
+                      }
                     }}
                   />
                   <Button

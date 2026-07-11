@@ -1,4 +1,4 @@
-import { verifyTransaction } from '@/lib/flutterwave';
+import { verifyTransaction, mapPesapalStatus } from '@/lib/pesapal';
 import {
   readFirestoreDocument,
   queryFirestoreDocuments,
@@ -196,21 +196,24 @@ export async function reconcilePendingTransaction(
   logger.info('payments', `reconcilePendingTransaction: checking depositId=${depositId}`);
   try {
     const tx = await verifyTransaction(depositId);
-    logger.info('payments', `reconcilePendingTransaction: Flutterwave status for depositId=${depositId}: ${tx.status}`);
+    logger.info('payments', `reconcilePendingTransaction: PesaPal status for depositId=${depositId}: ${tx.payment_status_description} (code=${tx.status_code})`);
 
-    if (tx.status === 'successful') {
+    const mappedStatus = mapPesapalStatus(tx.status_code, tx.payment_status_description);
+
+    if (mappedStatus === 'completed') {
       logger.info('payments', `reconcilePendingTransaction: completing depositId=${depositId}`);
       await completeDeposit(depositId);
       return 'completed';
     }
 
-    if (tx.status === 'failed') {
-      logger.warn('payments', `reconcilePendingTransaction: failing depositId=${depositId}, reason=${tx.failure_reason || 'unknown'}`);
-      await failDeposit(depositId, tx.failure_reason || 'Payment failed.');
+    if (mappedStatus === 'failed') {
+      const reason = tx.description || 'Payment failed.';
+      logger.warn('payments', `reconcilePendingTransaction: failing depositId=${depositId}, reason=${reason}`);
+      await failDeposit(depositId, reason);
       return 'failed';
     }
 
-    logger.info('payments', `reconcilePendingTransaction: depositId=${depositId} still pending (${tx.status})`);
+    logger.info('payments', `reconcilePendingTransaction: depositId=${depositId} still pending (${tx.payment_status_description})`);
     return 'skipped';
   } catch (err) {
     logger.error('payments', `reconcilePendingTransaction: error for depositId=${depositId}`, err);

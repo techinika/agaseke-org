@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { Save, Loader2, Upload, Plus, Pencil, Trash2, MessageSquare, Mail } from 'lucide-react';
+import { Save, Loader2, Upload, Plus, Pencil, Trash2, MessageSquare, Mail, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,7 +13,7 @@ import { RichTextEditor } from '@/components/shared/rich-text-editor';
 import { useOrganizationBySlug, useUpdateOrganization } from '@/hooks/use-organization';
 import { CATEGORIES, COUNTRIES } from '@/lib/constants';
 import { useAuthStore } from '@/store/auth-store';
-import { useImageUpload } from '@/hooks/use-image-upload';
+import { WORKERS } from '@/lib/workers';
 import { useRooms, useCreateRoom, useUpdateRoom, useDeleteRoom } from '@/hooks/use-rooms';
 import { useTiers } from '@/hooks/use-tiers';
 import { CreateRoomDialog } from '@/components/rooms/create-room-dialog';
@@ -42,13 +42,19 @@ export default function SettingsPage() {
   const [country, setCountry] = useState('');
   const [hasSmtpPass, setHasSmtpPass] = useState(false);
 
+  const [bankName, setBankName] = useState('');
+  const [bankAccountName, setBankAccountName] = useState('');
+  const [bankAccountNumber, setBankAccountNumber] = useState('');
+  const [swiftCode, setSwiftCode] = useState('');
+  const [bankAddress, setBankAddress] = useState('');
+
   const [savingSmtp, setSavingSmtp] = useState(false);
 
   const logoInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const smtpPassChangedRef = useRef(false);
-  const { upload: uploadLogo, isUploading: logoUploading } = useImageUpload({ folder: 'logos' });
-  const { upload: uploadCover, isUploading: coverUploading } = useImageUpload({ folder: 'covers' });
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
 
   const { data: rooms, isLoading: roomsLoading } = useRooms(org?.id ?? '');
   const { data: tiers } = useTiers(org?.id ?? '');
@@ -79,6 +85,11 @@ export default function SettingsPage() {
     setBrandColor(org.brandColor ?? '#FF0000');
     setCategory(org.category ?? '');
     setCountry(org.country ?? '');
+    setBankName(org.bankName ?? '');
+    setBankAccountName(org.bankAccountName ?? '');
+    setBankAccountNumber(org.bankAccountNumber ?? '');
+    setSwiftCode(org.swiftCode ?? '');
+    setBankAddress(org.bankAddress ?? '');
   }, [org]);
 
   async function handleSave() {
@@ -132,26 +143,46 @@ export default function SettingsPage() {
     }
   }
 
-  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = await uploadLogo(file);
-    if (url) {
-      setLogoURL(url);
-      toast.success('Logo uploaded');
+  async function handleSavePayout() {
+    if (!org) return;
+    try {
+      await updateOrg.mutateAsync({
+        bankName: bankName || undefined,
+        bankAccountName: bankAccountName || undefined,
+        bankAccountNumber: bankAccountNumber || undefined,
+        swiftCode: swiftCode || undefined,
+        bankAddress: bankAddress || undefined,
+      });
+      toast.success('Payout settings saved');
+    } catch {
+      toast.error('Failed to save payout settings');
     }
-    if (logoInputRef.current) logoInputRef.current.value = '';
   }
 
-  async function handleCoverUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>, folder: string, setUrl: (url: string) => void, setUploading: (v: boolean) => void) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = await uploadCover(file);
-    if (url) {
-      setCoverURL(url);
-      toast.success('Cover image uploaded');
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', folder);
+
+      const res = await fetch(`${WORKERS.uploads.url}/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+      setUrl(data.url);
+      toast.success(folder === 'logos' ? 'Logo uploaded' : 'Cover image uploaded');
+    } catch {
+      toast.error('Upload failed');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
     }
-    if (coverInputRef.current) coverInputRef.current.value = '';
   }
 
   async function handleCreateRoom(data: {
@@ -307,7 +338,7 @@ export default function SettingsPage() {
                     type="file"
                     accept="image/png,image/jpeg,image/jpg,image/gif,image/webp,image/svg+xml"
                     className="hidden"
-                    onChange={handleLogoUpload}
+                    onChange={(e) => handleFileUpload(e, 'logos', setLogoURL, setLogoUploading)}
                   />
                   <Button
                     type="button"
@@ -343,7 +374,7 @@ export default function SettingsPage() {
                     type="file"
                     accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
                     className="hidden"
-                    onChange={handleCoverUpload}
+                    onChange={(e) => handleFileUpload(e, 'covers', setCoverURL, setCoverUploading)}
                   />
                   <Button
                     type="button"
@@ -404,7 +435,7 @@ export default function SettingsPage() {
           {isAdmin ? (
             <>
               <p className="text-xs text-muted-foreground">
-                By default, emails are sent through the system provider. Configure your own SMTP server
+                By default, emails are sent through the system SMTP provider. Configure your own SMTP server
                 to send emails from your own domain. Leave empty to use system defaults.
               </p>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -442,7 +473,7 @@ export default function SettingsPage() {
                     type="password"
                     value={smtpPass}
                     onChange={(e) => { setSmtpPass(e.target.value); smtpPassChangedRef.current = true; }}
-                    placeholder={hasSmtpPass ? 'Leave empty to keep current password' : '••••••••'}
+                    placeholder={hasSmtpPass ? 'Leave empty to keep current password' : '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'}
                   />
                   {hasSmtpPass && (
                     <p className="text-xs text-muted-foreground">
@@ -476,6 +507,75 @@ export default function SettingsPage() {
             </>
           ) : (
             <p className="text-sm text-muted-foreground">Only administrators can modify email settings.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Payout Settings</CardTitle>
+          <CardDescription>Bank details for receiving payouts from donations and memberships</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isAdmin ? (
+            <>
+              <p className="text-xs text-muted-foreground">
+                Add your bank account details so we can send you payouts. All payouts are sent in USD.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="bankName">Bank Name</Label>
+                  <Input
+                    id="bankName"
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    placeholder="e.g. Bank of America"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bankAccountName">Account Holder Name</Label>
+                  <Input
+                    id="bankAccountName"
+                    value={bankAccountName}
+                    onChange={(e) => setBankAccountName(e.target.value)}
+                    placeholder="e.g. My Organization Inc"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bankAccountNumber">Account Number / IBAN</Label>
+                  <Input
+                    id="bankAccountNumber"
+                    value={bankAccountNumber}
+                    onChange={(e) => setBankAccountNumber(e.target.value)}
+                    placeholder="e.g. 1234567890"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="swiftCode">SWIFT / BIC Code</Label>
+                  <Input
+                    id="swiftCode"
+                    value={swiftCode}
+                    onChange={(e) => setSwiftCode(e.target.value)}
+                    placeholder="e.g. BOFAUS3N"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bankAddress">Bank Address</Label>
+                <Input
+                  id="bankAddress"
+                  value={bankAddress}
+                  onChange={(e) => setBankAddress(e.target.value)}
+                  placeholder="e.g. 123 Main St, New York, NY 10001"
+                />
+              </div>
+              <Button onClick={handleSavePayout} disabled={updateOrg.isPending}>
+                {updateOrg.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Building2 className="mr-2 size-4" />}
+                Save payout settings
+              </Button>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">Only administrators can modify payout settings.</p>
           )}
         </CardContent>
       </Card>
@@ -517,7 +617,7 @@ export default function SettingsPage() {
                       <p className="font-medium truncate">{room.name}</p>
                       <p className="text-xs text-muted-foreground">
                         {room.type === 'general' ? 'General' : room.type === 'members_only' ? 'Members only' : 'Tier restricted'}
-                        {room.description ? ` · ${room.description}` : ''}
+                        {room.description ? ` \u00b7 ${room.description}` : ''}
                       </p>
                     </div>
                   </div>

@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { OrgCheckoutLayout } from '@/components/shared/org-checkout-layout';
 import { OrgNotFound } from '@/components/shared/org-not-found';
 import { useOrganizationBySlug } from '@/hooks/use-organization';
+import { WORKERS } from '@/lib/workers';
 import type { OrgServerData } from '@/lib/firebase/server';
 import type { Organization } from '@/types/organization';
 
@@ -35,9 +36,12 @@ export default function PaymentReturnClient({ slug, initialOrg }: PaymentReturnC
 
     async function checkAndFinalize() {
       try {
-        const res = await fetch('/api/payments/finalize', {
+        const res = await fetch(`${WORKERS.payments.url}/finalize`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': WORKERS.payments.apiKey,
+          },
           body: JSON.stringify({ depositId, type: paymentType }),
         });
         const data = await res.json();

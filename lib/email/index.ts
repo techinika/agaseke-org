@@ -1,6 +1,5 @@
 import { readFirestoreDocument } from '@/lib/firebase/server';
 import { COLLECTIONS } from '@/lib/constants';
-import { sendViaResend, isResendConfigured } from './providers/resend';
 import { sendViaSmtp } from './providers/smtp';
 import { decryptSmtpPass } from './encrypt-smtp';
 
@@ -52,16 +51,6 @@ export async function sendEmail(options: EmailOptions, orgId?: string): Promise<
     if (org?.smtpFromEmail) {
       from = { email: org.smtpFromEmail as string, name: (org.smtpFromName as string) || from.name };
     }
-  }
-
-  if (isResendConfigured()) {
-    await sendViaResend(
-      { email: options.to.email, name: options.to.name },
-      from,
-      options.subject,
-      options.html
-    );
-    return;
   }
 
   const smtpHost = process.env.SMTP_HOST;
