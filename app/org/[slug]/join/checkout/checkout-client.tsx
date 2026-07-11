@@ -13,9 +13,9 @@ import { useActiveTiers } from '@/hooks/use-tiers';
 import { useOrganizationBySlug } from '@/hooks/use-organization';
 import { useAuthStore } from '@/store/auth-store';
 import { useCreateMembership } from '@/hooks/use-memberships';
-import { CURRENCY, COLLECTIONS, SUBCOLLECTIONS } from '@/lib/constants';
+import { CURRENCY, COLLECTIONS, SUBCOLLECTIONS, SUBSCRIPTION_PRICING } from '@/lib/constants';
 import { calculateFee } from '@/lib/fees';
-import { addDocument, setDocument } from '@/lib/firebase/firestore';
+import { addDocument, setDocument, queryDocuments } from '@/lib/firebase/firestore';
 import { generateOrderId, getReturnUrl } from '@/lib/pesapal';
 import { WORKERS } from '@/lib/workers';
 import { toast } from 'sonner';
@@ -56,6 +56,18 @@ export default function JoinCheckoutClient({ slug, initialOrg }: JoinCheckoutCli
     const orderId = generateOrderId();
     let membershipId: string | null = null;
     try {
+      // Check member limit
+      const plan = SUBSCRIPTION_PRICING[org.subscriptionPlan || 'starter'];
+      const members = await queryDocuments(
+        `${COLLECTIONS.ORGANIZATIONS}/${org.id}/${SUBCOLLECTIONS.MEMBERS}`,
+      );
+      const activeMembers = members.filter((m) => m.status === 'active' || m.status === 'pending');
+      if (plan.maxMembers !== Infinity && activeMembers.length >= plan.maxMembers) {
+        toast.error(`This organization has reached the ${plan.label} plan limit of ${plan.maxMembers} members. Please contact the admin to upgrade.`);
+        setIsProcessing(false);
+        return;
+      }
+
       const now = Timestamp.now();
       const totalToPay = feeBreakdown!.totalToPay;
       const returnUrl = getReturnUrl(slug, orderId, 'membership');

@@ -16,7 +16,7 @@ export default function NewCampaignPage() {
   const orgId = org?.id ?? '';
   const createCampaign = useCreateCampaign(orgId);
 
-  async function handleCreate(data: { title: string; description: string; goalAmount: number; endDate: string | null; platformFeePayer: 'org' | 'donor' }) {
+  async function handleCreate(data: { title: string; description: string; goalAmount: number; endDate: string | null; platformFeePayer: 'org' | 'donor'; withdrawalTrigger: 'target_reached' | 'anytime' }) {
     try {
       await createCampaign.mutateAsync({
         title: data.title,
@@ -29,6 +29,7 @@ export default function NewCampaignPage() {
         isActive: true,
         createdAt: Timestamp.now(),
         platformFeePayer: data.platformFeePayer,
+        withdrawalTrigger: data.withdrawalTrigger,
       });
       toast.success('Campaign created');
       router.push(`/org/${slug}/campaigns`);

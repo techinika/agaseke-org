@@ -9,6 +9,8 @@ import { Separator } from '@/components/ui/separator';
 import { Check, Crown, Users, ArrowUp, ArrowDown, Loader2, CreditCard, AlertTriangle } from 'lucide-react';
 import { SUBSCRIPTION_PRICING, type SubscriptionPlan } from '@/lib/constants';
 import { UpgradeDowngradeDialog } from '@/components/shared/upgrade-downgrade-dialog';
+import { useOrganizationBySlug } from '@/hooks/use-organization';
+import { useAuthStore } from '@/store/auth-store';
 import { toast } from 'sonner';
 
 const planOrder: SubscriptionPlan[] = ['starter', 'growth', 'enterprise'];
@@ -22,6 +24,8 @@ const planColors: Record<SubscriptionPlan, string> = {
 export default function SubscriptionPage() {
   const params = useParams();
   const slug = params.slug as string;
+  const { data: org } = useOrganizationBySlug(slug);
+  const { user, profile } = useAuthStore();
   const [currentPlan, setCurrentPlan] = useState<SubscriptionPlan>('starter');
   const [memberCount, setMemberCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -57,8 +61,6 @@ export default function SubscriptionPage() {
   }
 
   async function handleConfirmPlanChange() {
-    // In production, this would call PesaPal for subscription billing
-    // For now, just update the plan directly
     const res = await fetch(`/api/org/${slug}/subscription`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -66,6 +68,43 @@ export default function SubscriptionPage() {
     });
 
     if (!res.ok) throw new Error('Failed to update plan');
+
+    const data = await res.json();
+
+    if (data.requiresPayment) {
+      // Redirect to PesaPal payment
+      const appUrl = window.location.origin;
+      const returnUrl = `${appUrl}/org/${slug}/subscription/return/${data.orderId}`;
+      
+      // Initiate payment via quorum-payments worker
+      const paymentRes = await fetch(`${process.env.NEXT_PUBLIC_QUORUM_PAYMENTS_URL || 'http://localhost:8787'}/initiate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': process.env.NEXT_PUBLIC_QUORUM_PAYMENTS_API_KEY || '',
+        },
+        body: JSON.stringify({
+          depositId: data.orderId,
+          amount: data.amount,
+          returnUrl,
+          reason: `Subscription: ${data.plan} plan`,
+          email: user?.email || profile?.email,
+          name: profile?.displayName || user?.displayName || 'Organization',
+          slug,
+          orgName: org?.name || slug,
+        }),
+      });
+
+      if (!paymentRes.ok) {
+        const err = await paymentRes.json();
+        throw new Error(err.error || 'Failed to initiate payment');
+      }
+
+      const { redirectUrl } = await paymentRes.json();
+      window.location.href = redirectUrl;
+      return;
+    }
+
     setCurrentPlan(targetPlan);
   }
 

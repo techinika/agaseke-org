@@ -9,4 +9,8 @@ export const WORKERS = {
   cron: {
     url: process.env.QUORUM_CRON_URL || 'http://localhost:8789',
   },
+  comm: {
+    url: process.env.QUORUM_COMM_URL || 'http://localhost:8790',
+    apiKey: process.env.QUORUM_COMM_API_KEY || '',
+  },
 } as const;

@@ -35,4 +35,10 @@ export interface Organization {
   bankAccountNumber?: string;
   swiftCode?: string;
   bankAddress?: string;
+
+  // Branding settings (for emails and public pages)
+  websiteUrl?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  footerText?: string;
 }

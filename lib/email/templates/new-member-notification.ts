@@ -10,6 +10,10 @@ export function newMemberNotificationTemplate(params: {
   joinedDate: string;
   memberEmail?: string;
   membersUrl: string;
+  websiteUrl?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  footerText?: string;
 }): string {
   const brand = params.brandColor || DEFAULT_BRAND_COLOR;
 
@@ -65,5 +69,9 @@ export function newMemberNotificationTemplate(params: {
     orgName: params.orgName,
     orgLogoURL: params.orgLogoURL,
     brandColor: params.brandColor,
+    websiteUrl: params.websiteUrl,
+    contactEmail: params.contactEmail,
+    contactPhone: params.contactPhone,
+    footerText: params.footerText,
   });
 }

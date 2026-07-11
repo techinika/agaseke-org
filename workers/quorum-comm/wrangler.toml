@@ -1,0 +1,16 @@
+name = "quorum-comm"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+FIREBASE_PROJECT_ID = "ndafana-one"
+
+[secrets]
+FIREBASE_ADMIN_CLIENT_EMAIL = ""
+FIREBASE_ADMIN_PRIVATE_KEY = ""
+API_KEY = ""
+
+# Cloudflare Email Service binding
+[[send_email]]
+name = "EMAIL"

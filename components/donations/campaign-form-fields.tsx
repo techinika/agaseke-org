@@ -146,6 +146,43 @@ export function CampaignFormFields({ defaultValues, onSubmit, onCancel, submitLa
           </label>
         </div>
       </div>
+
+      <div className="space-y-2">
+        <Label>Withdrawal settings</Label>
+        <p className="text-xs text-muted-foreground">
+          Choose when campaign funds can be withdrawn to your bank account.
+        </p>
+        <div className="flex gap-4">
+          <label className="flex items-center gap-2 rounded-lg border p-3 flex-1 cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+            <input
+              type="radio"
+              value="anytime"
+              {...register('withdrawalTrigger')}
+              className="accent-primary"
+            />
+            <div>
+              <span className="text-sm font-medium">Withdraw anytime</span>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Access funds as donations come in
+              </p>
+            </div>
+          </label>
+          <label className="flex items-center gap-2 rounded-lg border p-3 flex-1 cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+            <input
+              type="radio"
+              value="target_reached"
+              {...register('withdrawalTrigger')}
+              className="accent-primary"
+            />
+            <div>
+              <span className="text-sm font-medium">When goal is reached</span>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Funds unlock when campaign reaches its target
+              </p>
+            </div>
+          </label>
+        </div>
+      </div>
       <div className="flex justify-end gap-3 pt-2">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel

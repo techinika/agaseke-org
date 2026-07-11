@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFirestoreDocument, updateFirestoreDocument } from '@/lib/firebase/server';
+import { readFirestoreDocument, updateFirestoreDocument, createFirestoreDocument } from '@/lib/firebase/server';
 import { COLLECTIONS, SUBSCRIPTION_PRICING, type SubscriptionPlan } from '@/lib/constants';
+import { generateOrderId } from '@/lib/pesapal';
+import { getAppUrl } from '@/lib/app-url';
 
 export async function GET(
   request: NextRequest,
@@ -9,9 +11,9 @@ export async function GET(
   try {
     const { slug } = await params;
 
-    // Get organization
-    const org = await readFirestoreDocument(COLLECTIONS.ORGANIZATIONS, slug) as Record<string, unknown> | null;
-    if (!org) {
+    // Get organization by slug
+    const orgs = await readFirestoreDocument(COLLECTIONS.ORGANIZATIONS, slug) as Record<string, unknown> | null;
+    if (!orgs) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
     }
 
@@ -24,7 +26,7 @@ export async function GET(
     const members = Array.isArray(membersRes) ? membersRes : [];
     const activeMembers = members.filter((m: Record<string, unknown>) => m.status === 'active').length;
 
-    const plan = (org.subscriptionPlan as SubscriptionPlan) || 'starter';
+    const plan = (orgs.subscriptionPlan as SubscriptionPlan) || 'starter';
 
     return NextResponse.json({
       plan,
@@ -56,12 +58,52 @@ export async function PATCH(
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
     }
 
-    // Update subscription plan
-    await updateFirestoreDocument(COLLECTIONS.ORGANIZATIONS, slug, {
-      subscriptionPlan: plan,
+    const currentPlan = (org.subscriptionPlan as SubscriptionPlan) || 'starter';
+    const targetPlan = plan as SubscriptionPlan;
+
+    // If downgrading to starter, update directly (free)
+    if (targetPlan === 'starter') {
+      await updateFirestoreDocument(COLLECTIONS.ORGANIZATIONS, slug, {
+        subscriptionPlan: 'starter',
+        subscriptionEndDate: null,
+      });
+      return NextResponse.json({ success: true, plan: 'starter' });
+    }
+
+    // For paid plans, initiate payment via PesaPal
+    const planInfo = SUBSCRIPTION_PRICING[targetPlan];
+    const orderId = generateOrderId();
+    const appUrl = getAppUrl();
+    const returnUrl = `${appUrl}/org/${slug}/subscription/return/${orderId}`;
+
+    // Create subscription transaction
+    await createFirestoreDocument(COLLECTIONS.TRANSACTIONS, {
+      orgId: org.id,
+      userId: (org.adminIds as string[])?.[0] || 'system',
+      amount: planInfo.price,
+      platformFee: 0,
+      orgReceives: planInfo.price,
+      currency: 'USD',
+      type: 'subscription',
+      referenceId: orderId,
+      depositId: orderId,
+      status: 'pending',
+      paymentMethod: 'pesapal_card',
+      createdAt: new Date(),
     });
 
-    return NextResponse.json({ success: true, plan });
+    // Update org with pending subscription
+    await updateFirestoreDocument(COLLECTIONS.ORGANIZATIONS, slug, {
+      subscriptionPlan: targetPlan,
+    });
+
+    return NextResponse.json({
+      success: true,
+      requiresPayment: true,
+      orderId,
+      amount: planInfo.price,
+      plan: targetPlan,
+    });
   } catch (error) {
     console.error('Failed to update subscription:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

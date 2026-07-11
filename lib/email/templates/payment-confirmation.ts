@@ -11,6 +11,10 @@ export function paymentConfirmationTemplate(params: {
   transactionId: string;
   date: string;
   description?: string;
+  websiteUrl?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  footerText?: string;
 }): string {
   const isDonation = params.type === 'donation';
 
@@ -80,5 +84,9 @@ export function paymentConfirmationTemplate(params: {
     orgName: params.orgName,
     orgLogoURL: params.orgLogoURL,
     brandColor: params.brandColor,
+    websiteUrl: params.websiteUrl,
+    contactEmail: params.contactEmail,
+    contactPhone: params.contactPhone,
+    footerText: params.footerText,
   });
 }

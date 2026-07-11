@@ -93,3 +93,25 @@ export async function getUserEmail(userId: string): Promise<EmailAddress | null>
     name: user.displayName as string | undefined,
   };
 }
+
+export async function getOrgBranding(orgId: string): Promise<{
+  orgName?: string;
+  orgLogoURL?: string;
+  brandColor?: string;
+  websiteUrl?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  footerText?: string;
+}> {
+  const org = await readFirestoreDocument(COLLECTIONS.ORGANIZATIONS, orgId);
+  if (!org) return {};
+  return {
+    orgName: org.name as string | undefined,
+    orgLogoURL: org.logoURL as string | undefined,
+    brandColor: org.brandColor as string | undefined,
+    websiteUrl: org.websiteUrl as string | undefined,
+    contactEmail: org.contactEmail as string | undefined,
+    contactPhone: org.contactPhone as string | undefined,
+    footerText: org.footerText as string | undefined,
+  };
+}

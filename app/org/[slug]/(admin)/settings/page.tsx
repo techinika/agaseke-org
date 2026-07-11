@@ -2,16 +2,17 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { Save, Loader2, Upload, Plus, Pencil, Trash2, MessageSquare, Mail, Building2 } from 'lucide-react';
+import { Save, Loader2, Upload, Plus, Pencil, Trash2, MessageSquare, Mail, Building2, Globe, Phone, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/shared/page-header';
 import { RichTextEditor } from '@/components/shared/rich-text-editor';
 import { useOrganizationBySlug, useUpdateOrganization } from '@/hooks/use-organization';
-import { CATEGORIES, COUNTRIES } from '@/lib/constants';
+import { CATEGORIES, COUNTRIES, SUBSCRIPTION_PRICING } from '@/lib/constants';
 import { useAuthStore } from '@/store/auth-store';
 import { WORKERS } from '@/lib/workers';
 import { useRooms, useCreateRoom, useUpdateRoom, useDeleteRoom } from '@/hooks/use-rooms';
@@ -19,6 +20,7 @@ import { useTiers } from '@/hooks/use-tiers';
 import { CreateRoomDialog } from '@/components/rooms/create-room-dialog';
 import { Room } from '@/types/room';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
 export default function SettingsPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -47,6 +49,11 @@ export default function SettingsPage() {
   const [bankAccountNumber, setBankAccountNumber] = useState('');
   const [swiftCode, setSwiftCode] = useState('');
   const [bankAddress, setBankAddress] = useState('');
+
+  const [websiteUrl, setWebsiteUrl] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [footerText, setFooterText] = useState('');
 
   const [savingSmtp, setSavingSmtp] = useState(false);
 
@@ -90,6 +97,10 @@ export default function SettingsPage() {
     setBankAccountNumber(org.bankAccountNumber ?? '');
     setSwiftCode(org.swiftCode ?? '');
     setBankAddress(org.bankAddress ?? '');
+    setWebsiteUrl(org.websiteUrl ?? '');
+    setContactEmail(org.contactEmail ?? '');
+    setContactPhone(org.contactPhone ?? '');
+    setFooterText(org.footerText ?? '');
   }, [org]);
 
   async function handleSave() {
@@ -156,6 +167,21 @@ export default function SettingsPage() {
       toast.success('Payout settings saved');
     } catch {
       toast.error('Failed to save payout settings');
+    }
+  }
+
+  async function handleSaveBranding() {
+    if (!org) return;
+    try {
+      await updateOrg.mutateAsync({
+        websiteUrl: websiteUrl || undefined,
+        contactEmail: contactEmail || undefined,
+        contactPhone: contactPhone || undefined,
+        footerText: footerText || undefined,
+      });
+      toast.success('Branding settings saved');
+    } catch {
+      toast.error('Failed to save branding settings');
     }
   }
 
@@ -254,6 +280,27 @@ export default function SettingsPage() {
   return (
     <div className="space-y-8">
       <PageHeader title="Settings" description="Configure your organization settings" />
+
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
+                <Crown className="size-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Current Plan</p>
+                <p className="text-lg font-bold">{SUBSCRIPTION_PRICING[org.subscriptionPlan || 'starter'].label}</p>
+              </div>
+            </div>
+            <Link href={`/org/${slug}/subscription`}>
+              <Button variant="outline" size="sm">
+                Manage subscription
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -576,6 +623,70 @@ export default function SettingsPage() {
             </>
           ) : (
             <p className="text-sm text-muted-foreground">Only administrators can modify payout settings.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Branding & Contact</CardTitle>
+          <CardDescription>Customize how your organization appears in emails and public pages</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isAdmin ? (
+            <>
+              <p className="text-xs text-muted-foreground">
+                These details appear in email footers and help supporters contact you.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="websiteUrl">Website URL</Label>
+                  <Input
+                    id="websiteUrl"
+                    value={websiteUrl}
+                    onChange={(e) => setWebsiteUrl(e.target.value)}
+                    placeholder="https://example.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contactEmail">Contact Email</Label>
+                  <Input
+                    id="contactEmail"
+                    type="email"
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                    placeholder="contact@example.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contactPhone">Contact Phone</Label>
+                  <Input
+                    id="contactPhone"
+                    value={contactPhone}
+                    onChange={(e) => setContactPhone(e.target.value)}
+                    placeholder="+1 (555) 123-4567"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="footerText">Custom Footer Text</Label>
+                <Input
+                  id="footerText"
+                  value={footerText}
+                  onChange={(e) => setFooterText(e.target.value)}
+                  placeholder="Thank you for your support!"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Custom text added to the footer of all emails sent to your supporters.
+                </p>
+              </div>
+              <Button onClick={handleSaveBranding} disabled={updateOrg.isPending}>
+                {updateOrg.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Globe className="mr-2 size-4" />}
+                Save branding settings
+              </Button>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">Only administrators can modify branding settings.</p>
           )}
         </CardContent>
       </Card>

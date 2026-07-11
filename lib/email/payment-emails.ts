@@ -34,6 +34,10 @@ export async function sendDonationEmails(donation: Record<string, unknown>, orgI
             date: new Date().toLocaleDateString('en-US', {
               year: 'numeric', month: 'long', day: 'numeric',
             }),
+            websiteUrl: org.websiteUrl as string | undefined,
+            contactEmail: org.contactEmail as string | undefined,
+            contactPhone: org.contactPhone as string | undefined,
+            footerText: org.footerText as string | undefined,
           }),
         },
         orgId
@@ -60,6 +64,10 @@ export async function sendDonationEmails(donation: Record<string, unknown>, orgI
               year: 'numeric', month: 'long', day: 'numeric',
             }),
             donationsUrl: `${appUrl}/org/${org.slug as string}/donations`,
+            websiteUrl: org.websiteUrl as string | undefined,
+            contactEmail: org.contactEmail as string | undefined,
+            contactPhone: org.contactPhone as string | undefined,
+            footerText: org.footerText as string | undefined,
           }),
         },
         orgId
@@ -104,6 +112,10 @@ export async function sendMembershipEmails(membership: Record<string, unknown>):
             year: 'numeric', month: 'long', day: 'numeric',
           }),
           description: tierName,
+          websiteUrl: org.websiteUrl as string | undefined,
+          contactEmail: org.contactEmail as string | undefined,
+          contactPhone: org.contactPhone as string | undefined,
+          footerText: org.footerText as string | undefined,
         }),
       },
       orgId
@@ -132,6 +144,10 @@ export async function sendMembershipEmails(membership: Record<string, unknown>):
               year: 'numeric', month: 'long', day: 'numeric',
             }),
             membersUrl: `${appUrl}/org/${org.slug as string}/members`,
+            websiteUrl: org.websiteUrl as string | undefined,
+            contactEmail: org.contactEmail as string | undefined,
+            contactPhone: org.contactPhone as string | undefined,
+            footerText: org.footerText as string | undefined,
           }),
         },
         orgId
@@ -174,6 +190,10 @@ export async function sendDonationFailedEmails(
               year: 'numeric', month: 'long', day: 'numeric',
             }),
             retryUrl: `${appUrl}/org/${org.slug as string}/donate`,
+            websiteUrl: org.websiteUrl as string | undefined,
+            contactEmail: org.contactEmail as string | undefined,
+            contactPhone: org.contactPhone as string | undefined,
+            footerText: org.footerText as string | undefined,
           }),
         },
         orgId
@@ -200,6 +220,10 @@ export async function sendDonationFailedEmails(
               year: 'numeric', month: 'long', day: 'numeric',
             }),
             donationsUrl: `${appUrl}/org/${org.slug as string}/donations`,
+            websiteUrl: org.websiteUrl as string | undefined,
+            contactEmail: org.contactEmail as string | undefined,
+            contactPhone: org.contactPhone as string | undefined,
+            footerText: org.footerText as string | undefined,
           }),
         },
         orgId
@@ -247,6 +271,10 @@ export async function sendMembershipFailedEmails(
             year: 'numeric', month: 'long', day: 'numeric',
           }),
           retryUrl: `${appUrl}/org/${org.slug as string}/join`,
+          websiteUrl: org.websiteUrl as string | undefined,
+          contactEmail: org.contactEmail as string | undefined,
+          contactPhone: org.contactPhone as string | undefined,
+          footerText: org.footerText as string | undefined,
         }),
       },
       orgId
@@ -271,6 +299,10 @@ export async function sendMembershipFailedEmails(
               year: 'numeric', month: 'long', day: 'numeric',
             }),
             membersUrl: `${appUrl}/org/${org.slug as string}/members`,
+            websiteUrl: org.websiteUrl as string | undefined,
+            contactEmail: org.contactEmail as string | undefined,
+            contactPhone: org.contactPhone as string | undefined,
+            footerText: org.footerText as string | undefined,
           }),
         },
         orgId

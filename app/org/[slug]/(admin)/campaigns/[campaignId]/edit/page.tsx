@@ -18,7 +18,7 @@ export default function EditCampaignPage() {
   const { data: campaign, isLoading } = useCampaign(orgId, campaignId);
   const updateCampaign = useUpdateCampaign(orgId);
 
-  async function handleUpdate(data: { title: string; description: string; goalAmount: number; endDate: string | null; platformFeePayer: 'org' | 'donor' }) {
+  async function handleUpdate(data: { title: string; description: string; goalAmount: number; endDate: string | null; platformFeePayer: 'org' | 'donor'; withdrawalTrigger: 'target_reached' | 'anytime' }) {
     try {
       await updateCampaign.mutateAsync({
         campaignId,
@@ -28,6 +28,7 @@ export default function EditCampaignPage() {
           goalAmount: data.goalAmount,
           endDate: data.endDate ? Timestamp.fromDate(new Date(data.endDate)) : null,
           platformFeePayer: data.platformFeePayer,
+          withdrawalTrigger: data.withdrawalTrigger,
         },
       });
       toast.success('Campaign updated');
@@ -96,6 +97,7 @@ export default function EditCampaignPage() {
             goalAmount: campaign.goalAmount,
             endDate: campaign.endDate?.toDate().toISOString().split('T')[0] ?? '',
             platformFeePayer: campaign.platformFeePayer,
+            withdrawalTrigger: campaign.withdrawalTrigger || 'anytime',
           }}
           onSubmit={handleUpdate}
           onCancel={() => router.push(`/org/${slug}/campaigns`)}

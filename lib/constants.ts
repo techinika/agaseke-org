@@ -103,3 +103,6 @@ export const COUNTRIES = [
 // Email / Reminders
 export const REMINDER_DAYS_BEFORE = 3;
 export const MEMBERSHIP_GRACE_PERIOD_DAYS = 7;
+
+// Withdrawal
+export const MIN_WITHDRAWAL_AMOUNT = 10;

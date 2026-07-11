@@ -2,8 +2,9 @@
 
 import { useParams } from 'next/navigation';
 import { useState, useMemo } from 'react';
-import { Wallet, TrendingUp, RefreshCw, Activity, Receipt, CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { Wallet, TrendingUp, RefreshCw, Activity, Receipt, CheckCircle2, Clock, XCircle, Banknote } from 'lucide-react';
 import { format } from 'date-fns';
+import { Timestamp } from 'firebase/firestore';
 import { PageHeader } from '@/components/shared/page-header';
 import { StatCard } from '@/components/shared/stat-card';
 import { FinanceCharts } from '@/components/donations/finance-charts';
@@ -15,7 +16,10 @@ import { EmptyState } from '@/components/shared/empty-state';
 import { useTransactions } from '@/hooks/use-transactions';
 import { useOrganizationBySlug } from '@/hooks/use-organization';
 import { useMemberships } from '@/hooks/use-memberships';
-import { CURRENCY, TXN_STATUSES } from '@/lib/constants';
+import { useRequestWithdrawal, usePendingWithdrawals } from '@/hooks/use-withdrawals';
+import { CURRENCY, TXN_STATUSES, MIN_WITHDRAWAL_AMOUNT } from '@/lib/constants';
+import { useAuthStore } from '@/store/auth-store';
+import { toast } from 'sonner';
 
 const statusLabels: Record<string, string> = {
   pending: 'Pending',
@@ -38,6 +42,9 @@ export default function FinancePage() {
   const { data: transactions } = useTransactions(orgId);
   const { data: memberships } = useMemberships(orgId);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const { user } = useAuthStore();
+  const requestWithdrawal = useRequestWithdrawal(orgId);
+  const { data: pendingWithdrawals } = usePendingWithdrawals(orgId);
 
   const revenueStats = useMemo(() => {
     const completed = transactions?.filter((t) => t.status === 'completed') ?? [];
@@ -66,6 +73,43 @@ export default function FinancePage() {
     if (statusFilter === 'all') return transactions ?? [];
     return (transactions ?? []).filter((t) => t.status === statusFilter);
   }, [transactions, statusFilter]);
+
+  const availableForWithdrawal = useMemo(() => {
+    const completed = transactions?.filter((t) => t.status === 'completed') ?? [];
+    return completed.reduce((sum, t) => sum + t.amount, 0);
+  }, [transactions]);
+
+  const hasPendingWithdrawal = pendingWithdrawals && pendingWithdrawals.length > 0;
+
+  async function handleRequestWithdrawal() {
+    if (!org || !user) return;
+    if (!org.bankName || !org.bankAccountName || !org.bankAccountNumber || !org.swiftCode) {
+      toast.error('Please add your bank details in Settings before requesting a withdrawal.');
+      return;
+    }
+    if (availableForWithdrawal < MIN_WITHDRAWAL_AMOUNT) {
+      toast.error(`Minimum withdrawal amount is ${MIN_WITHDRAWAL_AMOUNT} ${CURRENCY}.`);
+      return;
+    }
+    try {
+      await requestWithdrawal.mutateAsync({
+        orgId: org.id,
+        amount: availableForWithdrawal,
+        requestedBy: user.uid,
+        requestedAt: Timestamp.now(),
+        bankDetails: {
+          bankName: org.bankName,
+          accountName: org.bankAccountName,
+          accountNumber: org.bankAccountNumber,
+          swiftCode: org.swiftCode,
+          bankAddress: org.bankAddress || '',
+        },
+      });
+      toast.success('Withdrawal request submitted. Processing takes 5 working days.');
+    } catch {
+      toast.error('Failed to request withdrawal');
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -96,6 +140,36 @@ export default function FinancePage() {
           icon={RefreshCw}
         />
       </div>
+
+      {availableForWithdrawal > 0 && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Available for withdrawal</p>
+                <p className="text-2xl font-bold">{availableForWithdrawal.toLocaleString()} {CURRENCY}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {availableForWithdrawal < MIN_WITHDRAWAL_AMOUNT
+                    ? `Minimum withdrawal amount is ${MIN_WITHDRAWAL_AMOUNT} ${CURRENCY}`
+                    : 'Withdrawals take 5 working days to process'}
+                </p>
+              </div>
+              <Button
+                onClick={handleRequestWithdrawal}
+                disabled={requestWithdrawal.isPending || hasPendingWithdrawal || availableForWithdrawal < MIN_WITHDRAWAL_AMOUNT}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                {requestWithdrawal.isPending ? (
+                  <RefreshCw className="mr-2 size-4 animate-spin" />
+                ) : (
+                  <Banknote className="mr-2 size-4" />
+                )}
+                {hasPendingWithdrawal ? 'Withdrawal pending' : availableForWithdrawal < MIN_WITHDRAWAL_AMOUNT ? `Min. ${MIN_WITHDRAWAL_AMOUNT} ${CURRENCY}` : 'Request withdrawal'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <FinanceCharts transactions={transactions ?? []} />
 
