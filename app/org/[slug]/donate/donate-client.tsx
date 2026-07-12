@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, Shield, Lock, Smartphone, Info } from 'lucide-react';
+import { ChevronRight, Shield, Lock, CreditCard, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -292,7 +292,7 @@ export default function DonateClient({ slug, initialOrg }: DonateClientProps) {
               <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5"><Lock className="size-3.5" /> Secure payment</span>
                 <span className="flex items-center gap-1.5"><Shield className="size-3.5" /> Protected</span>
-                <span className="flex items-center gap-1.5"><Smartphone className="size-3.5" /> Mobile Money</span>
+                <span className="flex items-center gap-1.5"><CreditCard className="size-3.5" /> Cards accepted</span>
               </div>
             </CardContent>
           </Card>

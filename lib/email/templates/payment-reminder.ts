@@ -11,6 +11,10 @@ export function paymentReminderTemplate(params: {
   type: 'donation' | 'membership';
   description?: string;
   paymentUrl: string;
+  websiteUrl?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  footerText?: string;
 }): string {
   const brand = params.brandColor || DEFAULT_BRAND_COLOR;
 
@@ -71,5 +75,9 @@ export function paymentReminderTemplate(params: {
     orgName: params.orgName,
     orgLogoURL: params.orgLogoURL,
     brandColor: params.brandColor,
+    websiteUrl: params.websiteUrl,
+    contactEmail: params.contactEmail,
+    contactPhone: params.contactPhone,
+    footerText: params.footerText,
   });
 }

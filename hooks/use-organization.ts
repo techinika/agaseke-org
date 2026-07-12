@@ -34,6 +34,7 @@ export function useUpdateOrganization(orgId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organization', orgId] });
+      queryClient.invalidateQueries({ queryKey: ['organization-slug'] });
     },
   });
 }

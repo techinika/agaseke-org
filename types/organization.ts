@@ -1,5 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
-import { OrgStatus, SubscriptionPlan } from '@/lib/constants';
+import { SubscriptionBillingCycle, OrgStatus, SubscriptionPlan } from '@/lib/constants';
 
 export interface Organization {
   id: string;
@@ -18,6 +18,7 @@ export interface Organization {
 
   // Subscription settings
   subscriptionPlan: SubscriptionPlan;
+  subscriptionBillingCycle?: SubscriptionBillingCycle;
   subscriptionStartDate?: Timestamp;
   subscriptionEndDate?: Timestamp;
 

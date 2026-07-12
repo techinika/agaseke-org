@@ -1,37 +1,19 @@
 'use client';
 
-import { useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { AlertTriangle } from 'lucide-react';
-
-export default function RootError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
-  useEffect(() => {
-    console.error(error);
-  }, [error]);
-
+export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-4">
-      <div className="mx-auto max-w-md text-center">
-        <div className="mx-auto mb-6 flex size-16 items-center justify-center rounded-full bg-destructive/10">
-          <AlertTriangle className="size-8 text-destructive" />
+    <html>
+      <body>
+        <div style={{ display: 'flex', minHeight: '100vh', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'system-ui, sans-serif' }}>
+          <div style={{ textAlign: 'center' }}>
+            <h1 style={{ fontSize: '2rem', fontWeight: 600 }}>Something went wrong</h1>
+            <p style={{ color: '#666', marginTop: '0.5rem' }}>{error.message || 'An unexpected error occurred.'}</p>
+            <button onClick={reset} style={{ marginTop: '1rem', padding: '0.5rem 1rem', backgroundColor: '#FF0000', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500 }}>
+              Try again
+            </button>
+          </div>
         </div>
-        <h1 className="text-2xl font-bold tracking-tight">Something went wrong</h1>
-        <p className="mt-2 text-muted-foreground">
-          An unexpected error occurred. Please try again.
-        </p>
-        <div className="mt-6 flex items-center justify-center gap-3">
-          <Button onClick={reset}>Try again</Button>
-          <Button variant="outline" onClick={() => (window.location.href = '/')}>
-            Go home
-          </Button>
-        </div>
-      </div>
-    </div>
+      </body>
+    </html>
   );
 }

@@ -4,6 +4,7 @@ export interface Env {
   FIREBASE_PROJECT_ID: string;
   API_KEY: string;
   EMAIL: SendEmail;
+  ALLOWED_ORIGIN: string;
 }
 
 interface SendEmail {
@@ -38,15 +39,15 @@ export function generateCorrelationId(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function jsonResp(data: unknown, status = 200): Response {
+export function jsonResp(data: unknown, status = 200, env?: Env): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': env?.ALLOWED_ORIGIN || '*' },
   });
 }
 
-export function errorResp(message: string, status = 500): Response {
-  return jsonResp({ error: message }, status);
+export function errorResp(message: string, status = 500, env?: Env): Response {
+  return jsonResp({ error: message }, status, env);
 }
 
 // Firebase Admin REST API helpers

@@ -36,7 +36,11 @@ function decodeFields(fields?: Record<string, FirestoreFieldValue>): Record<stri
 function toFirestoreFields(data: Record<string, unknown>): Record<string, FirestoreFieldValue> {
   const fields: Record<string, FirestoreFieldValue> = {};
   for (const [key, value] of Object.entries(data)) {
-    if (value === null || value === undefined) continue;
+    if (value === null) {
+      fields[key] = { nullValue: null } as FirestoreFieldValue;
+      continue;
+    }
+    if (value === undefined) continue;
     if (typeof value === 'string') {
       fields[key] = { stringValue: value };
     } else if (typeof value === 'number') {
@@ -283,7 +287,7 @@ export async function incrementFirestoreField(
             fieldTransforms: [
               {
                 fieldPath: field,
-                increment: { integerValue: String(amount) },
+                increment: Number.isInteger(amount) ? { integerValue: String(amount) } : { doubleValue: amount },
               },
             ],
           },
@@ -361,5 +365,38 @@ export async function fetchOrgBySlug(slug: string): Promise<OrgServerData | null
   } catch (err) {
     console.error('fetchOrgBySlug error:', err);
     return null;
+  }
+}
+
+export async function fetchAllOrganizationSlugs(): Promise<string[]> {
+  try {
+    const headers = await getAuthHeaders();
+    const config = getAdminConfig();
+    const projectId = config.projectId;
+    const url = `${FIRESTORE_BASE}/projects/${projectId}/databases/(default)/documents:runQuery`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: 'organizations' }],
+          select: { fields: [{ fieldPath: 'slug' }] },
+        },
+      }),
+    });
+
+    if (!response.ok) return [];
+    const data = await response.json();
+    return data
+      .filter((r: Record<string, unknown>) => r.document)
+      .map((r: Record<string, unknown>) => {
+        const doc = r.document as Record<string, unknown>;
+        const fields = doc.fields as Record<string, Record<string, string>>;
+        return fields?.slug?.stringValue;
+      })
+      .filter(Boolean);
+  } catch {
+    return [];
   }
 }

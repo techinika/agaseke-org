@@ -279,7 +279,7 @@ export default function FinancePage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground capitalize">
-                        {txn.paymentMethod === 'pesapal' ? 'Card' : txn.paymentMethod}
+                        {txn.paymentMethod === 'pesapal_card' ? 'Card' : txn.paymentMethod}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {txn.createdAt?.toDate

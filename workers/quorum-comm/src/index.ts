@@ -25,7 +25,7 @@ export default {
       return new Response(null, {
         status: 204,
         headers: {
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': env.ALLOWED_ORIGIN || '*',
           'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type, X-API-Key',
         },
@@ -48,10 +48,10 @@ export default {
       return handleNotifyAdmins(request, env);
     }
     if (method === 'GET' && path === '/health') {
-      return jsonResp({ status: 'ok', worker: 'quorum-comm' });
+      return jsonResp({ status: 'ok', worker: 'quorum-comm' }, 200, env);
     }
 
-    return errorResp('Not found', 404);
+    return errorResp('Not found', 404, env);
   },
 };
 
@@ -79,13 +79,13 @@ async function getOrgBranding(orgId: string, env: Env) {
 async function handleSend(request: Request, env: Env): Promise<Response> {
   const cid = generateCorrelationId('cs');
   try {
-    if (!verifyApiKey(request, env)) return errorResp('Unauthorized', 401);
+    if (!verifyApiKey(request, env)) return errorResp('Unauthorized', 401, env);
 
     const body = await request.json();
     const { to, toName, subject, html, text } = body as EmailRequest;
 
     if (!to || !subject || !html) {
-      return errorResp('Missing required fields: to, subject, html');
+      return errorResp('Missing required fields: to, subject, html', 400, env);
     }
 
     const fromEmail = process.env.DEFAULT_FROM_EMAIL || 'noreply@quorum.app';
@@ -100,17 +100,17 @@ async function handleSend(request: Request, env: Env): Promise<Response> {
     });
 
     console.log(`[${cid}] Email sent to ${to}: ${subject}`);
-    return jsonResp({ success: true, correlationId: cid });
+    return jsonResp({ success: true, correlationId: cid }, 200, env);
   } catch (error) {
     console.error(`[${cid}] Send failed:`, error);
-    return errorResp(`Email send failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    return errorResp(`Email send failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 500, env);
   }
 }
 
 async function handleSendConfirmation(request: Request, env: Env): Promise<Response> {
   const cid = generateCorrelationId('cc');
   try {
-    if (!verifyApiKey(request, env)) return errorResp('Unauthorized', 401);
+    if (!verifyApiKey(request, env)) return errorResp('Unauthorized', 401, env);
 
     const body = await request.json();
     const { to, toName, orgId, type, amount, currency, transactionId, description } = body as {
@@ -125,11 +125,10 @@ async function handleSendConfirmation(request: Request, env: Env): Promise<Respo
     };
 
     if (!to || !orgId || !amount || !transactionId) {
-      return errorResp('Missing required fields');
+      return errorResp('Missing required fields', 400, env);
     }
 
     const branding = await getOrgBranding(orgId, env);
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://quorum.app';
 
     const html = paymentConfirmationTemplate({
       recipientName: toName || 'User',
@@ -159,17 +158,17 @@ async function handleSendConfirmation(request: Request, env: Env): Promise<Respo
     });
 
     console.log(`[${cid}] Confirmation sent to ${to} for ${currency} ${amount}`);
-    return jsonResp({ success: true, correlationId: cid });
+    return jsonResp({ success: true, correlationId: cid }, 200, env);
   } catch (error) {
     console.error(`[${cid}] Confirmation failed:`, error);
-    return errorResp(`Email send failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    return errorResp(`Email send failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 500, env);
   }
 }
 
 async function handleSendFailure(request: Request, env: Env): Promise<Response> {
   const cid = generateCorrelationId('cf');
   try {
-    if (!verifyApiKey(request, env)) return errorResp('Unauthorized', 401);
+    if (!verifyApiKey(request, env)) return errorResp('Unauthorized', 401, env);
 
     const body = await request.json();
     const { to, toName, orgId, type, amount, currency, failureReason, retryUrl } = body as {
@@ -184,7 +183,7 @@ async function handleSendFailure(request: Request, env: Env): Promise<Response> 
     };
 
     if (!to || !orgId || !amount) {
-      return errorResp('Missing required fields');
+      return errorResp('Missing required fields', 400, env);
     }
 
     const branding = await getOrgBranding(orgId, env);
@@ -218,17 +217,17 @@ async function handleSendFailure(request: Request, env: Env): Promise<Response> 
     });
 
     console.log(`[${cid}] Failure notification sent to ${to}`);
-    return jsonResp({ success: true, correlationId: cid });
+    return jsonResp({ success: true, correlationId: cid }, 200, env);
   } catch (error) {
     console.error(`[${cid}] Failure notification failed:`, error);
-    return errorResp(`Email send failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    return errorResp(`Email send failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 500, env);
   }
 }
 
 async function handleSendReminder(request: Request, env: Env): Promise<Response> {
   const cid = generateCorrelationId('cr');
   try {
-    if (!verifyApiKey(request, env)) return errorResp('Unauthorized', 401);
+    if (!verifyApiKey(request, env)) return errorResp('Unauthorized', 401, env);
 
     const body = await request.json();
     const { to, toName, orgId, type, amount, currency, renewalDate, renewUrl } = body as {
@@ -243,7 +242,7 @@ async function handleSendReminder(request: Request, env: Env): Promise<Response>
     };
 
     if (!to || !orgId || !amount) {
-      return errorResp('Missing required fields');
+      return errorResp('Missing required fields', 400, env);
     }
 
     const branding = await getOrgBranding(orgId, env);
@@ -276,17 +275,17 @@ async function handleSendReminder(request: Request, env: Env): Promise<Response>
     });
 
     console.log(`[${cid}] Reminder sent to ${to}`);
-    return jsonResp({ success: true, correlationId: cid });
+    return jsonResp({ success: true, correlationId: cid }, 200, env);
   } catch (error) {
     console.error(`[${cid}] Reminder failed:`, error);
-    return errorResp(`Email send failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    return errorResp(`Email send failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 500, env);
   }
 }
 
 async function handleNotifyAdmins(request: Request, env: Env): Promise<Response> {
   const cid = generateCorrelationId('cn');
   try {
-    if (!verifyApiKey(request, env)) return errorResp('Unauthorized', 401);
+    if (!verifyApiKey(request, env)) return errorResp('Unauthorized', 401, env);
 
     const body = await request.json();
     const { orgId, subject, html } = body as {
@@ -296,12 +295,12 @@ async function handleNotifyAdmins(request: Request, env: Env): Promise<Response>
     };
 
     if (!orgId || !subject || !html) {
-      return errorResp('Missing required fields');
+      return errorResp('Missing required fields', 400, env);
     }
 
     const accessToken = await getFirebaseAccessToken(env.FIREBASE_ADMIN_CLIENT_EMAIL, env.FIREBASE_ADMIN_PRIVATE_KEY);
     const org = await firestoreGet('organizations', orgId, accessToken, env.FIREBASE_PROJECT_ID);
-    if (!org) return errorResp('Organization not found', 404);
+    if (!org) return errorResp('Organization not found', 404, env);
 
     const branding = await getOrgBranding(orgId, env);
     const adminIds = (org.adminIds as string[]) || [];
@@ -324,9 +323,9 @@ async function handleNotifyAdmins(request: Request, env: Env): Promise<Response>
     }
 
     console.log(`[${cid}] Admin notification sent to ${sentCount} admins for org ${orgId}`);
-    return jsonResp({ success: true, sentCount, correlationId: cid });
+    return jsonResp({ success: true, sentCount, correlationId: cid }, 200, env);
   } catch (error) {
     console.error(`[${cid}] Admin notification failed:`, error);
-    return errorResp(`Email send failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    return errorResp(`Email send failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 500, env);
   }
 }

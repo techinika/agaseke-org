@@ -8,16 +8,17 @@ import { RichTextContent } from '@/components/shared/rich-text-content';
 import { Pencil, Trash2, EyeOff, CheckCircle2, Calendar, Target, Percent } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { CURRENCY, PLATFORM_FEE_RATE } from '@/lib/constants';
+import { CURRENCY } from '@/lib/constants';
 
 interface CampaignCardProps {
   campaign: Campaign;
+  feeRate?: number;
   onEdit: (campaign: Campaign) => void;
   onToggleActive: (campaign: Campaign) => void;
   onDelete: (campaign: Campaign) => void;
 }
 
-export function CampaignCard({ campaign, onEdit, onToggleActive, onDelete }: CampaignCardProps) {
+export function CampaignCard({ campaign, feeRate = 0.1, onEdit, onToggleActive, onDelete }: CampaignCardProps) {
   const progress = campaign.goalAmount > 0
     ? Math.min(Math.round((campaign.raisedAmount / campaign.goalAmount) * 100), 100)
     : 0;
@@ -67,7 +68,7 @@ export function CampaignCard({ campaign, onEdit, onToggleActive, onDelete }: Cam
           </div>
           <Badge variant={campaign.platformFeePayer === 'org' ? 'secondary' : 'default'} className="text-xs">
             <Percent className="mr-1 size-3" />
-            Fee: {campaign.platformFeePayer === 'org' ? 'Org pays' : 'Donor adds'} {Math.round(PLATFORM_FEE_RATE * 100)}%
+            Fee: {campaign.platformFeePayer === 'org' ? 'Org pays' : 'Donor adds'} {Math.round(feeRate * 100)}%
           </Badge>
         </div>
 

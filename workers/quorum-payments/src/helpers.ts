@@ -6,21 +6,27 @@ export interface Env {
   FIREBASE_ADMIN_PRIVATE_KEY: string;
   CRON_SECRET: string;
   API_KEY: string;
+  WEBHOOK_SECRET: string;
+  WORKER_URL: string;
+  ALLOWED_ORIGIN: string;
 }
 
 export function generateCorrelationId(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function jsonResp(data: unknown, status = 200): Response {
+export function jsonResp(data: unknown, status = 200, env?: Env): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': env?.ALLOWED_ORIGIN || '*',
+    },
   });
 }
 
-export function errorResp(message: string, status = 500): Response {
-  return jsonResp({ error: message }, status);
+export function errorResp(message: string, status = 500, env?: Env): Response {
+  return jsonResp({ error: message }, status, env);
 }
 
 // Firebase Admin REST API helpers
@@ -153,6 +159,33 @@ export async function firestoreUpdate(
     method: 'PATCH',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ fields }),
+  });
+}
+
+export async function firestoreIncrementField(
+  collectionPath: string,
+  docId: string,
+  field: string,
+  amount: number,
+  accessToken: string,
+  projectId: string
+): Promise<void> {
+  const documentPath = `projects/${projectId}/databases/(default)/documents/${collectionPath}/${docId}`;
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:commit`;
+  await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      writes: [{
+        transform: {
+          document: documentPath,
+          fieldTransforms: [{
+            fieldPath: field,
+            increment: { doubleValue: amount },
+          }],
+        },
+      }],
+    }),
   });
 }
 

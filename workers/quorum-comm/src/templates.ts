@@ -1,5 +1,14 @@
 import { emailLayout } from './layout';
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export function paymentConfirmationTemplate(params: {
   recipientName: string;
   amount: string;
@@ -17,6 +26,10 @@ export function paymentConfirmationTemplate(params: {
   footerText?: string;
 }): string {
   const isDonation = params.type === 'donation';
+  const orgName = escapeHtml(params.orgName);
+  const recipientName = escapeHtml(params.recipientName);
+  const description = params.description ? escapeHtml(params.description) : undefined;
+  const transactionId = escapeHtml(params.transactionId);
 
   const content = `
     <div style="text-align: center; margin-bottom: 24px;">
@@ -27,7 +40,7 @@ export function paymentConfirmationTemplate(params: {
         Payment ${isDonation ? 'Received' : 'Confirmed'}!
       </h1>
       <p style="margin: 0; font-size: 14px; color: #71717a;">
-        Thank you for your ${isDonation ? 'donation to' : 'membership with'} ${params.orgName}
+        Thank you for your ${isDonation ? 'donation to' : 'membership with'} ${orgName}
       </p>
     </div>
 
@@ -35,7 +48,7 @@ export function paymentConfirmationTemplate(params: {
       <tr>
         <td style="padding: 20px; text-align: center;">
           <p style="margin: 0 0 4px; font-size: 12px; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em;">Amount Paid</p>
-          <p style="margin: 0; font-size: 28px; font-weight: 700; color: #18181b;">${params.currency} ${params.amount}</p>
+          <p style="margin: 0; font-size: 28px; font-weight: 700; color: #18181b;">${escapeHtml(params.currency)} ${escapeHtml(params.amount)}</p>
         </td>
       </tr>
     </table>
@@ -46,20 +59,20 @@ export function paymentConfirmationTemplate(params: {
           <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%;">
             <tr>
               <td style="font-size: 13px; color: #71717a; padding: 4px 0;">Transaction ID</td>
-              <td style="font-size: 13px; color: #18181b; text-align: right; font-family: monospace; padding: 4px 0;">${params.transactionId}</td>
+              <td style="font-size: 13px; color: #18181b; text-align: right; font-family: monospace; padding: 4px 0;">${transactionId}</td>
             </tr>
             <tr>
               <td style="font-size: 13px; color: #71717a; padding: 4px 0;">Date</td>
-              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0;">${params.date}</td>
+              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0;">${escapeHtml(params.date)}</td>
             </tr>
             <tr>
               <td style="font-size: 13px; color: #71717a; padding: 4px 0;">Organization</td>
-              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0;">${params.orgName}</td>
+              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0;">${orgName}</td>
             </tr>
-            ${params.description ? `
+            ${description ? `
             <tr>
               <td style="font-size: 13px; color: #71717a; padding: 4px 0;">${isDonation ? 'Campaign' : 'Tier'}</td>
-              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0;">${params.description}</td>
+              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0;">${description}</td>
             </tr>
             ` : ''}
           </table>
@@ -108,6 +121,8 @@ export function paymentFailedTemplate(params: {
   footerText?: string;
 }): string {
   const brand = params.brandColor || '#FF0000';
+  const orgName = escapeHtml(params.orgName);
+  const failureReason = params.failureReason ? escapeHtml(params.failureReason) : undefined;
 
   const content = `
     <div style="text-align: center; margin-bottom: 24px;">
@@ -118,7 +133,7 @@ export function paymentFailedTemplate(params: {
         Payment Failed
       </h1>
       <p style="margin: 0; font-size: 14px; color: #71717a;">
-        Your ${params.type === 'donation' ? 'donation to' : 'membership payment for'} ${params.orgName} could not be processed
+        Your ${params.type === 'donation' ? 'donation to' : 'membership payment for'} ${orgName} could not be processed
       </p>
     </div>
 
@@ -126,7 +141,7 @@ export function paymentFailedTemplate(params: {
       <tr>
         <td style="padding: 20px; text-align: center;">
           <p style="margin: 0 0 4px; font-size: 12px; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em;">Attempted Amount</p>
-          <p style="margin: 0; font-size: 28px; font-weight: 700; color: #18181b;">${params.currency} ${params.amount}</p>
+          <p style="margin: 0; font-size: 28px; font-weight: 700; color: #18181b;">${escapeHtml(params.currency)} ${escapeHtml(params.amount)}</p>
         </td>
       </tr>
     </table>
@@ -137,16 +152,16 @@ export function paymentFailedTemplate(params: {
           <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%;">
             <tr>
               <td style="font-size: 13px; color: #71717a; padding: 4px 0;">Date</td>
-              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0;">${params.date}</td>
+              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0;">${escapeHtml(params.date)}</td>
             </tr>
             <tr>
               <td style="font-size: 13px; color: #71717a; padding: 4px 0;">Organization</td>
-              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0;">${params.orgName}</td>
+              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0;">${orgName}</td>
             </tr>
-            ${params.failureReason ? `
+            ${failureReason ? `
             <tr>
               <td style="font-size: 13px; color: #71717a; padding: 4px 0;">Reason</td>
-              <td style="font-size: 13px; color: #ef4444; text-align: right; padding: 4px 0;">${params.failureReason}</td>
+              <td style="font-size: 13px; color: #ef4444; text-align: right; padding: 4px 0;">${failureReason}</td>
             </tr>
             ` : ''}
           </table>
@@ -198,6 +213,7 @@ export function paymentReminderTemplate(params: {
   footerText?: string;
 }): string {
   const brand = params.brandColor || '#FF0000';
+  const orgName = escapeHtml(params.orgName);
 
   const content = `
     <div style="text-align: center; margin-bottom: 24px;">
@@ -208,7 +224,7 @@ export function paymentReminderTemplate(params: {
         Renewal Reminder
       </h1>
       <p style="margin: 0; font-size: 14px; color: #71717a;">
-        Your ${params.type === 'donation' ? 'recurring donation' : 'membership'} with ${params.orgName} renews soon
+        Your ${params.type === 'donation' ? 'recurring donation' : 'membership'} with ${orgName} renews soon
       </p>
     </div>
 
@@ -216,7 +232,7 @@ export function paymentReminderTemplate(params: {
       <tr>
         <td style="padding: 20px; text-align: center;">
           <p style="margin: 0 0 4px; font-size: 12px; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em;">Renewal Amount</p>
-          <p style="margin: 0; font-size: 28px; font-weight: 700; color: #18181b;">${params.currency} ${params.amount}</p>
+          <p style="margin: 0; font-size: 28px; font-weight: 700; color: #18181b;">${escapeHtml(params.currency)} ${escapeHtml(params.amount)}</p>
         </td>
       </tr>
     </table>
@@ -227,11 +243,11 @@ export function paymentReminderTemplate(params: {
           <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%;">
             <tr>
               <td style="font-size: 13px; color: #71717a; padding: 4px 0;">Renewal Date</td>
-              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0;">${params.renewalDate}</td>
+              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0;">${escapeHtml(params.renewalDate)}</td>
             </tr>
             <tr>
               <td style="font-size: 13px; color: #71717a; padding: 4px 0;">Organization</td>
-              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0;">${params.orgName}</td>
+              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0;">${orgName}</td>
             </tr>
           </table>
         </td>
@@ -280,6 +296,9 @@ export function newDonationNotificationTemplate(params: {
   footerText?: string;
 }): string {
   const brand = params.brandColor || '#FF0000';
+  const orgName = escapeHtml(params.orgName);
+  const donorName = escapeHtml(params.donorName);
+  const donorEmail = params.donorEmail ? escapeHtml(params.donorEmail) : undefined;
 
   const content = `
     <div style="text-align: center; margin-bottom: 24px;">
@@ -290,7 +309,7 @@ export function newDonationNotificationTemplate(params: {
         New Donation Received!
       </h1>
       <p style="margin: 0; font-size: 14px; color: #71717a;">
-        ${params.donorName} has made a donation to ${params.orgName}
+        ${donorName} has made a donation to ${orgName}
       </p>
     </div>
 
@@ -298,7 +317,7 @@ export function newDonationNotificationTemplate(params: {
       <tr>
         <td style="padding: 20px; text-align: center;">
           <p style="margin: 0 0 4px; font-size: 12px; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em;">Donation Amount</p>
-          <p style="margin: 0; font-size: 28px; font-weight: 700; color: #18181b;">${params.currency} ${params.amount}</p>
+          <p style="margin: 0; font-size: 28px; font-weight: 700; color: #18181b;">${escapeHtml(params.currency)} ${escapeHtml(params.amount)}</p>
         </td>
       </tr>
     </table>
@@ -309,17 +328,17 @@ export function newDonationNotificationTemplate(params: {
           <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%;">
             <tr>
               <td style="font-size: 13px; color: #71717a; padding: 4px 0;">Donor</td>
-              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0; font-weight: 600;">${params.donorName}</td>
+              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0; font-weight: 600;">${donorName}</td>
             </tr>
-            ${params.donorEmail ? `
+            ${donorEmail ? `
             <tr>
               <td style="font-size: 13px; color: #71717a; padding: 4px 0;">Email</td>
-              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0;">${params.donorEmail}</td>
+              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0;">${donorEmail}</td>
             </tr>
             ` : ''}
             <tr>
               <td style="font-size: 13px; color: #71717a; padding: 4px 0;">Date</td>
-              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0;">${params.donationDate}</td>
+              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0;">${escapeHtml(params.donationDate)}</td>
             </tr>
           </table>
         </td>
@@ -361,6 +380,10 @@ export function newMemberNotificationTemplate(params: {
   footerText?: string;
 }): string {
   const brand = params.brandColor || '#FF0000';
+  const orgName = escapeHtml(params.orgName);
+  const memberName = escapeHtml(params.memberName);
+  const tierName = escapeHtml(params.tierName);
+  const memberEmail = params.memberEmail ? escapeHtml(params.memberEmail) : undefined;
 
   const content = `
     <div style="text-align: center; margin-bottom: 24px;">
@@ -371,7 +394,7 @@ export function newMemberNotificationTemplate(params: {
         New Member Joined!
       </h1>
       <p style="margin: 0; font-size: 14px; color: #71717a;">
-        ${params.memberName} has joined ${params.orgName}
+        ${memberName} has joined ${orgName}
       </p>
     </div>
 
@@ -381,21 +404,21 @@ export function newMemberNotificationTemplate(params: {
           <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%;">
             <tr>
               <td style="font-size: 13px; color: #71717a; padding: 4px 0;">Name</td>
-              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0; font-weight: 600;">${params.memberName}</td>
+              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0; font-weight: 600;">${memberName}</td>
             </tr>
-            ${params.memberEmail ? `
+            ${memberEmail ? `
             <tr>
               <td style="font-size: 13px; color: #71717a; padding: 4px 0;">Email</td>
-              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0;">${params.memberEmail}</td>
+              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0;">${memberEmail}</td>
             </tr>
             ` : ''}
             <tr>
               <td style="font-size: 13px; color: #71717a; padding: 4px 0;">Tier</td>
-              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0;">${params.tierName}</td>
+              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0;">${tierName}</td>
             </tr>
             <tr>
               <td style="font-size: 13px; color: #71717a; padding: 4px 0;">Joined</td>
-              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0;">${params.joinedDate}</td>
+              <td style="font-size: 13px; color: #18181b; text-align: right; padding: 4px 0;">${escapeHtml(params.joinedDate)}</td>
             </tr>
           </table>
         </td>

@@ -67,6 +67,10 @@ export async function completeDeposit(depositId: string): Promise<{ completed: n
       await processMembership(depositId);
     }
 
+    if (txType === 'subscription') {
+      await processSubscription(tx, depositId);
+    }
+
     completed++;
   }
 
@@ -188,6 +192,28 @@ async function processMembership(depositId: string): Promise<void> {
 
     await safeSend(() => sendMembershipEmails(membership));
   }
+}
+
+async function processSubscription(tx: Record<string, unknown>, depositId: string): Promise<void> {
+  logger.info('payments', `processSubscription: starting for depositId=${depositId}`);
+  const targetPlan = tx.targetPlan as string | undefined;
+  const targetBillingCycle = tx.targetBillingCycle as string | undefined;
+  const orgId = tx.orgId as string | undefined;
+
+  if (!targetPlan || !orgId) {
+    logger.warn('payments', `processSubscription: missing targetPlan or orgId for depositId=${depositId}`);
+    return;
+  }
+
+  const updateData: Record<string, unknown> = {
+    subscriptionPlan: targetPlan,
+  };
+  if (targetBillingCycle) {
+    updateData.subscriptionBillingCycle = targetBillingCycle;
+  }
+
+  await updateFirestoreDocument(COLLECTIONS.ORGANIZATIONS, orgId, updateData);
+  logger.info('payments', `processSubscription: org ${orgId} updated to plan=${targetPlan}, billingCycle=${targetBillingCycle}`);
 }
 
 export async function reconcilePendingTransaction(

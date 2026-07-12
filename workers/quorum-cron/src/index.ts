@@ -9,6 +9,10 @@ interface Env {
   DEFAULT_FROM_EMAIL: string;
   DEFAULT_FROM_NAME: string;
   APP_URL: string;
+  QUORUM_PAYMENTS_URL: string;
+  QUORUM_PAYMENTS_API_KEY: string;
+  QUORUM_COMM_URL: string;
+  QUORUM_COMM_API_KEY: string;
 }
 
 export default {
@@ -55,27 +59,22 @@ export default {
 async function handleReconcile(env: Env): Promise<Response> {
   const cid = genCid('rec');
   try {
-    const { accessToken, projectId } = await getFirebaseAuth(env);
-
-    const pendingTxs = await firestoreQuery('transactions', 'status', 'pending', accessToken, projectId);
-    const results = { checked: 0, completed: 0, failed: 0, skipped: 0, errors: 0 };
-
-    for (const tx of pendingTxs) {
-      const depositId = tx.depositId as string | undefined;
-      if (!depositId) { results.skipped++; continue; }
-
-      try {
-        results.checked++;
-        // Note: In production, query PesaPal for status here
-        // For now, just log that we found a pending transaction
-        console.log(`[${cid}] pending transaction ${tx.id} for depositId=${depositId}`);
-        results.skipped++;
-      } catch {
-        results.errors++;
-      }
+    if (!env.QUORUM_PAYMENTS_URL || !env.QUORUM_PAYMENTS_API_KEY) {
+      console.error(`[${cid}] QUORUM_PAYMENTS_URL or QUORUM_PAYMENTS_API_KEY not configured`);
+      return jsonResp({ error: 'Payments worker not configured' }, 500);
     }
 
-    console.log(`[${cid}] reconcile done:`, JSON.stringify(results));
+    console.log(`[${cid}] calling quorum-payments /reconcile`);
+    const res = await fetch(`${env.QUORUM_PAYMENTS_URL}/reconcile`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.CRON_SECRET}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const results = await res.json();
+    console.log(`[${cid}] reconcile result:`, JSON.stringify(results));
     return jsonResp(results);
   } catch (err) {
     console.error(`[${cid}] reconcile error`, err);
@@ -123,16 +122,19 @@ async function handlePaymentReminders(env: Env): Promise<Response> {
         if (!user?.email) continue;
 
         const slug = org.slug as string;
-        const brandColor = (org.brandColor as string) || '#FF0000';
+        const orgName = org.name as string;
+
+        const orgIdForComm = orgId;
 
         await sendEmail(env, {
           to: user.email as string,
-          subject: `Membership Renewal Reminder — ${org.name as string}`,
+          orgId: orgIdForComm,
+          subject: `Membership Renewal Reminder — ${orgName}`,
           html: paymentReminderHtml({
             recipientName: (user.displayName as string) || 'Member',
             amount: tierPrice.toFixed(2),
-            orgName: org.name as string,
-            brandColor,
+            orgName,
+            brandColor: (org.brandColor as string) || '#FF0000',
             dueDate: new Date(renewsAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
             type: 'membership',
             description: tierName,
@@ -173,16 +175,16 @@ async function handlePaymentReminders(env: Env): Promise<Response> {
         if (!donorEmail) continue;
 
         const slug = org.slug as string;
-        const brandColor = (org.brandColor as string) || '#FF0000';
 
         await sendEmail(env, {
           to: donorEmail,
+          orgId,
           subject: `Donation Reminder — ${org.name as string}`,
           html: paymentReminderHtml({
             recipientName: (donation.donorName as string) || 'Supporter',
             amount: (donation.amount as number).toFixed(2),
             orgName: org.name as string,
-            brandColor,
+            brandColor: (org.brandColor as string) || '#FF0000',
             dueDate: new Date(nextBillingDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
             type: 'donation',
             description: undefined,
@@ -246,16 +248,16 @@ async function handleMembershipExpiry(env: Env): Promise<Response> {
         if (!user?.email) continue;
 
         const slug = org.slug as string;
-        const brandColor = (org.brandColor as string) || '#FF0000';
 
         try {
           await sendEmail(env, {
             to: user.email as string,
+            orgId,
             subject: `Membership Expired — ${org.name as string}`,
             html: membershipExpiryHtml({
               recipientName: (user.displayName as string) || 'Member',
               orgName: org.name as string,
-              brandColor,
+              brandColor: (org.brandColor as string) || '#FF0000',
               tierName,
               expiredDate: new Date(renewsAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
               renewalUrl: `${env.APP_URL}/org/${slug}/join`,
@@ -393,27 +395,35 @@ function parseFirestoreDoc(doc: Record<string, unknown>): Record<string, unknown
   return result;
 }
 
-// ─── Email (Nodemailer via SMTP) ─────────────────────────────────────────────
+// ─── Email (via quorum-comm worker) ──────────────────────────────────────────
 
-async function sendEmail(env: Env, options: { to: string; subject: string; html: string }): Promise<void> {
-  const host = env.SMTP_HOST;
-  const port = parseInt(env.SMTP_PORT || '587');
-  const user = env.SMTP_USER;
-  const pass = env.SMTP_PASS;
-  const from = env.DEFAULT_FROM_EMAIL || 'noreply@quorum.org';
-  const fromName = env.DEFAULT_FROM_NAME || 'Quorum';
-
-  if (!host) {
-    console.warn('No SMTP configured. Skipping email to', options.to);
+async function sendEmail(env: Env, options: { to: string; orgId: string; subject: string; html: string }): Promise<void> {
+  if (!env.QUORUM_COMM_URL || !env.QUORUM_COMM_API_KEY) {
+    console.warn(`[EMAIL] quorum-comm not configured. Would send to ${options.to}: ${options.subject}`);
     return;
   }
 
-  // Cloudflare Workers don't support Nodemailer directly (no Node.js net module)
-  // Use fetch-based SMTP or a transactional email API
-  // For now, log the email that would be sent
-  console.log(`[EMAIL] To: ${options.to}, Subject: ${options.subject}`);
-  console.log(`[EMAIL] From: ${fromName} <${from}>`);
-  console.log(`[EMAIL] Body preview: ${options.html.slice(0, 200)}`);
+  try {
+    const res = await fetch(`${env.QUORUM_COMM_URL}/send`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': env.QUORUM_COMM_API_KEY,
+      },
+      body: JSON.stringify({
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+      }),
+    });
+
+    if (!res.ok) {
+      const errBody = await res.text();
+      console.error(`[EMAIL] quorum-comm returned ${res.status}: ${errBody.slice(0, 200)}`);
+    }
+  } catch (err) {
+    console.error(`[EMAIL] failed to call quorum-comm:`, err);
+  }
 }
 
 // ─── Email Templates ─────────────────────────────────────────────────────────

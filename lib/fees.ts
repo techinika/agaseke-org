@@ -1,4 +1,4 @@
-import { PLATFORM_FEE_RATE, SUBSCRIPTION_PRICING, type PlatformFeePayer, type SubscriptionPlan } from './constants';
+import { SUBSCRIPTION_PRICING, type PlatformFeePayer, type SubscriptionPlan } from './constants';
 
 export interface FeeBreakdown {
   totalToPay: number;

@@ -20,6 +20,7 @@ export interface Membership {
   userId: string;
   tierId: string;
   status: MembershipStatus;
+  amount?: number;
   startDate: Timestamp;
   renewsAt: Timestamp | null;
   autoRenew: boolean;
@@ -31,7 +32,7 @@ export interface OrgMember {
   userId: string;
   membershipId: string;
   tierId: string;
-  status?: string;
+  status?: MembershipStatus;
   depositId?: string;
   joinedAt: Timestamp;
   displayName: string;

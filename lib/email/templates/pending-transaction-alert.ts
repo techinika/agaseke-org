@@ -9,6 +9,10 @@ export function pendingTransactionAlertTemplate(params: {
   totalAmount: string;
   currency: string;
   reconcileUrl: string;
+  websiteUrl?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  footerText?: string;
 }): string {
   const brand = params.brandColor || DEFAULT_BRAND_COLOR;
 
@@ -59,5 +63,9 @@ export function pendingTransactionAlertTemplate(params: {
     orgName: params.orgName,
     orgLogoURL: params.orgLogoURL,
     brandColor: params.brandColor,
+    websiteUrl: params.websiteUrl,
+    contactEmail: params.contactEmail,
+    contactPhone: params.contactPhone,
+    footerText: params.footerText,
   });
 }

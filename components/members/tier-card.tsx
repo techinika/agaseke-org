@@ -6,10 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { GripVertical, Pencil, Trash2, EyeOff, CheckCircle2, DollarSign, Percent } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { CURRENCY, PLATFORM_FEE_RATE } from '@/lib/constants';
+import { CURRENCY } from '@/lib/constants';
 
 interface TierCardProps {
   tier: Tier;
+  feeRate?: number;
   onEdit: (tier: Tier) => void;
   onToggleActive: (tier: Tier) => void;
   onDelete: (tier: Tier) => void;
@@ -17,7 +18,7 @@ interface TierCardProps {
   isDragging?: boolean;
 }
 
-export function TierCard({ tier, onEdit, onToggleActive, onDelete, dragHandleProps, isDragging }: TierCardProps) {
+export function TierCard({ tier, feeRate = 0.1, onEdit, onToggleActive, onDelete, dragHandleProps, isDragging }: TierCardProps) {
   return (
     <Card className={cn('relative', isDragging && 'opacity-50 shadow-lg')}>
       <CardContent className="flex items-center gap-4 p-4">
@@ -42,7 +43,7 @@ export function TierCard({ tier, onEdit, onToggleActive, onDelete, dragHandlePro
             </Badge>
             <Badge variant={tier.platformFeePayer === 'org' ? 'secondary' : 'default'} className="text-xs">
               <Percent className="mr-1 size-3" />
-              Fee: {tier.platformFeePayer === 'org' ? 'Org pays' : 'Member adds'} {Math.round(PLATFORM_FEE_RATE * 100)}%
+              Fee: {tier.platformFeePayer === 'org' ? 'Org pays' : 'Member adds'} {Math.round(feeRate * 100)}%
             </Badge>
             {tier.benefits.map((b, i) => (
               <Badge key={i} variant="outline" className="text-xs">

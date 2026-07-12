@@ -1,9 +1,26 @@
 import Link from 'next/link';
-import { ArrowRight, Heart, MessageSquare, Shield, CreditCard, CheckCircle2, Target, Globe, Smartphone, BarChart3, ChevronDown, DollarSign, BookOpen, Building2, School, Church, Handshake, Zap, Mail, Lock, Share2, Layers, TrendingUp, Star } from 'lucide-react';
+import { ArrowRight, Heart, MessageSquare, Shield, CreditCard, CheckCircle2, Target, Globe, BarChart3, ChevronDown, DollarSign, BookOpen, Building2, School, Church, Handshake, Zap, Mail, Lock, Share2, Layers, TrendingUp, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PublicNav } from '@/components/shared/public-nav';
 import { PublicFooter } from '@/components/shared/public-footer';
-import { logger } from '@/lib/logger';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Quorum — Membership & Donation Platform for Organizations',
+  description: 'Manage memberships, collect donations, and build community with Quorum. White-labeled platform for nonprofits with tiered memberships, campaign tracking, encrypted chat, and card payments.',
+  openGraph: {
+    title: 'Quorum — Membership & Donation Platform',
+    description: 'Manage memberships, collect donations, and build community. White-labeled platform for nonprofits.',
+    url: process.env.NEXT_PUBLIC_APP_URL || 'https://quorum.app',
+    siteName: 'Quorum',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Quorum — Membership & Donation Platform',
+    description: 'Manage memberships, collect donations, and build community. White-labeled platform for nonprofits.',
+  },
+};
 
 const features = [
   {
@@ -22,8 +39,8 @@ const features = [
     icon: MessageSquare,
   },
   {
-    title: 'Mobile Money & Cards',
-    description: 'Accept payments from anyone. Mobile Money for Africa, bank cards for the world. Recurring billing included.',
+    title: 'Secure Card Payments',
+    description: 'Accept Visa and Mastercard from anywhere in the world via PesaPal. Recurring billing included.',
     icon: CreditCard,
   },
   {
@@ -114,7 +131,6 @@ const faqs = [
 ];
 
 export default function LandingPage() {
-  logger.info('page:landing', 'Rendering landing page');
   return (
     <div className="flex min-h-screen flex-col pb-16 md:pb-0">
       <PublicNav />
@@ -157,7 +173,7 @@ export default function LandingPage() {
               <div className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1.5"><CheckCircle2 className="size-4 text-primary" /> No credit card needed</span>
                 <span className="flex items-center gap-1.5"><CheckCircle2 className="size-4 text-primary" /> Free to start</span>
-                <span className="flex items-center gap-1.5"><CheckCircle2 className="size-4 text-primary" /> Mobile Money &amp; cards</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 className="size-4 text-primary" /> Secure card payments</span>
                 <span className="flex items-center gap-1.5"><CheckCircle2 className="size-4 text-primary" /> Works on any phone</span>
               </div>
             </div>
@@ -352,12 +368,12 @@ export default function LandingPage() {
               </div>
               <div className="flex gap-4">
                 <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                  <Smartphone className="size-5 text-primary" />
+                  <Globe className="size-5 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">Mobile Money friendly</h3>
+                  <h3 className="font-semibold">Global card payments</h3>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Most of your members use Mobile Money. We make it easy for them to pay that way.
+                    Accept Visa and Mastercard from supporters anywhere in the world.
                   </p>
                 </div>
               </div>

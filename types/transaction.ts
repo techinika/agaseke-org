@@ -15,4 +15,7 @@ export interface Transaction {
   status: TxnStatus;
   paymentMethod: PaymentMethod;
   createdAt: Timestamp;
+  processedAt?: string;
+  failureReason?: string;
+  billingCycle?: string;
 }

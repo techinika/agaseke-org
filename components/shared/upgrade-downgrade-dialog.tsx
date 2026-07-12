@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, ArrowUp, ArrowDown, Loader2, Crown } from 'lucide-react';
-import { SUBSCRIPTION_PRICING, type SubscriptionPlan } from '@/lib/constants';
+import { SUBSCRIPTION_PRICING, type SubscriptionPlan, type SubscriptionBillingCycle } from '@/lib/constants';
 import { toast } from 'sonner';
 
 interface UpgradeDowngradeDialogProps {
@@ -20,6 +20,7 @@ interface UpgradeDowngradeDialogProps {
   onOpenChange: (open: boolean) => void;
   currentPlan: SubscriptionPlan;
   targetPlan: SubscriptionPlan;
+  billingCycle?: SubscriptionBillingCycle;
   onConfirm: () => Promise<void>;
 }
 
@@ -30,12 +31,16 @@ export function UpgradeDowngradeDialog({
   onOpenChange,
   currentPlan,
   targetPlan,
+  billingCycle = 'monthly',
   onConfirm,
 }: UpgradeDowngradeDialogProps) {
   const [loading, setLoading] = useState(false);
   const isUpgrade = planOrder.indexOf(targetPlan) > planOrder.indexOf(currentPlan);
   const current = SUBSCRIPTION_PRICING[currentPlan];
   const target = SUBSCRIPTION_PRICING[targetPlan];
+  const currentPrice = billingCycle === 'yearly' ? current.yearlyPrice : current.price;
+  const targetPrice = billingCycle === 'yearly' ? target.yearlyPrice : target.price;
+  const priceSuffix = billingCycle === 'yearly' ? '/yr' : '/mo';
 
   async function handleConfirm() {
     setLoading(true);
@@ -76,7 +81,7 @@ export function UpgradeDowngradeDialog({
               <p className="font-medium">{current.label}</p>
             </div>
             <Badge variant="outline">
-              {current.price === 0 ? 'Free' : `$${current.price}/mo`}
+              {currentPrice === 0 ? 'Free' : `$${currentPrice}${priceSuffix}`}
             </Badge>
           </div>
 
@@ -96,7 +101,7 @@ export function UpgradeDowngradeDialog({
               <p className="font-medium">{target.label}</p>
             </div>
             <Badge variant="default">
-              {target.price === 0 ? 'Free' : `$${target.price}/mo`}
+              {targetPrice === 0 ? 'Free' : `$${targetPrice}${priceSuffix}`}
             </Badge>
           </div>
 
@@ -112,6 +117,12 @@ export function UpgradeDowngradeDialog({
                   <Check className="size-4 text-primary" />
                   <span>Up to {target.maxMembers === Infinity ? '∞' : target.maxMembers.toLocaleString()} members</span>
                 </li>
+                {billingCycle === 'yearly' && target.yearlyPrice > 0 && (
+                  <li className="flex items-center gap-2 text-sm">
+                    <Check className="size-4 text-green-600 dark:text-green-400" />
+                    <span>Save {((1 - target.yearlyPrice / (target.price * 12)) * 100).toFixed(0)}% with yearly billing</span>
+                  </li>
+                )}
                 {targetPlan === 'enterprise' && (
                   <li className="flex items-center gap-2 text-sm">
                     <Check className="size-4 text-primary" />

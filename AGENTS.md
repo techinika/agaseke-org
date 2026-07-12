@@ -43,6 +43,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - `org/[slug]/payment/return/[depositId]/[type]/` — payment return page (client-side verification via `quorum-payments` worker)
 - `org/[slug]/admins/` — admin roles management (super-admin, finance-admin, community-admin)
 - `org/[slug]/subscription/` — subscription plan management with PesaPal billing
+- `org/[slug]/subscription/return/[orderId]/` — subscription payment return page (polls for processing state)
 - `admin/organizations/` — super admin page listing all organizations (requires `isAdmin: true` on user doc)
 - `org/[slug]/chat/` — public chat (guest-accessible)
 - `app/api/org/smtp/` — POST, encrypts SMTP password and saves to Firestore
@@ -58,13 +59,17 @@ A web app for nonprofits to manage memberships and collect donations.
   - `POST /webhook` — Receives PesaPal IPN notifications, processes payments
   - `POST /finalize` — Client-side return verification after PesaPal redirect
   - `POST /reconcile` — Cron: verifies all pending transactions via PesaPal
-  - Auth: `X-API-Key` header for initiate/finalize, `Authorization: Bearer {CRON_SECRET}` for reconcile
-  - Bindings: `PESAPAL_CONSUMER_KEY`, `PESAPAL_CONSUMER_SECRET`, `PESAPAL_BASE_URL`, `FIREBASE_ADMIN_*`, `CRON_SECRET`
+  - Auth: `X-API-Key` for initiate/finalize; `Authorization: Bearer {WEBHOOK_SECRET}` for webhook; `Authorization: Bearer {CRON_SECRET}` for reconcile
+  - Webhook auth warns if `WEBHOOK_SECRET` unset (backwards-compatible migration)
+  - Campaign `raisedAmount` incremented on successful donations; race condition skips already-processed txns
+  - Bindings: `PESAPAL_CONSUMER_KEY`, `PESAPAL_CONSUMER_SECRET`, `PESAPAL_BASE_URL`, `FIREBASE_ADMIN_*`, `CRON_SECRET`, `WEBHOOK_SECRET`
+  - CORS: restricted to `ALLOWED_ORIGIN` (set `ALLOWED_ORIGIN=https://yourdomain.com`)
 - `workers/quorum-uploads/` — R2 image uploads
-  - `POST /upload` — Multipart file upload to R2 bucket `quorum-assets`
+  - `POST /upload` — Multipart file upload to R2 bucket `quorum-assets` (auth required)
   - `GET /files/*` — Public file serving from R2
-  - `DELETE /files/*` — File deletion from R2
+  - `DELETE /files/*` — File deletion from R2 (auth required)
   - Binding: `R2_BUCKET` (R2 bucket: `quorum-assets`)
+  - CORS: restricted to `ALLOWED_ORIGIN`
 - `workers/quorum-cron/` — Scheduled tasks
   - `GET|POST /reconcile` — Pending transaction reconciliation
   - `GET|POST /payment-reminders` — 3-day renewal reminders for memberships and recurring donations
@@ -86,6 +91,10 @@ A web app for nonprofits to manage memberships and collect donations.
 
 ### Key Patterns
 - AuthGuard via client-side auth store (Firebase Auth uses indexedDB — middleware can't read it)
+- **Worker Firebase Auth**: `workers/shared/firebase-auth.ts` uses `jose` JWKS + JWT verification for verifying Firebase ID tokens in Cloudflare Workers
+- **Proxy security headers**: `proxy.ts` adds X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy (no auth verification — Firebase Auth uses IndexedDB)
+- **CORS on all workers**: All workers restrict CORS to `ALLOWED_ORIGIN` env var
+- **Webhook auth**: PesaPal webhook uses `WEBHOOK_SECRET` Bearer token; warns if unset for backwards-compatible migration
 - Public org pages white-labeled (no Quorum branding, solid `bg-background` on nav/footer — no gradients) with SignInModal for logged-out users; all public pages show `OrgNotFound` component when org doesn't exist
 - Campaign `raisedAmount` updated atomically (`increment`) AND computed from donations — computed sum is authoritative
 - PesaPal return URLs are path-based (`/org/{slug}/payment/return/{depositId}/{type}`) to avoid query param issues
@@ -124,7 +133,9 @@ A web app for nonprofits to manage memberships and collect donations.
 - **Org branding settings**: Settings page includes website URL, contact email, contact phone, and custom footer text for emails. Used by `quorum-comm` worker to add org branding to email footers.
 - **R2 uploads**: Image uploads go through `quorum-uploads` worker to R2 bucket `quorum-assets`. Returns public URL at `quorum-assets.r2.dev/files/{folder}/{uuid}.{ext}`.
 - **Member limit enforcement**: Join flow checks org's subscription plan member limit before allowing new memberships. Shows error toast if limit reached.
-- **Subscription billing**: Subscription page allows upgrading/downgrading plans. Paid plans (Growth/Enterprise) initiate PesaPal payment via `quorum-payments` worker. Starter plan updates directly.
+- **Subscription billing**: Subscription page allows upgrading/downgrading plans. Paid plans (Growth/Enterprise) initiate PesaPal payment via `quorum-payments` worker. Starter plan updates directly. Plan only upgraded on payment confirmation (not on initial PATCH).
+- **Subscription return page**: `org/[slug]/subscription/return/[orderId]/` polls for payment processing state, shows success/failure UI with link back to subscription page.
+- **Yearly billing**: Subscription page supports monthly/yearly toggle with 15% discount on yearly plans. `SubscriptionBillingCycle` type, `yearlyPrice` field in `SUBSCRIPTION_PRICING`.
 - **Settings subscription card**: Settings page shows current subscription plan with link to manage subscription.
 
 ### Logging (lib/logger.ts)
@@ -144,6 +155,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - `queryFirestoreDocuments(collection, field, operator, value, limit?)`
 - `incrementFirestoreField(collection, docId, field, amount, subcollection?, subDocId?)` — uses `doubleValue`
 - `fetchOrgBySlug(slug)` — for server-side SEO metadata (uses `getAuthHeaders()`)
+- `fetchAllOrganizationSlugs()` — fetches all org slugs for sitemap generation (uses Firestore REST `runQuery`)
 
 ### Email Infrastructure (lib/email/)
 - `index.ts` — `sendEmail(options, orgId?)` dispatcher (org SMTP → system SMTP fallback); `getOrgAdmins(orgId)`; `getUserEmail(userId)`; `getOrgBranding(orgId)` for footer data
@@ -192,6 +204,9 @@ A web app for nonprofits to manage memberships and collect donations.
 - `SMTP_ENCRYPTION_KEY` — 32 bytes hex key for AES-GCM SMTP password encryption
 - `CRON_SECRET` — shared secret for cron job authorization
 - `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID` — Google Analytics measurement ID
+- `WEBHOOK_SECRET` — secret for PesaPal webhook Bearer token auth (warns if unset)
+- `ALLOWED_ORIGIN` — CORS origin restriction for all workers (e.g. `https://yourdomain.com`)
+- `WORKER_URL` — internal worker URL for quorum-payments (used by quorum-cron)
 
 ### Types
 - `types/organization.ts` — Organization with subscription, SMTP, payout, and branding fields (websiteUrl, contactEmail, contactPhone, footerText)
@@ -242,6 +257,17 @@ A web app for nonprofits to manage memberships and collect donations.
 - **Added member limit enforcement** — Join flow checks plan member limit before allowing new memberships. ✅
 - **Added PesaPal subscription billing** — Paid plans (Growth/Enterprise) initiate PesaPal payment. Starter updates directly. ✅
 - **Fixed PWA icons** — All icons (192, 512, maskable) now show "Q" instead of "A". ✅
+- **Yearly billing** — Monthly/yearly toggle with 15% discount. `SubscriptionBillingCycle` type. ✅
+- **Subscription return page** — `org/[slug]/subscription/return/[orderId]/` with polling UI. ✅
+- **Worker auth hardening** — `WEBHOOK_SECRET` for PesaPal webhook, CORS restricted on all workers, Firebase Auth via `jose` in workers. ✅
+- **Proxy security headers** — X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy. ✅
+- **SEO pages** — `not-found.tsx`, `error.tsx` (global + org), `robots.ts`, `sitemap.ts` with dynamic org pages. ✅
+- **Landing page SEO** — `generateMetadata` with OpenGraph/Twitter tags. ✅
+- **Email template branding** — payment-reminder, membership-expiry, pending-transaction-alert templates now pass org branding footer params. ✅
+- **Type fixes** — `Transaction.processedAt/failureReason/billingCycle`, `Membership.amount`, `OrgMember.status` typed as `MembershipStatus`. ✅
+- **Firestore REST fixes** — null values written as `{ nullValue: null }`, `incrementFirestoreField` uses `doubleValue` for decimals. ✅
+- **Fee display fixes** — CampaignCard/TierCard accept `feeRate` prop instead of hardcoded 10%. ✅
+- **Subscription API auth** — Route uses `verifyFirebaseToken` + admin check, deferred plan upgrade, ISO createdAt. ✅
 
 ### Next Steps
 1. Deploy `quorum-comm` worker: `cd workers/quorum-comm && wrangler deploy`
