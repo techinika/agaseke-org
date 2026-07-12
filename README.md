@@ -16,9 +16,13 @@ Built with Next.js 16 (App Router), Firebase (Firestore, Auth, Storage), Tailwin
 - **Public organization pages** — White-labeled profile (with cover image overlay for readability), join, and donate pages
 - **Rich text content** — Org bios and campaign descriptions support images, video embeds, links, and formatted text via tiptap editor
 - **Google Analytics** — GA4 page view tracking via measurement ID
-- **Email notifications** — Payment confirmations, reminders, expiry alerts, and failure notices via Nodemailer (org SMTP → system SMTP fallback)
+- **Email notifications** — Payment confirmations, reminders, expiry alerts, and failure notices via Cloudflare Email Service (branded) with Nodemailer SMTP fallback
 - **Automated reconciliation** — Cron-driven pending transaction checks with admin email alerts
 - **Progressive Web App** — Installable with offline support, push notifications, and home screen launch via web app manifest and service worker
+- **Admin roles** — Super-admin, finance-admin, and community-admin roles with granular access control
+- **Subscription plans** — Starter (free), Growth ($99/mo), Enterprise ($199/mo) with member limits and platform fees
+- **Withdrawals** — $10 minimum withdrawal with 5 working day processing
+- **Org branding** — White-labeled emails with custom website, contact info, and footer text
 
 ## Pricing
 
@@ -56,8 +60,10 @@ Open [http://localhost:3000](http://localhost:3000) to see the result.
 | `QUORUM_PAYMENTS_API_KEY` | Yes | API key for quorum-payments worker |
 | `NEXT_PUBLIC_QUORUM_UPLOADS_URL` | Yes | quorum-uploads worker URL |
 | `QUORUM_CRON_URL` | Yes | quorum-cron worker URL |
+| `QUORUM_COMM_URL` | Yes | quorum-comm worker URL |
+| `QUORUM_COMM_API_KEY` | Yes | API key for quorum-comm worker |
 | `CRON_SECRET` | Yes | Shared secret for cron job authorization |
-| `SMTP_HOST/PORT/USER/PASS` | Fallback email | System SMTP provider |
+| `SMTP_HOST/PORT/USER/PASS` | Fallback email | System SMTP provider (fallback) |
 | `DEFAULT_FROM_EMAIL`, `DEFAULT_FROM_NAME` | Yes | Default email sender |
 | `SMTP_ENCRYPTION_KEY` | For email | 32-byte hex key for org SMTP password encryption |
 | `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID` | Optional | Google Analytics measurement ID |
@@ -69,9 +75,9 @@ Open [http://localhost:3000](http://localhost:3000) to see the result.
 - **Backend**: Firebase (Firestore, Auth, Storage)
 - **State**: Zustand, React Query
 - **Payments**: PesaPal API v3 (Cards only, USD)
-- **Workers**: Cloudflare Workers (payments, uploads, cron)
+- **Workers**: Cloudflare Workers (payments, uploads, cron, comm)
 - **Storage**: Cloudflare R2 (`quorum-assets` bucket)
-- **Email**: Nodemailer SMTP (org custom → system fallback)
+- **Email**: Cloudflare Email Service (branded), Nodemailer SMTP (fallback)
 - **Encryption**: AES-GCM 256
 - **Rich text**: tiptap editor with @tailwindcss/typography
 - **Analytics**: GA4 via next/script (gtag)
@@ -90,7 +96,7 @@ app/
   org/             — User's organization listing (card grid with dashboard + public page links)
   org/create/      — Create organization wizard (3 steps)
   org/[slug]/
-    (admin)/       — Dashboard, settings (brand color, category/country, encrypted SMTP, payout bank details), campaigns (new/[campaignId]/edit), members (tiers/new/[tierId]/edit), finance, rooms
+    (admin)/       — Dashboard, settings (brand color, category/country, encrypted SMTP, payout bank details, branding), campaigns (new/[campaignId]/edit), members (tiers/new/[tierId]/edit), finance, rooms, admins, subscription
     (member)/      — Chat rooms (with back button when room selected)
     join/          — Join flow with checkout
     donate/        — Donation flow with checkout
@@ -109,6 +115,7 @@ lib/
   workers.ts       — Centralized worker URL configuration
   fees.ts          — Shared calculateFee utility with plan-specific rates
   payments.ts      — Shared completeDeposit, failDeposit, reconcilePendingTransaction, reReadTransaction (race guard), safeSend (email failure safety)
+  constants.ts     — Collections, fee rates, subscription plans, types
   app-url.ts       — Dynamic APP_URL helper
   encryption.ts    — AES-GCM 256 chat encryption
   constants.ts     — Collections, fee rates, subscription plans, types
@@ -118,4 +125,5 @@ workers/
   quorum-payments/ — PesaPal payment integration (initiate, webhook, finalize, reconcile)
   quorum-uploads/  — R2 file upload/serving
   quorum-cron/     — Scheduled tasks (reconcile, payment-reminders, membership-expiry)
+  quorum-comm/     — Branded email sending via Cloudflare Email Service
 ```

@@ -60,7 +60,7 @@ export default function JoinCheckoutClient({ slug, initialOrg }: JoinCheckoutCli
       const plan = SUBSCRIPTION_PRICING[org.subscriptionPlan || 'starter'];
       const members = await queryDocuments(
         `${COLLECTIONS.ORGANIZATIONS}/${org.id}/${SUBCOLLECTIONS.MEMBERS}`,
-      );
+      ) as Record<string, unknown>[];
       const activeMembers = members.filter((m) => m.status === 'active' || m.status === 'pending');
       if (plan.maxMembers !== Infinity && activeMembers.length >= plan.maxMembers) {
         toast.error(`This organization has reached the ${plan.label} plan limit of ${plan.maxMembers} members. Please contact the admin to upgrade.`);
