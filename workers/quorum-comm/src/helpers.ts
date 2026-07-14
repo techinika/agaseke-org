@@ -42,7 +42,7 @@ export function generateCorrelationId(prefix: string): string {
 export function jsonResp(data: unknown, status = 200, env?: Env): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': env?.ALLOWED_ORIGIN || '*' },
+    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': env?.ALLOWED_ORIGIN || 'https://quorum.app' },
   });
 }
 

@@ -28,6 +28,7 @@ function decodeFields(fields?: Record<string, FirestoreFieldValue>): Record<stri
     else if (value.doubleValue !== undefined) result[key] = value.doubleValue;
     else if (value.booleanValue !== undefined) result[key] = value.booleanValue;
     else if (value.timestampValue !== undefined) result[key] = value.timestampValue;
+    else if ('nullValue' in value) result[key] = null;
     else if (value.arrayValue?.values) result[key] = value.arrayValue.values.map((v) => v.stringValue ?? '');
   }
   return result;

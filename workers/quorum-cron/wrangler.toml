@@ -4,7 +4,7 @@ compatibility_date = "2024-12-01"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-APP_URL = "https://quorum.org"
+APP_URL = "https://quorum-org-app.vercel.app"
 
 # Cron triggers — runs all 3 tasks daily at 06:00 UTC
 [[triggers]]
@@ -15,7 +15,7 @@ command = "cron"
 CRON_SECRET = ""
 FIREBASE_ADMIN_CLIENT_EMAIL = ""
 FIREBASE_ADMIN_PRIVATE_KEY = ""
-QUORUM_PAYMENTS_URL = ""
+QUORUM_PAYMENTS_URL = "https://quorum-payments.agasekeforcreators.workers.dev"
 QUORUM_PAYMENTS_API_KEY = ""
-QUORUM_COMM_URL = ""
+QUORUM_COMM_URL = "https://quorum-comm.agasekeforcreators.workers.dev"
 QUORUM_COMM_API_KEY = ""

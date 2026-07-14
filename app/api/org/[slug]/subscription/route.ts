@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFirestoreDocument, updateFirestoreDocument, createFirestoreDocument } from '@/lib/firebase/server';
+import { readFirestoreDocument, queryFirestoreDocuments, updateFirestoreDocument, createFirestoreDocument } from '@/lib/firebase/server';
 import { verifyFirebaseToken } from '@/lib/firebase/admin';
 import { COLLECTIONS, SUBSCRIPTION_PRICING, type SubscriptionPlan, type SubscriptionBillingCycle, SUBSCRIPTION_BILLING_CYCLES } from '@/lib/constants';
 import { generateOrderId } from '@/lib/pesapal';
@@ -31,12 +31,7 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const membersRes = await readFirestoreDocument(
-      COLLECTIONS.ORGANIZATIONS,
-      slug,
-      'members'
-    );
-    const members = Array.isArray(membersRes) ? membersRes : [];
+    const members = await queryFirestoreDocuments(COLLECTIONS.MEMBERSHIPS, 'orgId', 'EQUAL', slug);
     const activeMembers = members.filter((m: Record<string, unknown>) => m.status === 'active').length;
 
     const plan = (orgs.subscriptionPlan as SubscriptionPlan) || 'starter';

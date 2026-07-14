@@ -221,10 +221,25 @@ export async function reconcilePendingTransaction(
 ): Promise<'completed' | 'failed' | 'skipped'> {
   logger.info('payments', `reconcilePendingTransaction: checking depositId=${depositId}`);
   try {
-    const tx = await verifyTransaction(depositId);
-    logger.info('payments', `reconcilePendingTransaction: PesaPal status for depositId=${depositId}: ${tx.payment_status_description} (code=${tx.status_code})`);
+    // Fetch transaction to get the stored orderTrackingId
+    const txs = await queryFirestoreDocuments(COLLECTIONS.TRANSACTIONS, 'depositId', 'EQUAL', depositId);
+    if (txs.length === 0) {
+      logger.warn('payments', `reconcilePendingTransaction: no transactions found for depositId=${depositId}`);
+      return 'skipped';
+    }
 
-    const mappedStatus = mapPesapalStatus(tx.status_code, tx.payment_status_description);
+    const tx = txs[0];
+    const orderTrackingId = tx.orderTrackingId as string | undefined;
+    if (!orderTrackingId) {
+      logger.warn('payments', `reconcilePendingTransaction: no orderTrackingId stored for depositId=${depositId}`);
+      return 'skipped';
+    }
+
+    // Verify with PesaPal using the stored orderTrackingId
+    const pspTx = await verifyTransaction(orderTrackingId);
+    logger.info('payments', `reconcilePendingTransaction: PesaPal status for depositId=${depositId}: ${pspTx.payment_status_description} (code=${pspTx.status_code})`);
+
+    const mappedStatus = mapPesapalStatus(pspTx.status_code, pspTx.payment_status_description);
 
     if (mappedStatus === 'completed') {
       logger.info('payments', `reconcilePendingTransaction: completing depositId=${depositId}`);
@@ -233,13 +248,13 @@ export async function reconcilePendingTransaction(
     }
 
     if (mappedStatus === 'failed') {
-      const reason = tx.description || 'Payment failed.';
+      const reason = pspTx.description || 'Payment failed.';
       logger.warn('payments', `reconcilePendingTransaction: failing depositId=${depositId}, reason=${reason}`);
       await failDeposit(depositId, reason);
       return 'failed';
     }
 
-    logger.info('payments', `reconcilePendingTransaction: depositId=${depositId} still pending (${tx.payment_status_description})`);
+    logger.info('payments', `reconcilePendingTransaction: depositId=${depositId} still pending (${pspTx.payment_status_description})`);
     return 'skipped';
   } catch (err) {
     logger.error('payments', `reconcilePendingTransaction: error for depositId=${depositId}`, err);

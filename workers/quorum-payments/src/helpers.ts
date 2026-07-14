@@ -9,6 +9,8 @@ export interface Env {
   WEBHOOK_SECRET: string;
   WORKER_URL: string;
   ALLOWED_ORIGIN: string;
+  QUORUM_COMM_URL: string;
+  QUORUM_COMM_API_KEY: string;
 }
 
 export function generateCorrelationId(prefix: string): string {

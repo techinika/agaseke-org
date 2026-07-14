@@ -207,19 +207,19 @@ export async function sendDonationFailedEmails(
         {
           to: admin,
           subject: `Failed Donation — ${org.name as string}`,
-          html: newDonationNotificationTemplate({
-            adminName: admin.name || 'Admin',
-            donorName: (donation.donorName as string) || 'Anonymous',
-            donorEmail: donorEmail || undefined,
+          html: paymentFailedTemplate({
+            recipientName: admin.name || 'Admin',
             amount: (donation.amount as number).toFixed(2),
             currency: 'USD',
+            type: 'donation',
             orgName: org.name as string,
             orgLogoURL: org.logoURL as string | undefined,
             brandColor,
-            donationDate: new Date().toLocaleDateString('en-US', {
+            failureReason,
+            date: new Date().toLocaleDateString('en-US', {
               year: 'numeric', month: 'long', day: 'numeric',
             }),
-            donationsUrl: `${appUrl}/org/${org.slug as string}/donations`,
+            retryUrl: `${appUrl}/org/${org.slug as string}/donate`,
             websiteUrl: org.websiteUrl as string | undefined,
             contactEmail: org.contactEmail as string | undefined,
             contactPhone: org.contactPhone as string | undefined,

@@ -77,6 +77,11 @@ async function handleInitiate(request: Request, env: Env): Promise<Response> {
       },
     });
 
+    const accessToken = await getFirebaseAccessToken(env.FIREBASE_ADMIN_CLIENT_EMAIL, env.FIREBASE_ADMIN_PRIVATE_KEY);
+    const projectId = env.FIREBASE_ADMIN_CLIENT_EMAIL.split('@')[1]?.replace('.gserviceaccount.com', '') || '';
+    await firestoreUpdate('transactions', depositId, { orderTrackingId: result.order_tracking_id }, accessToken, projectId);
+    console.log(`[${cid}] stored orderTrackingId=${result.order_tracking_id} for depositId=${depositId}`);
+
     return jsonResp({ redirectUrl: result.redirect_url, orderTrackingId: result.order_tracking_id }, 200, env);
   } catch (err) {
     console.error(`[${cid}] initiate error`, err);
@@ -118,12 +123,12 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
     const projectId = env.FIREBASE_ADMIN_CLIENT_EMAIL.split('@')[1]?.replace('.gserviceaccount.com', '') || '';
 
     if (tx.status_code === 1) {
-      await processCompleted(OrderMerchantReference, accessToken, projectId, cid);
+      await processCompleted(OrderMerchantReference, env, accessToken, projectId, cid);
       return jsonResp({ orderNotificationType: 'IPNCHANGE', orderTrackingId: OrderTrackingId, orderMerchantReference: OrderMerchantReference, status: 200 }, 200, env);
     }
 
     if (tx.status_code === 2) {
-      await processFailed(OrderMerchantReference, tx.description || 'Payment failed', accessToken, projectId, cid);
+      await processFailed(OrderMerchantReference, tx.description || 'Payment failed', env, accessToken, projectId, cid);
       return jsonResp({ orderNotificationType: 'IPNCHANGE', orderTrackingId: OrderTrackingId, orderMerchantReference: OrderMerchantReference, status: 200 }, 200, env);
     }
 
@@ -154,15 +159,18 @@ async function handleFinalize(request: Request, env: Env): Promise<Response> {
     if (tx.status === 'completed') return jsonResp({ status: 'completed' }, 200, env);
     if (tx.status === 'failed') return jsonResp({ status: 'failed', failureReason: tx.failureReason || 'Payment was declined.' }, 200, env);
 
-    const pesapalTx = await pesapalVerify(env.PESAPAL_BASE_URL, env.PESAPAL_CONSUMER_KEY, env.PESAPAL_CONSUMER_SECRET, depositId);
+    const trackingId = tx.orderTrackingId as string | undefined;
+    if (!trackingId) return jsonResp({ status: 'processing', message: 'Payment is still being processed.' }, 200, env);
+
+    const pesapalTx = await pesapalVerify(env.PESAPAL_BASE_URL, env.PESAPAL_CONSUMER_KEY, env.PESAPAL_CONSUMER_SECRET, trackingId);
 
     if (pesapalTx.status_code === 1) {
-      await processCompleted(depositId, accessToken, projectId, cid);
+      await processCompleted(depositId, env, accessToken, projectId, cid);
       return jsonResp({ status: 'completed' }, 200, env);
     }
 
     if (pesapalTx.status_code === 2) {
-      await processFailed(depositId, pesapalTx.description || 'Payment failed', accessToken, projectId, cid);
+      await processFailed(depositId, pesapalTx.description || 'Payment failed', env, accessToken, projectId, cid);
       return jsonResp({ status: 'failed', failureReason: pesapalTx.description }, 200, env);
     }
 
@@ -189,17 +197,18 @@ async function handleReconcile(request: Request, env: Env): Promise<Response> {
 
     for (const tx of pendingTxs) {
       const depositId = tx.depositId as string | undefined;
-      if (!depositId) { results.skipped++; continue; }
+      const trackingId = tx.orderTrackingId as string | undefined;
+      if (!depositId || !trackingId) { results.skipped++; continue; }
 
       try {
-        const pesapalTx = await pesapalVerify(env.PESAPAL_BASE_URL, env.PESAPAL_CONSUMER_KEY, env.PESAPAL_CONSUMER_SECRET, depositId);
+        const pesapalTx = await pesapalVerify(env.PESAPAL_BASE_URL, env.PESAPAL_CONSUMER_KEY, env.PESAPAL_CONSUMER_SECRET, trackingId);
         results.checked++;
 
         if (pesapalTx.status_code === 1) {
-          await processCompleted(depositId, accessToken, projectId, cid);
+          await processCompleted(depositId, env, accessToken, projectId, cid);
           results.completed++;
         } else if (pesapalTx.status_code === 2) {
-          await processFailed(depositId, pesapalTx.description || 'Payment failed', accessToken, projectId, cid);
+          await processFailed(depositId, pesapalTx.description || 'Payment failed', env, accessToken, projectId, cid);
           results.failed++;
         } else {
           results.skipped++;
@@ -216,11 +225,15 @@ async function handleReconcile(request: Request, env: Env): Promise<Response> {
   }
 }
 
-async function processCompleted(depositId: string, accessToken: string, projectId: string, cid: string): Promise<void> {
+async function processCompleted(depositId: string, env: Env, accessToken: string, projectId: string, cid: string): Promise<void> {
   const txs = await firestoreQuery('transactions', 'depositId', depositId, accessToken, projectId);
   for (const tx of txs) {
-    if (tx.status === 'completed') {
-      console.log(`[${cid}] skipping already-completed transaction ${tx.id} for depositId=${depositId}`);
+    if (tx.status === 'completed' || tx.processedAt) {
+      console.log(`[${cid}] skipping already-processed transaction ${tx.id} for depositId=${depositId}`);
+      continue;
+    }
+    if (tx.status === 'failed') {
+      console.log(`[${cid}] skipping failed transaction ${tx.id} for depositId=${depositId}`);
       continue;
     }
     await firestoreUpdate('transactions', tx.id, { status: 'completed', processedAt: new Date().toISOString() }, accessToken, projectId);
@@ -236,11 +249,22 @@ async function processCompleted(depositId: string, accessToken: string, projectI
 
         const campaignId = donation.campaignId as string | undefined;
         const orgId = donation.orgId as string | undefined;
-        const amount = donation.amount as number | undefined;
-        if (campaignId && orgId && amount && amount > 0) {
-          console.log(`[${cid}] incrementing campaign ${campaignId} raisedAmount by ${amount}`);
-          await firestoreIncrementField(`organizations/${orgId}/campaigns`, campaignId, 'raisedAmount', amount, accessToken, projectId);
+        const orgReceives = (donation.orgReceives as number) || 0;
+        if (campaignId && orgId && orgReceives > 0) {
+          console.log(`[${cid}] incrementing campaign ${campaignId} raisedAmount by ${orgReceives}`);
+          await firestoreIncrementField(`organizations/${orgId}/campaigns`, campaignId, 'raisedAmount', orgReceives, accessToken, projectId);
         }
+
+        await sendEmailSafe(env, {
+          to: donation.donorEmail as string,
+          orgId: orgId as string,
+          type: 'donation',
+          amount: donation.amount as number,
+          name: donation.donorName as string | undefined,
+          description: donation.campaignName as string | undefined,
+          transactionId: donation.id as string,
+          cid,
+        });
       }
     }
 
@@ -262,6 +286,18 @@ async function processCompleted(depositId: string, accessToken: string, projectI
             projectId
           );
         }
+
+        const user = await firestoreGet('users', membership.userId as string, accessToken, projectId);
+        await sendEmailSafe(env, {
+          to: user?.email as string,
+          orgId: membership.orgId as string,
+          type: 'membership',
+          amount: (membership.amount as number) || 0,
+          name: user?.displayName as string | undefined,
+          description: membership.tierName as string | undefined,
+          transactionId: membership.id as string,
+          cid,
+        });
       }
     }
 
@@ -281,11 +317,15 @@ async function processCompleted(depositId: string, accessToken: string, projectI
   }
 }
 
-async function processFailed(depositId: string, reason: string, accessToken: string, projectId: string, cid: string): Promise<void> {
+async function processFailed(depositId: string, reason: string, env: Env, accessToken: string, projectId: string, cid: string): Promise<void> {
   const txs = await firestoreQuery('transactions', 'depositId', depositId, accessToken, projectId);
   for (const tx of txs) {
-    if (tx.status === 'failed') {
-      console.log(`[${cid}] skipping already-failed transaction ${tx.id} for depositId=${depositId}`);
+    if (tx.status === 'failed' || tx.processedAt) {
+      console.log(`[${cid}] skipping already-processed transaction ${tx.id} for depositId=${depositId}`);
+      continue;
+    }
+    if (tx.status === 'completed') {
+      console.log(`[${cid}] skipping completed transaction ${tx.id} for depositId=${depositId}`);
       continue;
     }
     await firestoreUpdate('transactions', tx.id, { status: 'failed', processedAt: new Date().toISOString(), failureReason: reason }, accessToken, projectId);
@@ -295,6 +335,17 @@ async function processFailed(depositId: string, reason: string, accessToken: str
       for (const donation of donations) {
         if (donation.status === 'failed' || donation.status === 'active') continue;
         await firestoreUpdate('donations', donation.id, { status: 'failed' }, accessToken, projectId);
+
+        const user = await firestoreGet('users', donation.userId as string, accessToken, projectId);
+        await sendFailedEmailSafe(env, {
+          to: user?.email as string || donation.donorEmail as string,
+          orgId: donation.orgId as string,
+          type: 'donation',
+          amount: donation.amount as number,
+          name: user?.displayName as string || donation.donorName as string,
+          reason,
+          cid,
+        });
       }
     }
 
@@ -313,6 +364,17 @@ async function processFailed(depositId: string, reason: string, accessToken: str
             projectId
           );
         }
+
+        const user = await firestoreGet('users', membership.userId as string, accessToken, projectId);
+        await sendFailedEmailSafe(env, {
+          to: user?.email as string,
+          orgId: membership.orgId as string,
+          type: 'membership',
+          amount: (membership.amount as number) || 0,
+          name: user?.displayName as string,
+          reason,
+          cid,
+        });
       }
     }
   }
@@ -320,9 +382,57 @@ async function processFailed(depositId: string, reason: string, accessToken: str
 
 function urlFromEnv(env: Env): string {
   if (env.WORKER_URL) return env.WORKER_URL;
-  return env.PESAPAL_BASE_URL.includes('cybqa')
-    ? 'https://quorum-payments.quorum.workers.dev'
-    : 'https://quorum-payments.quorum.workers.dev';
+  if (!env.ALLOWED_ORIGIN) {
+    console.warn('WARNING: WORKER_URL and ALLOWED_ORIGIN not set. Webhook URLs will be wrong.');
+  }
+  return env.ALLOWED_ORIGIN || 'https://quorum-payments.quorum.workers.dev';
+}
+
+async function sendEmailSafe(env: Env, params: { to?: string; orgId: string; type: string; amount: number; name?: string; description?: string; transactionId: string; cid: string }): Promise<void> {
+  if (!params.to || !env.QUORUM_COMM_URL || !env.QUORUM_COMM_API_KEY) return;
+  try {
+    const res = await fetch(`${env.QUORUM_COMM_URL}/send-confirmation`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': env.QUORUM_COMM_API_KEY },
+      body: JSON.stringify({
+        to: params.to,
+        orgId: params.orgId,
+        type: params.type,
+        amount: params.amount,
+        currency: 'USD',
+        transactionId: params.transactionId,
+        toName: params.name,
+        description: params.description,
+      }),
+    });
+    if (!res.ok) console.error(`[${params.cid}] send-confirmation failed: ${res.status}`);
+    else console.log(`[${params.cid}] confirmation email sent to ${params.to}`);
+  } catch (err) {
+    console.error(`[${params.cid}] email send error`, err);
+  }
+}
+
+async function sendFailedEmailSafe(env: Env, params: { to?: string; orgId: string; type: string; amount: number; name?: string; reason: string; cid: string }): Promise<void> {
+  if (!params.to || !env.QUORUM_COMM_URL || !env.QUORUM_COMM_API_KEY) return;
+  try {
+    const res = await fetch(`${env.QUORUM_COMM_URL}/send-failure`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': env.QUORUM_COMM_API_KEY },
+      body: JSON.stringify({
+        to: params.to,
+        orgId: params.orgId,
+        type: params.type,
+        amount: params.amount,
+        currency: 'USD',
+        failureReason: params.reason,
+        toName: params.name,
+      }),
+    });
+    if (!res.ok) console.error(`[${params.cid}] send-failure failed: ${res.status}`);
+    else console.log(`[${params.cid}] failure email sent to ${params.to}`);
+  } catch (err) {
+    console.error(`[${params.cid}] email send error`, err);
+  }
 }
 
 function timingSafeEqual(a: string, b: string): boolean {

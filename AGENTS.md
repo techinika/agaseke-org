@@ -268,6 +268,9 @@ A web app for nonprofits to manage memberships and collect donations.
 - **Firestore REST fixes** — null values written as `{ nullValue: null }`, `incrementFirestoreField` uses `doubleValue` for decimals. ✅
 - **Fee display fixes** — CampaignCard/TierCard accept `feeRate` prop instead of hardcoded 10%. ✅
 - **Subscription API auth** — Route uses `verifyFirebaseToken` + admin check, deferred plan upgrade, ISO createdAt. ✅
+- **Fixed `reconcilePendingTransaction`** — now fetches `orderTrackingId` from Firestore before calling `verifyTransaction` (was passing `depositId` as tracking ID) ✅
+- **Fixed subscription API imports** — added `updateFirestoreDocument`, `createFirestoreDocument` imports (removed unused ones) ✅
+- **Added worker secrets** — `QUORUM_COMM_URL`, `QUORUM_COMM_API_KEY` in `quorum-payments/wrangler.toml` ✅
 
 ### Next Steps
 1. Deploy `quorum-comm` worker: `cd workers/quorum-comm && wrangler deploy`

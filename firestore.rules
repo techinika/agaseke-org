@@ -96,7 +96,11 @@ service cloud.firestore {
       allow read: if isAuthenticated()
         && (isOrgAdmin(get(/databases/$(database)/documents/organizations/$(resource.data.orgId)).data.id)
           || resource.data.userId == request.auth.uid);
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      allow create: if isAuthenticated()
+        && request.auth.uid == request.resource.data.userId
+        && request.resource.data.status == 'pending'
+        && request.resource.data.orgId is string
+        && request.resource.data.amount is number;
       allow update: if false;
       allow delete: if false;
     }
@@ -105,7 +109,10 @@ service cloud.firestore {
       allow read: if isAuthenticated()
         && (isOrgAdmin(get(/databases/$(database)/documents/organizations/$(resource.data.orgId)).data.id)
           || resource.data.userId == request.auth.uid);
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      allow create: if isAuthenticated()
+        && request.auth.uid == request.resource.data.userId
+        && request.resource.data.status == 'pending'
+        && request.resource.data.orgId is string;
       allow update: if false;
       allow delete: if false;
     }

@@ -25,7 +25,7 @@ export default {
       return new Response(null, {
         status: 204,
         headers: {
-          'Access-Control-Allow-Origin': env.ALLOWED_ORIGIN || '*',
+          'Access-Control-Allow-Origin': env.ALLOWED_ORIGIN || 'https://quorum.app',
           'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type, X-API-Key',
         },

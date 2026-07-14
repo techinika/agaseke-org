@@ -24,7 +24,7 @@ export default {
     if (method === 'OPTIONS') {
       return new Response(null, {
         status: 204,
-        headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Authorization, Content-Type' },
+        headers: { 'Access-Control-Allow-Origin': 'https://quorum.app', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Authorization, Content-Type' },
       });
     }
 
@@ -290,7 +290,7 @@ function genCid(prefix: string): string {
 function jsonResp(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://quorum.app' },
   });
 }
 
@@ -428,16 +428,31 @@ async function sendEmail(env: Env, options: { to: string; orgId: string; subject
 
 // ─── Email Templates ─────────────────────────────────────────────────────────
 
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 function emailLayout(content: string, brandColor: string): string {
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f4f4f5;font-family:system-ui,-apple-system,sans-serif"><div style="max-width:600px;margin:0 auto;padding:24px"><div style="background:${brandColor};color:#fff;padding:16px 24px;border-radius:8px 8px 0 0"><h1 style="margin:0;font-size:18px;font-weight:600">Quorum</h1></div><div style="background:#fff;padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px">${content}</div><p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">Powered by Quorum</p></div></body></html>`;
+  const safeColor = /^#[0-9a-fA-F]{3,8}$/.test(brandColor) ? brandColor : '#FF0000';
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f4f4f5;font-family:system-ui,-apple-system,sans-serif"><div style="max-width:600px;margin:0 auto;padding:24px"><div style="background:${safeColor};color:#fff;padding:16px 24px;border-radius:8px 8px 0 0"><h1 style="margin:0;font-size:18px;font-weight:600">Quorum</h1></div><div style="background:#fff;padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px">${content}</div><p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">Powered by Quorum</p></div></body></html>`;
 }
 
 function paymentReminderHtml(params: { recipientName: string; amount: string; orgName: string; brandColor: string; dueDate: string; type: string; description?: string; paymentUrl: string }): string {
-  const content = `<h2 style="margin:0 0 16px;font-size:20px;color:#111">Payment Reminder</h2><p style="color:#555;margin:0 0 16px">Hi ${params.recipientName},</p><p style="color:#555;margin:0 0 16px">Your ${params.type === 'membership' ? 'membership' : 'donation'} renewal for <strong>${params.orgName}</strong> is due on <strong>${params.dueDate}</strong>.</p><div style="background:#f9fafb;padding:16px;border-radius:8px;margin:0 0 16px"><p style="margin:0;color:#111;font-size:16px"><strong>Amount: $${params.amount} USD</strong></p>${params.description ? `<p style="margin:4px 0 0;color:#666;font-size:14px">${params.description}</p>` : ''}</div><a href="${params.paymentUrl}" style="display:inline-block;background:${params.brandColor};color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600">Make Payment Now</a>`;
+  const name = escapeHtml(params.recipientName);
+  const org = escapeHtml(params.orgName);
+  const date = escapeHtml(params.dueDate);
+  const desc = params.description ? escapeHtml(params.description) : '';
+  const url = escapeHtml(params.paymentUrl);
+  const content = `<h2 style="margin:0 0 16px;font-size:20px;color:#111">Payment Reminder</h2><p style="color:#555;margin:0 0 16px">Hi ${name},</p><p style="color:#555;margin:0 0 16px">Your ${params.type === 'membership' ? 'membership' : 'donation'} renewal for <strong>${org}</strong> is due on <strong>${date}</strong>.</p><div style="background:#f9fafb;padding:16px;border-radius:8px;margin:0 0 16px"><p style="margin:0;color:#111;font-size:16px"><strong>Amount: $${escapeHtml(params.amount)} USD</strong></p>${desc ? `<p style="margin:4px 0 0;color:#666;font-size:14px">${desc}</p>` : ''}</div><a href="${url}" style="display:inline-block;background:${params.brandColor};color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600">Make Payment Now</a>`;
   return emailLayout(content, params.brandColor);
 }
 
 function membershipExpiryHtml(params: { recipientName: string; orgName: string; brandColor: string; tierName: string; expiredDate: string; renewalUrl: string }): string {
-  const content = `<h2 style="margin:0 0 16px;font-size:20px;color:#111">Membership Expired</h2><p style="color:#555;margin:0 0 16px">Hi ${params.recipientName},</p><p style="color:#555;margin:0 0 16px">Your <strong>${params.tierName}</strong> membership with <strong>${params.orgName}</strong> expired on <strong>${params.expiredDate}</strong>.</p><a href="${params.renewalUrl}" style="display:inline-block;background:${params.brandColor};color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600">Renew Membership</a>`;
+  const name = escapeHtml(params.recipientName);
+  const org = escapeHtml(params.orgName);
+  const tier = escapeHtml(params.tierName);
+  const date = escapeHtml(params.expiredDate);
+  const url = escapeHtml(params.renewalUrl);
+  const content = `<h2 style="margin:0 0 16px;font-size:20px;color:#111">Membership Expired</h2><p style="color:#555;margin:0 0 16px">Hi ${name},</p><p style="color:#555;margin:0 0 16px">Your <strong>${tier}</strong> membership with <strong>${org}</strong> expired on <strong>${date}</strong>.</p><a href="${url}" style="display:inline-block;background:${params.brandColor};color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600">Renew Membership</a>`;
   return emailLayout(content, params.brandColor);
 }

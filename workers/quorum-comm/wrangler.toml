@@ -4,13 +4,13 @@ compatibility_date = "2024-12-01"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-FIREBASE_PROJECT_ID = "ndafana-one"
+FIREBASE_PROJECT_ID = "agaseke4org"
 
 [secrets]
 FIREBASE_ADMIN_CLIENT_EMAIL = ""
 FIREBASE_ADMIN_PRIVATE_KEY = ""
 API_KEY = ""
-ALLOWED_ORIGIN = ""
+ALLOWED_ORIGIN = "https://quorum-org-app.vercel.app"
 
 # Cloudflare Email Service binding
 [[send_email]]
