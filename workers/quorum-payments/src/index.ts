@@ -61,7 +61,10 @@ async function handleInitiate(request: Request, env: Env): Promise<Response> {
       return errorResp('Missing required fields: depositId, amount, returnUrl', 400, env);
     }
 
-    const notificationId = `${urlFromEnv(env)}/webhook`;
+    const notificationId = env.PESAPAL_IPN_URL_ID;
+    if (!notificationId) {
+      return errorResp('PESAPAL_IPN_URL_ID not configured', 500, env);
+    }
 
     const result = await pesapalInitiate(env.PESAPAL_BASE_URL, env.PESAPAL_CONSUMER_KEY, env.PESAPAL_CONSUMER_SECRET, {
       id: depositId,
@@ -92,16 +95,6 @@ async function handleInitiate(request: Request, env: Env): Promise<Response> {
 async function handleWebhook(request: Request, env: Env): Promise<Response> {
   const cid = generateCorrelationId('wh');
   try {
-    if (env.WEBHOOK_SECRET) {
-      const headerSecret = request.headers.get('X-Webhook-Secret');
-      if (!headerSecret || !timingSafeEqual(headerSecret, env.WEBHOOK_SECRET)) {
-        console.warn(`[${cid}] webhook auth failed: invalid or missing X-Webhook-Secret`);
-        return errorResp('Unauthorized', 401, env);
-      }
-    } else {
-      console.warn(`[${cid}] WEBHOOK_SECRET not set — webhook is unauthenticated (migration period)`);
-    }
-
     const body = await request.json();
     const { OrderTrackingId, OrderMerchantReference, OrderNotificationType } = body as {
       OrderTrackingId: string;
@@ -374,13 +367,6 @@ async function processFailed(depositId: string, reason: string, env: Env, access
   }
 }
 
-function urlFromEnv(env: Env): string {
-  if (env.WORKER_URL) return env.WORKER_URL;
-  if (!env.ALLOWED_ORIGIN) {
-    console.warn('WARNING: WORKER_URL and ALLOWED_ORIGIN not set. Webhook URLs will be wrong.');
-  }
-  return env.ALLOWED_ORIGIN || 'https://quorum-payments.quorum.workers.dev';
-}
 
 async function sendEmailSafe(env: Env, params: { to?: string; orgId: string; type: string; amount: number; name?: string; description?: string; transactionId: string; cid: string }): Promise<void> {
   if (!params.to || !env.QUORUM_COMM_URL || !env.API_KEY) return;
@@ -490,16 +476,4 @@ async function notifySubscriptionsFailure(env: Env, tx: Record<string, unknown>,
   } catch (err) {
     console.error(`[${cid}] Failed to call quorum-subscriptions/handle-failure`, err);
   }
-}
-
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  const encoder = new TextEncoder();
-  const bufA = encoder.encode(a);
-  const bufB = encoder.encode(b);
-  let result = 0;
-  for (let i = 0; i < bufA.length; i++) {
-    result |= bufA[i] ^ bufB[i];
-  }
-  return result === 0;
 }

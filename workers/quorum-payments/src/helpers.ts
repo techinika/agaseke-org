@@ -2,11 +2,11 @@ export interface Env {
   PESAPAL_CONSUMER_KEY: string;
   PESAPAL_CONSUMER_SECRET: string;
   PESAPAL_BASE_URL: string;
+  PESAPAL_IPN_URL_ID: string;
   FIREBASE_ADMIN_CLIENT_EMAIL: string;
   FIREBASE_ADMIN_PRIVATE_KEY: string;
   CRON_SECRET: string;
   API_KEY: string;
-  WEBHOOK_SECRET: string;
   WORKER_URL: string;
   ALLOWED_ORIGIN: string;
   QUORUM_COMM_URL: string;

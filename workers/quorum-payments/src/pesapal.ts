@@ -9,7 +9,6 @@ export interface PesapalInitiateParams {
   currency: string;
   description: string;
   callbackUrl: string;
-  cancellationUrl?: string;
   notificationId: string;
   billingAddress: {
     email_address?: string;
@@ -93,9 +92,7 @@ export async function initiatePayment(
       amount: params.amount,
       description: params.description,
       callback_url: params.callbackUrl,
-      cancellation_url: params.cancellationUrl || '',
       notification_id: params.notificationId,
-      redirect_mode: 'TOP_WINDOW',
       billing_address: params.billingAddress,
     }),
   });

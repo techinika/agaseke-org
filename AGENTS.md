@@ -62,10 +62,9 @@ A web app for nonprofits to manage memberships and collect donations.
   - `POST /webhook` — Receives PesaPal IPN notifications, processes payments
   - `POST /finalize` — Client-side return verification after PesaPal redirect; calls `quorum-subscriptions/finalize` for subscription payments
   - `POST /reconcile` — Cron: verifies all pending transactions via PesaPal
-  - Auth: `X-API-Key` for initiate/finalize; `Authorization: Bearer {WEBHOOK_SECRET}` for webhook; `Authorization: Bearer {CRON_SECRET}` for reconcile
-  - Webhook auth warns if `WEBHOOK_SECRET` unset (backwards-compatible migration)
+  - Auth: `X-API-Key` for initiate/finalize; `Authorization: Bearer {CRON_SECRET}` for reconcile; IPN webhook is unauthenticated (PesaPal sends plain POST)
   - Campaign `raisedAmount` incremented on successful donations; race condition skips already-processed txns
-  - Bindings: `PESAPAL_CONSUMER_KEY`, `PESAPAL_CONSUMER_SECRET`, `PESAPAL_BASE_URL`, `FIREBASE_ADMIN_*`, `CRON_SECRET`, `WEBHOOK_SECRET`, `QUORUM_SUBSCRIPTIONS_URL`, `API_KEY`
+  - Bindings: `PESAPAL_CONSUMER_KEY`, `PESAPAL_CONSUMER_SECRET`, `PESAPAL_BASE_URL`, `PESAPAL_IPN_URL_ID`, `FIREBASE_ADMIN_*`, `CRON_SECRET`, `QUORUM_SUBSCRIPTIONS_URL`, `API_KEY`
   - CORS: restricted to `ALLOWED_ORIGIN` (set `ALLOWED_ORIGIN=https://yourdomain.com`)
 - `workers/quorum-uploads/` — R2 image uploads
   - `POST /upload` — Multipart file upload to R2 bucket `quorum-assets` (auth required)
@@ -112,7 +111,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - **Worker Firebase Auth**: `workers/shared/firebase-auth.ts` uses `jose` JWKS + JWT verification for verifying Firebase ID tokens in Cloudflare Workers
 - **Proxy security headers**: `proxy.ts` adds X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy (no auth verification — Firebase Auth uses IndexedDB)
 - **CORS on all workers**: All workers restrict CORS to `ALLOWED_ORIGIN` env var
-- **Webhook auth**: PesaPal webhook uses `WEBHOOK_SECRET` Bearer token; warns if unset for backwards-compatible migration
+- **Webhook auth**: PesaPal webhook is unauthenticated (plain POST); validates payload structure (OrderTrackingId, OrderMerchantReference required)
 - Public org pages white-labeled (no Quorum branding, solid `bg-background` on nav/footer — no gradients) with SignInModal for logged-out users; all public pages show `OrgNotFound` component when org doesn't exist
 - Campaign `raisedAmount` updated atomically (`increment`) AND computed from donations — computed sum is authoritative
 - PesaPal return URLs are path-based (`/org/{slug}/payment/return/{depositId}/{type}`) to avoid query param issues
@@ -221,7 +220,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - `SMTP_ENCRYPTION_KEY` — 32 bytes hex key for AES-GCM SMTP password encryption
 - `CRON_SECRET` — shared secret for cron job authorization
 - `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID` — Google Analytics measurement ID
-- `WEBHOOK_SECRET` — secret for PesaPal webhook Bearer token auth (warns if unset)
+- `WEBHOOK_SECRET` — removed (PesaPal IPN is unauthenticated plain POST)
 - `ALLOWED_ORIGIN` — CORS origin restriction for all workers (e.g. `https://yourdomain.com`)
 - `WORKER_URL` — internal worker URL for quorum-payments (used by quorum-cron)
 
@@ -276,7 +275,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - **Multi-month subscription billing** — Subscription page supports 1–12 month selection with live price breakdown. Frontend calls `quorum-subscriptions` worker directly.
 - **Removed Next.js subscription API route** — Subscription logic fully handled by `quorum-subscriptions` worker (verifies Firebase tokens via JWKS directly).
 - **Fixed PWA icons** — All icons (192, 512, maskable) now show "Q" instead of "A".
-- **Worker auth hardening** — `WEBHOOK_SECRET` for PesaPal webhook, CORS restricted on all workers, Firebase Auth via `jose` in workers.
+- **Worker auth hardening** — CORS restricted on all workers, Firebase Auth via `jose` in workers.
 - **Proxy security headers** — X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy.
 - **SEO pages** — `not-found.tsx`, `error.tsx` (global + org), `robots.ts`, `sitemap.ts` with dynamic org pages.
 - **Landing page SEO** — `generateMetadata` with OpenGraph/Twitter tags.
