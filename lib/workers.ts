@@ -1,4 +1,4 @@
-const WORKER_API_KEY = process.env.NEXT_PUBLIC_WORKER_API_KEY || process.env.WORKER_API_KEY || '';
+const WORKER_API_KEY = process.env.NEXT_PUBLIC_WORKER_API_KEY || '';
 
 export const WORKERS = {
   payments: {
