@@ -5,9 +5,7 @@ export interface Env {
   API_KEY: string;
   ALLOWED_ORIGIN: string;
   QUORUM_PAYMENTS_URL: string;
-  QUORUM_PAYMENTS_API_KEY: string;
   QUORUM_COMM_URL: string;
-  QUORUM_COMM_API_KEY: string;
   CRON_SECRET: string;
   APP_URL: string;
 }

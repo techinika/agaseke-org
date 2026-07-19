@@ -1,7 +1,9 @@
+const WORKER_API_KEY = process.env.WORKER_API_KEY || '';
+
 export const WORKERS = {
   payments: {
     url: process.env.QUORUM_PAYMENTS_URL || 'http://localhost:8787',
-    apiKey: process.env.QUORUM_PAYMENTS_API_KEY || '',
+    apiKey: WORKER_API_KEY,
   },
   uploads: {
     url: process.env.NEXT_PUBLIC_QUORUM_UPLOADS_URL || 'http://localhost:8788',
@@ -11,10 +13,10 @@ export const WORKERS = {
   },
   comm: {
     url: process.env.QUORUM_COMM_URL || 'http://localhost:8790',
-    apiKey: process.env.QUORUM_COMM_API_KEY || '',
+    apiKey: WORKER_API_KEY,
   },
   subscriptions: {
     url: process.env.QUORUM_SUBSCRIPTIONS_URL || 'http://localhost:8791',
-    apiKey: process.env.QUORUM_SUBSCRIPTIONS_API_KEY || '',
+    apiKey: WORKER_API_KEY,
   },
 } as const;

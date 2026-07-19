@@ -53,22 +53,14 @@ Open [http://localhost:3000](http://localhost:3000) to see the result.
 | `NEXT_PUBLIC_FIREBASE_*` | Yes | Firebase client SDK credentials |
 | `FIREBASE_ADMIN_CLIENT_EMAIL` | Yes | Firebase Admin SDK service account email |
 | `FIREBASE_ADMIN_PRIVATE_KEY` | Yes | Firebase Admin SDK private key |
-| `PESAPAL_CONSUMER_KEY` | Yes | PesaPal consumer key |
-| `PESAPAL_CONSUMER_SECRET` | Yes | PesaPal consumer secret |
-| `PESAPAL_BASE_URL` | Yes | PesaPal API base URL (sandbox or production) |
 | `NEXT_PUBLIC_APP_URL` | Yes | App base URL (for email links and return URLs) |
+| `WORKER_API_KEY` | Yes | Shared secret for worker auth (same value as `API_KEY` in all workers' wrangler.toml) |
 | `QUORUM_PAYMENTS_URL` | Yes | quorum-payments worker URL |
-| `QUORUM_PAYMENTS_API_KEY` | Yes | API key for quorum-payments worker |
 | `NEXT_PUBLIC_QUORUM_UPLOADS_URL` | Yes | quorum-uploads worker URL |
 | `QUORUM_CRON_URL` | Yes | quorum-cron worker URL |
 | `QUORUM_COMM_URL` | Yes | quorum-comm worker URL |
-| `QUORUM_COMM_API_KEY` | Yes | API key for quorum-comm worker |
 | `QUORUM_SUBSCRIPTIONS_URL` | Yes | quorum-subscriptions worker URL |
-| `QUORUM_SUBSCRIPTIONS_API_KEY` | Yes | API key for quorum-subscriptions worker |
-| `CRON_SECRET` | Yes | Shared secret for cron job authorization |
-| `SMTP_HOST/PORT/USER/PASS` | Fallback email | System SMTP provider (fallback) |
-| `DEFAULT_FROM_EMAIL`, `DEFAULT_FROM_NAME` | Yes | Default email sender |
-| `SMTP_ENCRYPTION_KEY` | For email | 32-byte hex key for org SMTP password encryption |
+| `SMTP_ENCRYPTION_KEY` | Yes | 32-byte hex key for org SMTP password encryption |
 | `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID` | Optional | Google Analytics measurement ID |
 
 ## Tech Stack

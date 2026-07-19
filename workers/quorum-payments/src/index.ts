@@ -383,11 +383,11 @@ function urlFromEnv(env: Env): string {
 }
 
 async function sendEmailSafe(env: Env, params: { to?: string; orgId: string; type: string; amount: number; name?: string; description?: string; transactionId: string; cid: string }): Promise<void> {
-  if (!params.to || !env.QUORUM_COMM_URL || !env.QUORUM_COMM_API_KEY) return;
+  if (!params.to || !env.QUORUM_COMM_URL || !env.API_KEY) return;
   try {
     const res = await fetch(`${env.QUORUM_COMM_URL}/send-confirmation`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-API-Key': env.QUORUM_COMM_API_KEY },
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': env.API_KEY },
       body: JSON.stringify({
         to: params.to,
         orgId: params.orgId,
@@ -407,11 +407,11 @@ async function sendEmailSafe(env: Env, params: { to?: string; orgId: string; typ
 }
 
 async function sendFailedEmailSafe(env: Env, params: { to?: string; orgId: string; type: string; amount: number; name?: string; reason: string; cid: string }): Promise<void> {
-  if (!params.to || !env.QUORUM_COMM_URL || !env.QUORUM_COMM_API_KEY) return;
+  if (!params.to || !env.QUORUM_COMM_URL || !env.API_KEY) return;
   try {
     const res = await fetch(`${env.QUORUM_COMM_URL}/send-failure`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-API-Key': env.QUORUM_COMM_API_KEY },
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': env.API_KEY },
       body: JSON.stringify({
         to: params.to,
         orgId: params.orgId,
@@ -430,7 +430,7 @@ async function sendFailedEmailSafe(env: Env, params: { to?: string; orgId: strin
 }
 
 async function notifySubscriptionsFinalize(env: Env, tx: Record<string, unknown>, cid: string): Promise<void> {
-  if (!env.QUORUM_SUBSCRIPTIONS_URL || !env.QUORUM_SUBSCRIPTIONS_API_KEY) {
+  if (!env.QUORUM_SUBSCRIPTIONS_URL || !env.API_KEY) {
     console.warn(`[${cid}] QUORUM_SUBSCRIPTIONS_URL not configured, skipping subscription finalization`);
     return;
   }
@@ -440,7 +440,7 @@ async function notifySubscriptionsFinalize(env: Env, tx: Record<string, unknown>
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': env.QUORUM_SUBSCRIPTIONS_API_KEY,
+        'X-API-Key': env.API_KEY,
       },
       body: JSON.stringify({
         orgId: tx.orgId,
@@ -462,7 +462,7 @@ async function notifySubscriptionsFinalize(env: Env, tx: Record<string, unknown>
 }
 
 async function notifySubscriptionsFailure(env: Env, tx: Record<string, unknown>, reason: string, cid: string): Promise<void> {
-  if (!env.QUORUM_SUBSCRIPTIONS_URL || !env.QUORUM_SUBSCRIPTIONS_API_KEY) {
+  if (!env.QUORUM_SUBSCRIPTIONS_URL || !env.API_KEY) {
     console.warn(`[${cid}] QUORUM_SUBSCRIPTIONS_URL not configured, skipping subscription failure notification`);
     return;
   }
@@ -472,7 +472,7 @@ async function notifySubscriptionsFailure(env: Env, tx: Record<string, unknown>,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': env.QUORUM_SUBSCRIPTIONS_API_KEY,
+        'X-API-Key': env.API_KEY,
       },
       body: JSON.stringify({
         orgId: tx.orgId,

@@ -10,11 +10,9 @@ interface Env {
   DEFAULT_FROM_NAME: string;
   APP_URL: string;
   QUORUM_PAYMENTS_URL: string;
-  QUORUM_PAYMENTS_API_KEY: string;
   QUORUM_COMM_URL: string;
-  QUORUM_COMM_API_KEY: string;
   QUORUM_SUBSCRIPTIONS_URL: string;
-  QUORUM_SUBSCRIPTIONS_API_KEY: string;
+  API_KEY: string;
 }
 
 export default {
@@ -69,8 +67,8 @@ export default {
 async function handleReconcile(env: Env): Promise<Response> {
   const cid = genCid('rec');
   try {
-    if (!env.QUORUM_PAYMENTS_URL || !env.QUORUM_PAYMENTS_API_KEY) {
-      console.error(`[${cid}] QUORUM_PAYMENTS_URL or QUORUM_PAYMENTS_API_KEY not configured`);
+    if (!env.QUORUM_PAYMENTS_URL || !env.API_KEY) {
+      console.error(`[${cid}] QUORUM_PAYMENTS_URL or API_KEY not configured`);
       return jsonResp({ error: 'Payments worker not configured' }, 500);
     }
 
@@ -410,7 +408,7 @@ function parseFirestoreDoc(doc: Record<string, unknown>): Record<string, unknown
 async function handleSubscriptionRenewal(env: Env): Promise<Response> {
   const cid = genCid('srr');
   try {
-    if (!env.QUORUM_SUBSCRIPTIONS_URL || !env.QUORUM_SUBSCRIPTIONS_API_KEY) {
+    if (!env.QUORUM_SUBSCRIPTIONS_URL || !env.API_KEY) {
       console.warn(`[${cid}] QUORUM_SUBSCRIPTIONS_URL not configured`);
       return jsonResp({ error: 'Subscriptions worker not configured' }, 500);
     }
@@ -436,7 +434,7 @@ async function handleSubscriptionRenewal(env: Env): Promise<Response> {
 async function handleSubscriptionExpiry(env: Env): Promise<Response> {
   const cid = genCid('sex');
   try {
-    if (!env.QUORUM_SUBSCRIPTIONS_URL || !env.QUORUM_SUBSCRIPTIONS_API_KEY) {
+    if (!env.QUORUM_SUBSCRIPTIONS_URL || !env.API_KEY) {
       console.warn(`[${cid}] QUORUM_SUBSCRIPTIONS_URL not configured`);
       return jsonResp({ error: 'Subscriptions worker not configured' }, 500);
     }
@@ -462,7 +460,7 @@ async function handleSubscriptionExpiry(env: Env): Promise<Response> {
 // ─── Email (via quorum-comm worker) ──────────────────────────────────────────
 
 async function sendEmail(env: Env, options: { to: string; orgId: string; subject: string; html: string }): Promise<void> {
-  if (!env.QUORUM_COMM_URL || !env.QUORUM_COMM_API_KEY) {
+  if (!env.QUORUM_COMM_URL || !env.API_KEY) {
     console.warn(`[EMAIL] quorum-comm not configured. Would send to ${options.to}: ${options.subject}`);
     return;
   }
@@ -472,7 +470,7 @@ async function sendEmail(env: Env, options: { to: string; orgId: string; subject
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': env.QUORUM_COMM_API_KEY,
+        'X-API-Key': env.API_KEY,
       },
       body: JSON.stringify({
         to: options.to,

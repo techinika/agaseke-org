@@ -10,9 +10,7 @@ export interface Env {
   WORKER_URL: string;
   ALLOWED_ORIGIN: string;
   QUORUM_COMM_URL: string;
-  QUORUM_COMM_API_KEY: string;
   QUORUM_SUBSCRIPTIONS_URL: string;
-  QUORUM_SUBSCRIPTIONS_API_KEY: string;
 }
 
 export function generateCorrelationId(prefix: string): string {

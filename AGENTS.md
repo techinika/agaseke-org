@@ -63,7 +63,7 @@ A web app for nonprofits to manage memberships and collect donations.
   - Auth: `X-API-Key` for initiate/finalize; `Authorization: Bearer {WEBHOOK_SECRET}` for webhook; `Authorization: Bearer {CRON_SECRET}` for reconcile
   - Webhook auth warns if `WEBHOOK_SECRET` unset (backwards-compatible migration)
   - Campaign `raisedAmount` incremented on successful donations; race condition skips already-processed txns
-  - Bindings: `PESAPAL_CONSUMER_KEY`, `PESAPAL_CONSUMER_SECRET`, `PESAPAL_BASE_URL`, `FIREBASE_ADMIN_*`, `CRON_SECRET`, `WEBHOOK_SECRET`, `QUORUM_SUBSCRIPTIONS_URL`, `QUORUM_SUBSCRIPTIONS_API_KEY`
+  - Bindings: `PESAPAL_CONSUMER_KEY`, `PESAPAL_CONSUMER_SECRET`, `PESAPAL_BASE_URL`, `FIREBASE_ADMIN_*`, `CRON_SECRET`, `WEBHOOK_SECRET`, `QUORUM_SUBSCRIPTIONS_URL`, `API_KEY`
   - CORS: restricted to `ALLOWED_ORIGIN` (set `ALLOWED_ORIGIN=https://yourdomain.com`)
 - `workers/quorum-uploads/` — R2 image uploads
   - `POST /upload` — Multipart file upload to R2 bucket `quorum-assets` (auth required)
@@ -79,7 +79,7 @@ A web app for nonprofits to manage memberships and collect donations.
   - `GET|POST /subscription-expiry` — Calls `quorum-subscriptions/expiry`
   - Cron trigger: daily at 06:00 UTC (runs all 5 tasks)
   - All endpoints auth: `Authorization: Bearer {CRON_SECRET}`
-  - Bindings: `QUORUM_SUBSCRIPTIONS_URL`, `QUORUM_SUBSCRIPTIONS_API_KEY`
+  - Bindings: `QUORUM_SUBSCRIPTIONS_URL`, `QUORUM_COMM_URL`, `API_KEY`, `CRON_SECRET`
 - `workers/quorum-comm/` — Branded email sending via Resend API
   - `POST /send` — Generic email send (to, subject, html)
   - `POST /send-confirmation` — Payment confirmation email with org branding
@@ -102,7 +102,7 @@ A web app for nonprofits to manage memberships and collect donations.
   - `GET /expiry` — Cron: downgrades expired subscriptions and notifies admins
   - Auth: Firebase ID token (JWKS) for user-facing endpoints; `X-API-Key` for worker-to-worker calls
   - Pricing: `subtotal = monthlyRate × months`, 10% discount applied when `months >= 5`, max 12 months
-  - Bindings: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `QUORUM_PAYMENTS_URL`, `QUORUM_PAYMENTS_API_KEY`, `FIREBASE_ADMIN_*`
+  - Bindings: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `QUORUM_PAYMENTS_URL`, `QUORUM_COMM_URL`, `API_KEY`, `FIREBASE_ADMIN_*`
   - CORS: restricted to `ALLOWED_ORIGIN`
 
 ### Key Patterns
@@ -211,13 +211,9 @@ A web app for nonprofits to manage memberships and collect donations.
 - `PESAPAL_CONSUMER_SECRET` — PesaPal consumer secret
 - `PESAPAL_BASE_URL` — PesaPal API base URL (sandbox or production)
 - `QUORUM_PAYMENTS_URL` — quorum-payments worker URL
-- `QUORUM_PAYMENTS_API_KEY` — API key for quorum-payments worker
-- `NEXT_PUBLIC_QUORUM_UPLOADS_URL` — quorum-uploads worker URL (public)
-- `QUORUM_CRON_URL` — quorum-cron worker URL
 - `QUORUM_COMM_URL` — quorum-comm worker URL
-- `QUORUM_COMM_API_KEY` — API key for quorum-comm worker
 - `QUORUM_SUBSCRIPTIONS_URL` — quorum-subscriptions worker URL
-- `QUORUM_SUBSCRIPTIONS_API_KEY` — API key for quorum-subscriptions worker
+- `WORKER_API_KEY` — shared secret for worker auth (same value as `API_KEY` in all workers' wrangler.toml)
 - `SMTP_HOST/PORT/USER/PASS` — system SMTP provider (fallback)
 - `DEFAULT_FROM_EMAIL`, `DEFAULT_FROM_NAME` — default email sender
 - `SMTP_ENCRYPTION_KEY` — 32 bytes hex key for AES-GCM SMTP password encryption
@@ -287,7 +283,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - **Firestore REST fixes** — null values written as `{ nullValue: null }`, `incrementFirestoreField` uses `doubleValue` for decimals.
 - **Fee display fixes** — CampaignCard/TierCard accept `feeRate` prop instead of hardcoded 10%.
 - **Fixed `reconcilePendingTransaction`** — now fetches `orderTrackingId` from Firestore before calling `verifyTransaction` (was passing `depositId` as tracking ID)
-- **Added worker secrets** — `QUORUM_COMM_URL`, `QUORUM_COMM_API_KEY`, `QUORUM_SUBSCRIPTIONS_URL`, `QUORUM_SUBSCRIPTIONS_API_KEY` in wrangler.toml files
+- **Added worker secrets** — `QUORUM_COMM_URL`, `QUORUM_SUBSCRIPTIONS_URL`, `API_KEY` (shared across all workers) in wrangler.toml files
 - **Settings form pre-fill** — Lazy `useState(() => org?.field ?? '')` initialization so inputs populate immediately from cached org data.
 - **Sidebar persistence** — Sidebar open/closed state persisted to `localStorage`. Nav clicks only auto-close sidebar on mobile (not desktop).
 - **Lint cleanup** — Removed unused imports and variables across subscription page, quorum-comm, quorum-subscriptions, and lib/payments.
@@ -299,11 +295,11 @@ A web app for nonprofits to manage memberships and collect donations.
 4. Set secrets on `quorum-subscriptions`: Firebase, PesaPal, Resend, worker API keys
 5. Deploy `quorum-payments` worker: `cd workers/quorum-payments && npm install && npm run deploy`
 6. Deploy `quorum-cron` worker: `cd workers/quorum-cron && npm install && npm run deploy`
-7. Update `quorum-cron` wrangler.toml with deployed `QUORUM_SUBSCRIPTIONS_URL` and `QUORUM_SUBSCRIPTIONS_API_KEY`
+7. Update `quorum-cron` wrangler.toml with deployed `QUORUM_SUBSCRIPTIONS_URL`
 8. Create R2 bucket `quorum-assets` via Cloudflare dashboard
 9. Register IPN URL in PesaPal dashboard: `https://quorum-payments.<subdomain>.workers.dev/webhook`
 10. Add PesaPal sandbox credentials to `.env.local`
-11. Add worker URLs and API keys to `.env.local` (including `QUORUM_SUBSCRIPTIONS_URL`, `QUORUM_SUBSCRIPTIONS_API_KEY`)
+11. Add worker URLs and `WORKER_API_KEY` to `.env.local`
 12. Configure SMTP credentials for system email (fallback)
 13. Test full payment flow: donate → PesaPal sandbox → webhook → email receipt → cron reconciliation
 14. Test subscription flow: upgrade → multi-month PesaPal payment → plan update → email confirmation

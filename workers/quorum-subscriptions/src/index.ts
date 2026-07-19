@@ -237,7 +237,7 @@ async function handleChangePlan(request: Request, env: Env): Promise<Response> {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': env.QUORUM_PAYMENTS_API_KEY,
+        'X-API-Key': env.API_KEY,
       },
       body: JSON.stringify({
         depositId: orderId,
@@ -472,7 +472,7 @@ async function handleExpiry(env: Env): Promise<Response> {
 // ─── Email Helpers ─────────────────────────────────────────────────────────────
 
 async function sendEmail(env: Env, to: string, subject: string, html: string): Promise<void> {
-  if (!env.QUORUM_COMM_URL || !env.QUORUM_COMM_API_KEY) {
+  if (!env.QUORUM_COMM_URL || !env.API_KEY) {
     console.warn(`[EMAIL] quorum-comm not configured. Would send to ${to}: ${subject}`);
     return;
   }
@@ -481,7 +481,7 @@ async function sendEmail(env: Env, to: string, subject: string, html: string): P
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-API-Key': env.QUORUM_COMM_API_KEY,
+      'X-API-Key': env.API_KEY,
     },
     body: JSON.stringify({ to, subject, html }),
   });
