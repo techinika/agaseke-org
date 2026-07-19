@@ -16,6 +16,9 @@ import { useAuthStore } from '@/store/auth-store';
 import { ADMIN_ROLES, AdminRole } from '@/types/admin';
 import { WORKERS } from '@/lib/workers';
 import { toast } from 'sonner';
+import { queryDocuments } from '@/lib/firebase/firestore';
+import { COLLECTIONS } from '@/lib/constants';
+import { where } from 'firebase/firestore';
 
 export default function AdminsPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -39,8 +42,16 @@ export default function AdminsPage() {
       return;
     }
     try {
+      // Look up existing user by email
+      const users = await queryDocuments<{ id: string; uid: string }>(
+        COLLECTIONS.USERS,
+        where('email', '==', email)
+      );
+      const existingUser = users[0];
+      const uid = existingUser?.uid || existingUser?.id || `pending_${Date.now()}`;
+
       await addAdmin.mutateAsync({
-        uid: `pending_${Date.now()}`,
+        uid,
         email,
         displayName,
         role: selectedRole,

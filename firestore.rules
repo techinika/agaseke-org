@@ -32,7 +32,7 @@ service cloud.firestore {
     match /organizations/{orgId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
-      allow update: if isOrgAdmin(orgId);
+      allow update: if isOrgAdmin(orgId) || isSuperAdmin();
       allow delete: if false;
 
       match /tiers/{tierId} {
@@ -65,7 +65,7 @@ service cloud.firestore {
 
       match /members/{userId} {
         allow read: if isAuthenticated() && (isOrgAdmin(orgId) || request.auth.uid == userId);
-        allow create: if isAuthenticated() && request.auth.uid == userId;
+        allow create: if isAuthenticated() && (request.auth.uid == userId || isOrgAdmin(orgId));
         allow update: if isOrgAdmin(orgId);
         allow delete: if false;
       }
@@ -88,7 +88,7 @@ service cloud.firestore {
         && (isOrgAdmin(get(/databases/$(database)/documents/organizations/$(resource.data.orgId)).data.id)
           || resource.data.userId == request.auth.uid);
       allow create: if false;
-      allow update: if false;
+      allow update: if isSuperAdmin();
       allow delete: if false;
     }
 
@@ -98,10 +98,9 @@ service cloud.firestore {
           || resource.data.userId == request.auth.uid);
       allow create: if isAuthenticated()
         && request.auth.uid == request.resource.data.userId
-        && request.resource.data.status == 'pending'
         && request.resource.data.orgId is string
         && request.resource.data.amount is number;
-      allow update: if false;
+      allow update: if isSuperAdmin();
       allow delete: if false;
     }
 
@@ -111,10 +110,15 @@ service cloud.firestore {
           || resource.data.userId == request.auth.uid);
       allow create: if isAuthenticated()
         && request.auth.uid == request.resource.data.userId
-        && request.resource.data.status == 'pending'
         && request.resource.data.orgId is string;
-      allow update: if false;
+      allow update: if isSuperAdmin();
       allow delete: if false;
+    }
+
+    match /logs/{logId} {
+      allow read: if isSuperAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
     }
   }
 }
