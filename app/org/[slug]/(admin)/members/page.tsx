@@ -56,10 +56,16 @@ export default function MembersPage() {
         title="Members"
         description="Manage members and membership tiers"
         action={
-          <Button onClick={() => router.push(`/org/${slug}/members/tiers/new`)}>
-            <Plus className="mr-2 size-4" />
-            New tier
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => router.push(`/org/${slug}/members/add`)}>
+              <Plus className="mr-2 size-4" />
+              Add member
+            </Button>
+            <Button onClick={() => router.push(`/org/${slug}/members/tiers/new`)}>
+              <Plus className="mr-2 size-4" />
+              New tier
+            </Button>
+          </div>
         }
       />
 

@@ -55,7 +55,7 @@ export default function DonationCheckoutClient({ slug, initialOrg }: DonationChe
   const [isProcessing, setIsProcessing] = useState(false);
 
   async function handlePay() {
-    if (!org || amount < 100 || !feeBreakdown) return;
+    if (!org || amount < 1 || !feeBreakdown) return;
     setIsProcessing(true);
     const orderId = generateOrderId();
     try {

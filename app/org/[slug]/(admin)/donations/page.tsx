@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { Banknote, RefreshCw } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { DonationTable } from '@/components/donations/donation-table';
+import { ManualDonationForm } from '@/components/donations/manual-donation-form';
 import { useDonations } from '@/hooks/use-donations';
 import { useOrganizationBySlug } from '@/hooks/use-organization';
 import { useRequestWithdrawal, usePendingWithdrawals } from '@/hooks/use-withdrawals';
@@ -77,6 +78,7 @@ export default function DonationsPage() {
       <PageHeader
         title="Donations"
         description="Track and manage all donations received"
+        action={<ManualDonationForm orgId={org?.id ?? ''} slug={slug} />}
       />
       {(pendingCount > 0 || failedCount > 0) && (
         <div className="flex gap-3">

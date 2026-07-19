@@ -14,6 +14,7 @@ import { useOrganizationBySlug } from '@/hooks/use-organization';
 import { useOrgAdmins, useAddOrgAdmin, useUpdateOrgAdmin, useRemoveOrgAdmin } from '@/hooks/use-admins';
 import { useAuthStore } from '@/store/auth-store';
 import { ADMIN_ROLES, AdminRole } from '@/types/admin';
+import { WORKERS } from '@/lib/workers';
 import { toast } from 'sonner';
 
 export default function AdminsPage() {
@@ -47,6 +48,38 @@ export default function AdminsPage() {
         addedBy: user?.uid ?? '',
       });
       toast.success('Admin added');
+
+      // Send invitation email (fire-and-forget)
+      const roleName = ADMIN_ROLES.find((r) => r.value === selectedRole)?.label || selectedRole;
+      const footerHtml = org?.name
+        ? `<p style="color:#999;font-size:12px;margin-top:24px;">You were added as a <strong>${roleName}</strong> admin for <strong>${org.name}</strong>.</p>`
+        : '';
+      fetch(`${WORKERS.comm.url}/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': WORKERS.comm.apiKey,
+        },
+        body: JSON.stringify({
+          to: email,
+          subject: `You've been added as an admin for ${org?.name || 'an organization'}`,
+          html: `
+            <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+              <h2 style="color:#333;">Admin Invitation</h2>
+              <p>Hi ${displayName},</p>
+              <p>You have been added as a <strong>${roleName}</strong> for <strong>${org?.name || 'an organization'}</strong>.</p>
+              <p>Log in to your Quorum account to access the admin dashboard.</p>
+              <a href="${typeof window !== 'undefined' ? window.location.origin : ''}/org/${slug}/dashboard"
+                 style="display:inline-block;padding:10px 20px;background:#FF0000;color:#fff;text-decoration:none;border-radius:6px;margin-top:12px;">
+                Go to Dashboard
+              </a>
+              ${footerHtml}
+            </div>
+          `,
+        }),
+      }).catch(() => {});
+      // Intentionally not awaited — email failure doesn't block admin creation
+
       setEmail('');
       setDisplayName('');
       setSelectedRole('super-admin');

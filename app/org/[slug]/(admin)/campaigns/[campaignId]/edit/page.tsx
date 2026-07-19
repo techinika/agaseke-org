@@ -75,21 +75,19 @@ export default function EditCampaignPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
-      <div className="flex items-center justify-between border-b pb-4 mb-6">
-        <div>
-          <Link href={`/org/${slug}/campaigns`} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-2 block">
-            <ArrowLeft className="size-4" />
-            Back to campaigns
-          </Link>
-          <h1 className="text-2xl font-bold tracking-tight">Edit Campaign</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Update your donation campaign.
-          </p>
-        </div>
+    <div className="space-y-6">
+      <div className="border-b pb-4">
+        <Link href={`/org/${slug}/campaigns`} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-2">
+          <ArrowLeft className="size-4" />
+          Back to campaigns
+        </Link>
+        <h1 className="text-2xl font-bold tracking-tight">Edit Campaign</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Update your donation campaign.
+        </p>
       </div>
 
-      <div className="flex-1 overflow-hidden">
+      <div className="max-w-2xl">
         <CampaignFormFields
           defaultValues={{
             title: campaign.title,

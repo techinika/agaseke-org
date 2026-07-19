@@ -68,21 +68,19 @@ export default function EditTierPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
-      <div className="flex items-center justify-between border-b pb-4 mb-6">
-        <div>
-          <Link href={`/org/${slug}/members`} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-2 block">
-            <ArrowLeft className="size-4" />
-            Back to members
-          </Link>
-          <h1 className="text-2xl font-bold tracking-tight">Edit Tier</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Update the membership tier details.
-          </p>
-        </div>
+    <div className="space-y-6">
+      <div className="border-b pb-4">
+        <Link href={`/org/${slug}/members`} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-2">
+          <ArrowLeft className="size-4" />
+          Back to members
+        </Link>
+        <h1 className="text-2xl font-bold tracking-tight">Edit Tier</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Update the membership tier details.
+        </p>
       </div>
 
-      <div className="flex-1 overflow-hidden">
+      <div className="max-w-2xl">
         <TierFormFields
           key={tier.id}
           onSubmit={handleUpdate}

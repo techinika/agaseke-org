@@ -1,14 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Check, Crown, Users, ArrowUp, ArrowDown, Loader2, CreditCard, AlertTriangle, Tag } from 'lucide-react';
 import { SUBSCRIPTION_PRICING, type SubscriptionPlan, MULTI_MONTH_DISCOUNT_RATE, MIN_MONTHS_FOR_DISCOUNT } from '@/lib/constants';
-import { UpgradeDowngradeDialog } from '@/components/shared/upgrade-downgrade-dialog';
 import { useAuthStore } from '@/store/auth-store';
 import { WORKERS } from '@/lib/workers';
 
@@ -39,6 +38,7 @@ interface PriceBreakdown {
 
 export default function SubscriptionPage() {
   const params = useParams();
+  const router = useRouter();
   const slug = params.slug as string;
   const { user } = useAuthStore();
   const [currentPlan, setCurrentPlan] = useState<SubscriptionPlan>('starter');
@@ -46,8 +46,6 @@ export default function SubscriptionPage() {
   const [currentEndDate, setCurrentEndDate] = useState<string>('');
   const [memberCount, setMemberCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [targetPlan, setTargetPlan] = useState<SubscriptionPlan>('growth');
   const [months, setMonths] = useState(1);
 
   useEffect(() => {
@@ -111,41 +109,7 @@ export default function SubscriptionPage() {
   }
 
   function handleUpgrade(target: SubscriptionPlan) {
-    setTargetPlan(target);
-    setMonths(1);
-    setDialogOpen(true);
-  }
-
-  async function handleConfirmPlanChange() {
-    if (!user) throw new Error('Not authenticated');
-    const token = await user.getIdToken();
-
-    const res = await fetch(`${WORKERS.subscriptions.url}/change-plan`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': WORKERS.subscriptions.apiKey,
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ slug, plan: targetPlan, months }),
-    });
-
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      throw new Error(errBody.error || 'Failed to update plan');
-    }
-
-    const data = await res.json();
-
-    if (data.requiresPayment && data.redirectUrl) {
-      window.location.href = data.redirectUrl;
-      return;
-    }
-
-    // Starter plan — no payment needed
-    setCurrentPlan(targetPlan);
-    setCurrentMonths(1);
-    setCurrentEndDate('');
+    router.push(`/org/${slug}/subscription/upgrade?currentPlan=${currentPlan}`);
   }
 
   if (loading) {
@@ -387,16 +351,6 @@ export default function SubscriptionPage() {
           </div>
         </CardContent>
       </Card>
-
-      <UpgradeDowngradeDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        currentPlan={currentPlan}
-        targetPlan={targetPlan}
-        months={months}
-        onMonthsChange={setMonths}
-        onConfirm={handleConfirmPlanChange}
-      />
     </div>
   );
 }

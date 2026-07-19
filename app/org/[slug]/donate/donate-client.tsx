@@ -25,7 +25,7 @@ import { BrandColorWrapper } from '@/components/shared/brand-color-wrapper';
 import { OrgNotFound } from '@/components/shared/org-not-found';
 import type { OrgServerData } from '@/lib/firebase/server';
 
-const AMOUNT_PRESETS = [5000, 10000, 25000, 50000, 100000];
+const AMOUNT_PRESETS = [10, 25, 50, 100, 250];
 type Frequency = (typeof DONATION_FREQUENCIES)[number];
 
 interface DonateClientProps {
@@ -41,7 +41,7 @@ export default function DonateClient({ slug, initialOrg }: DonateClientProps) {
   const { data: campaigns, isLoading: campaignsLoading } = useActiveCampaigns(org?.id ?? '');
   const { data: campaignTotals } = useCampaignDonationTotals(org?.id ?? '');
 
-  const [amount, setAmount] = useState(10000);
+  const [amount, setAmount] = useState(50);
   const [customAmount, setCustomAmount] = useState('');
   const [frequency, setFrequency] = useState<Frequency>('one_time');
   const [campaignId, setCampaignId] = useState<string>(() => {
@@ -65,7 +65,7 @@ export default function DonateClient({ slug, initialOrg }: DonateClientProps) {
   }
 
   function handleProceed() {
-    if (displayAmount < 100) return;
+    if (displayAmount < 1) return;
     const params = new URLSearchParams({
       amount: displayAmount.toString(),
       frequency,
@@ -158,6 +158,7 @@ export default function DonateClient({ slug, initialOrg }: DonateClientProps) {
                   </span>
                   <Input
                     type="number"
+                    min={1}
                     placeholder="Custom amount"
                     value={customAmount}
                     onChange={(e) => { setCustomAmount(e.target.value); setAmount(0); }}
@@ -283,7 +284,7 @@ export default function DonateClient({ slug, initialOrg }: DonateClientProps) {
                 className="h-14 w-full text-base font-semibold shadow-md transition-all hover:shadow-lg"
                 size="lg"
                 onClick={handleProceed}
-                disabled={displayAmount < 100}
+                disabled={displayAmount < 1}
               >
                 Donate {displayAmount.toLocaleString()} {CURRENCY}
                 <ChevronRight className="ml-2 size-5" />

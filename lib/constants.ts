@@ -64,7 +64,7 @@ export type TxnStatus = (typeof TXN_STATUSES)[number];
 export const TXN_TYPES = ['donation', 'membership', 'subscription'] as const;
 export type TxnType = (typeof TXN_TYPES)[number];
 
-export const PAYMENT_METHODS = ['pesapal_card'] as const;
+export const PAYMENT_METHODS = ['pesapal_card', 'manual'] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 export const MEMBERSHIP_STATUSES = ['active', 'expired', 'cancelled', 'pending', 'failed'] as const;

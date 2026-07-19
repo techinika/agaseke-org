@@ -39,6 +39,8 @@ A web app for nonprofits to manage memberships and collect donations.
 - `org/` — org listing page showing all orgs the user belongs to (with links to dashboard + public page)
 - `org/create/` — create organization wizard (3 steps: basic info, category/location, logo)
 - `org/[slug]/(admin)/` — dashboard, settings (brand color, category/country, encrypted SMTP, payout bank details, branding), campaigns, members, finance, rooms, admins, subscription
+- `org/[slug]/(admin)/members/add/` — manual member addition (name, email, tier, optional paid flag with transaction)
+- `org/[slug]/(admin)/subscription/upgrade/` — dedicated upgrade/downgrade page with month selector and pricing cards
 - `org/[slug]/(member)/` — member-only rooms
 - `org/[slug]/join/` — join flow with PesaPal card checkout (with member limit enforcement)
 - `org/[slug]/donate/` — donation flow with PesaPal card checkout

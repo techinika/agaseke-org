@@ -101,7 +101,7 @@ export function TierFormFields({
         <Textarea id="description" placeholder="What does this tier include?" rows={3} {...register('description')} />
         {errors.description && <p className="text-xs text-destructive">{errors.description.message}</p>}
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="price">Price ($)</Label>
           <Input id="price" type="number" min={1} {...register('price')} />
@@ -129,7 +129,7 @@ export function TierFormFields({
         <p className="text-xs text-muted-foreground">
           Quorum charges a 10% platform fee. Choose who pays it.
         </p>
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-4">
           <label className="flex items-center gap-2 rounded-lg border p-3 flex-1 cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/5">
             <input
               type="radio"
