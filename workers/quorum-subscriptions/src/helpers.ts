@@ -132,7 +132,11 @@ export async function getFirebaseAccessToken(email: string, privateKey: string):
 }
 
 function pemToArrayBuffer(pem: string): ArrayBuffer {
-  const cleaned = pem.replace(/-----BEGIN PRIVATE KEY-----/g, '').replace(/-----END PRIVATE KEY-----/g, '').replace(/\s/g, '');
+  const cleaned = pem
+    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+    .replace(/-----END PRIVATE KEY-----/g, '')
+    .replace(/\\n/g, '')
+    .replace(/\s/g, '');
   const binaryString = atob(cleaned);
   const bytes = new Uint8Array(binaryString.length);
   for (let i = 0; i < binaryString.length; i++) {
