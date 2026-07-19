@@ -68,7 +68,7 @@ export default function MyOrganizationsPage() {
         </Link>
       </div>
 
-      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))' }}>
         {orgsLoading ? (
           Array.from({ length: 3 }).map((_, i) => (
             <Card key={i}>
@@ -91,7 +91,7 @@ export default function MyOrganizationsPage() {
         ) : organizations && organizations.length > 0 ? (
           organizations.map((org) => (
             <Card key={org.id} className="flex flex-col">
-              <CardHeader className="flex-row items-center gap-4 space-y-0 pb-4">
+              <CardHeader className="flex-row items-center gap-3 space-y-0 pb-4">
                 <Avatar size="lg">
                   {org.logoURL ? (
                     <AvatarImage src={org.logoURL} alt={org.name} />
@@ -101,7 +101,10 @@ export default function MyOrganizationsPage() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                  <CardTitle className="truncate text-lg">{org.name}</CardTitle>
+                  <CardTitle className="truncate text-lg">
+                    <span className="hidden sm:inline">{org.name}</span>
+                    <span className="sm:hidden">{org.name.charAt(0).toUpperCase()}</span>
+                  </CardTitle>
                   <CardDescription className="flex items-center gap-2 mt-0.5">
                     <Badge variant="secondary" className="text-xs">
                       {org.status}
