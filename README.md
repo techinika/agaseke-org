@@ -2,7 +2,7 @@
 
 A web application for nonprofits to manage memberships and collect donations.
 
-Built with Next.js 16 (App Router), Firebase (Firestore, Auth, Storage), Tailwind CSS v4, shadcn/ui, Zustand, React Query, PesaPal, Cloudflare Workers, and Nodemailer.
+Built with Next.js 16 (App Router), Firebase (Firestore, Auth, Storage), Tailwind CSS v4, shadcn/ui, Zustand, React Query, PesaPal, Cloudflare Workers, and Resend.
 
 ## Features
 
@@ -16,11 +16,12 @@ Built with Next.js 16 (App Router), Firebase (Firestore, Auth, Storage), Tailwin
 - **Public organization pages** — White-labeled profile (with cover image overlay for readability), join, and donate pages
 - **Rich text content** — Org bios and campaign descriptions support images, video embeds, links, and formatted text via tiptap editor
 - **Google Analytics** — GA4 page view tracking via measurement ID
-- **Email notifications** — Payment confirmations, reminders, expiry alerts, and failure notices via Cloudflare Email Service (branded) with Nodemailer SMTP fallback
+- **Email notifications** — Payment confirmations, reminders, expiry alerts, and failure notices via Resend API (branded) with Nodemailer SMTP fallback
 - **Automated reconciliation** — Cron-driven pending transaction checks with admin email alerts
 - **Progressive Web App** — Installable with offline support, push notifications, and home screen launch via web app manifest and service worker
 - **Admin roles** — Super-admin, finance-admin, and community-admin roles with granular access control
 - **Subscription plans** — Starter (free), Growth ($99/mo), Enterprise ($199/mo) with member limits and platform fees
+- **Multi-month subscriptions** — 1–12 month billing with 10% discount for 5+ months
 - **Withdrawals** — $10 minimum withdrawal with 5 working day processing
 - **Org branding** — White-labeled emails with custom website, contact info, and footer text
 
@@ -62,6 +63,8 @@ Open [http://localhost:3000](http://localhost:3000) to see the result.
 | `QUORUM_CRON_URL` | Yes | quorum-cron worker URL |
 | `QUORUM_COMM_URL` | Yes | quorum-comm worker URL |
 | `QUORUM_COMM_API_KEY` | Yes | API key for quorum-comm worker |
+| `QUORUM_SUBSCRIPTIONS_URL` | Yes | quorum-subscriptions worker URL |
+| `QUORUM_SUBSCRIPTIONS_API_KEY` | Yes | API key for quorum-subscriptions worker |
 | `CRON_SECRET` | Yes | Shared secret for cron job authorization |
 | `SMTP_HOST/PORT/USER/PASS` | Fallback email | System SMTP provider (fallback) |
 | `DEFAULT_FROM_EMAIL`, `DEFAULT_FROM_NAME` | Yes | Default email sender |
@@ -75,9 +78,9 @@ Open [http://localhost:3000](http://localhost:3000) to see the result.
 - **Backend**: Firebase (Firestore, Auth, Storage)
 - **State**: Zustand, React Query
 - **Payments**: PesaPal API v3 (Cards only, USD)
-- **Workers**: Cloudflare Workers (payments, uploads, cron, comm)
+- **Workers**: Cloudflare Workers (payments, uploads, cron, comm, subscriptions)
 - **Storage**: Cloudflare R2 (`quorum-assets` bucket)
-- **Email**: Cloudflare Email Service (branded), Nodemailer SMTP (fallback)
+- **Email**: Resend API (branded), Nodemailer SMTP (fallback)
 - **Encryption**: AES-GCM 256
 - **Rich text**: tiptap editor with @tailwindcss/typography
 - **Analytics**: GA4 via next/script (gtag)
@@ -118,12 +121,12 @@ lib/
   constants.ts     — Collections, fee rates, subscription plans, types
   app-url.ts       — Dynamic APP_URL helper
   encryption.ts    — AES-GCM 256 chat encryption
-  constants.ts     — Collections, fee rates, subscription plans, types
 types/             — TypeScript interfaces
 hooks/             — React Query hooks, custom hooks
 workers/
   quorum-payments/ — PesaPal payment integration (initiate, webhook, finalize, reconcile)
   quorum-uploads/  — R2 file upload/serving
-  quorum-cron/     — Scheduled tasks (reconcile, payment-reminders, membership-expiry)
-  quorum-comm/     — Branded email sending via Cloudflare Email Service
+  quorum-cron/     — Scheduled tasks (reconcile, payment-reminders, membership-expiry, subscription-renewal, subscription-expiry)
+  quorum-comm/     — Branded email sending via Resend API
+  quorum-subscriptions/ — Multi-month subscription management, plan changes, renewal reminders, expiry
 ```

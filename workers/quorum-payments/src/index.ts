@@ -302,17 +302,7 @@ async function processCompleted(depositId: string, env: Env, accessToken: string
     }
 
     if (tx.type === 'subscription') {
-      const targetPlan = tx.targetPlan as string | undefined;
-      const targetBillingCycle = tx.targetBillingCycle as string | undefined;
-      if (targetPlan && tx.orgId) {
-        const updateData: Record<string, unknown> = {
-          subscriptionPlan: targetPlan,
-        };
-        if (targetBillingCycle) {
-          updateData.subscriptionBillingCycle = targetBillingCycle;
-        }
-        await firestoreUpdate('organizations', tx.orgId as string, updateData, accessToken, projectId);
-      }
+      await notifySubscriptionsFinalize(env, tx, cid);
     }
   }
 }
@@ -377,6 +367,10 @@ async function processFailed(depositId: string, reason: string, env: Env, access
         });
       }
     }
+
+    if (tx.type === 'subscription') {
+      await notifySubscriptionsFailure(env, tx, reason, cid);
+    }
   }
 }
 
@@ -432,6 +426,69 @@ async function sendFailedEmailSafe(env: Env, params: { to?: string; orgId: strin
     else console.log(`[${params.cid}] failure email sent to ${params.to}`);
   } catch (err) {
     console.error(`[${params.cid}] email send error`, err);
+  }
+}
+
+async function notifySubscriptionsFinalize(env: Env, tx: Record<string, unknown>, cid: string): Promise<void> {
+  if (!env.QUORUM_SUBSCRIPTIONS_URL || !env.QUORUM_SUBSCRIPTIONS_API_KEY) {
+    console.warn(`[${cid}] QUORUM_SUBSCRIPTIONS_URL not configured, skipping subscription finalization`);
+    return;
+  }
+
+  try {
+    const res = await fetch(`${env.QUORUM_SUBSCRIPTIONS_URL}/finalize`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': env.QUORUM_SUBSCRIPTIONS_API_KEY,
+      },
+      body: JSON.stringify({
+        orgId: tx.orgId,
+        orderId: tx.depositId || tx.referenceId,
+        targetPlan: tx.targetPlan,
+        subscriptionMonths: tx.subscriptionMonths || 1,
+      }),
+    });
+
+    if (!res.ok) {
+      const errBody = await res.text();
+      console.error(`[${cid}] quorum-subscriptions/finalize failed: ${res.status} ${errBody.slice(0, 200)}`);
+    } else {
+      console.log(`[${cid}] Subscription finalized via quorum-subscriptions for org ${tx.orgId}`);
+    }
+  } catch (err) {
+    console.error(`[${cid}] Failed to call quorum-subscriptions/finalize`, err);
+  }
+}
+
+async function notifySubscriptionsFailure(env: Env, tx: Record<string, unknown>, reason: string, cid: string): Promise<void> {
+  if (!env.QUORUM_SUBSCRIPTIONS_URL || !env.QUORUM_SUBSCRIPTIONS_API_KEY) {
+    console.warn(`[${cid}] QUORUM_SUBSCRIPTIONS_URL not configured, skipping subscription failure notification`);
+    return;
+  }
+
+  try {
+    const res = await fetch(`${env.QUORUM_SUBSCRIPTIONS_URL}/handle-failure`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': env.QUORUM_SUBSCRIPTIONS_API_KEY,
+      },
+      body: JSON.stringify({
+        orgId: tx.orgId,
+        orderId: tx.depositId || tx.referenceId,
+        reason,
+      }),
+    });
+
+    if (!res.ok) {
+      const errBody = await res.text();
+      console.error(`[${cid}] quorum-subscriptions/handle-failure failed: ${res.status} ${errBody.slice(0, 200)}`);
+    } else {
+      console.log(`[${cid}] Subscription failure notified via quorum-subscriptions for org ${tx.orgId}`);
+    }
+  } catch (err) {
+    console.error(`[${cid}] Failed to call quorum-subscriptions/handle-failure`, err);
   }
 }
 

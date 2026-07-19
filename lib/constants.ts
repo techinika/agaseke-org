@@ -54,6 +54,10 @@ export type SubscriptionBillingCycle = (typeof SUBSCRIPTION_BILLING_CYCLES)[numb
 
 export const YEARLY_DISCOUNT_RATE = 0.15;
 
+export const MULTI_MONTH_DISCOUNT_RATE = 0.10;
+export const MIN_MONTHS_FOR_DISCOUNT = 5;
+export const MAX_SUBSCRIPTION_MONTHS = 12;
+
 export const TXN_STATUSES = ['pending', 'completed', 'failed', 'refunded'] as const;
 export type TxnStatus = (typeof TXN_STATUSES)[number];
 

@@ -13,4 +13,8 @@ export const WORKERS = {
     url: process.env.QUORUM_COMM_URL || 'http://localhost:8790',
     apiKey: process.env.QUORUM_COMM_API_KEY || '',
   },
+  subscriptions: {
+    url: process.env.QUORUM_SUBSCRIPTIONS_URL || 'http://localhost:8791',
+    apiKey: process.env.QUORUM_SUBSCRIPTIONS_API_KEY || '',
+  },
 } as const;

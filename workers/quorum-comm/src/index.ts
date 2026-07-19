@@ -7,12 +7,11 @@ import {
   getFirebaseAccessToken,
   firestoreGet,
 } from './helpers';
+import { sendViaResend } from './resend';
 import {
   paymentConfirmationTemplate,
   paymentFailedTemplate,
   paymentReminderTemplate,
-  newDonationNotificationTemplate,
-  newMemberNotificationTemplate,
 } from './templates';
 
 export default {
@@ -60,6 +59,18 @@ function verifyApiKey(request: Request, env: Env): boolean {
   return apiKey === env.API_KEY;
 }
 
+function getFromAddress(env: Env, orgName?: string): string {
+  const fromEmail = env.RESEND_FROM_EMAIL || process.env.DEFAULT_FROM_EMAIL || 'noreply@quorum.app';
+  const fromName = orgName || process.env.DEFAULT_FROM_NAME || 'Quorum';
+  return `${fromName} <${fromEmail}>`;
+}
+
+async function sendEmail(env: Env, to: string, subject: string, html: string, orgName?: string, cid?: string): Promise<void> {
+  const from = getFromAddress(env, orgName);
+  await sendViaResend(env.RESEND_API_KEY, { to, from, subject, html });
+  if (cid) console.log(`[${cid}] Email sent to ${to}: ${subject}`);
+}
+
 async function getOrgBranding(orgId: string, env: Env) {
   const accessToken = await getFirebaseAccessToken(env.FIREBASE_ADMIN_CLIENT_EMAIL, env.FIREBASE_ADMIN_PRIVATE_KEY);
   const org = await firestoreGet('organizations', orgId, accessToken, env.FIREBASE_PROJECT_ID);
@@ -82,24 +93,13 @@ async function handleSend(request: Request, env: Env): Promise<Response> {
     if (!verifyApiKey(request, env)) return errorResp('Unauthorized', 401, env);
 
     const body = await request.json();
-    const { to, toName, subject, html, text } = body as EmailRequest;
+    const { to, subject, html } = body as EmailRequest;
 
     if (!to || !subject || !html) {
       return errorResp('Missing required fields: to, subject, html', 400, env);
     }
 
-    const fromEmail = process.env.DEFAULT_FROM_EMAIL || 'noreply@quorum.app';
-    const fromName = process.env.DEFAULT_FROM_NAME || 'Quorum';
-
-    await env.EMAIL.send({
-      to,
-      from: { email: fromEmail, name: fromName },
-      subject,
-      html,
-      text: text || html.replace(/<[^>]*>/g, ''),
-    });
-
-    console.log(`[${cid}] Email sent to ${to}: ${subject}`);
+    await sendEmail(env, to, subject, html, undefined, cid);
     return jsonResp({ success: true, correlationId: cid }, 200, env);
   } catch (error) {
     console.error(`[${cid}] Send failed:`, error);
@@ -147,15 +147,8 @@ async function handleSendConfirmation(request: Request, env: Env): Promise<Respo
       footerText: branding.footerText,
     });
 
-    const fromEmail = process.env.DEFAULT_FROM_EMAIL || 'noreply@quorum.app';
-    const fromName = process.env.DEFAULT_FROM_NAME || 'Quorum';
-
-    await env.EMAIL.send({
-      to,
-      from: { email: fromEmail, name: branding.orgName || fromName },
-      subject: `${type === 'donation' ? 'Donation Receipt' : 'Payment Confirmed'} — ${branding.orgName || 'Organization'}`,
-      html,
-    });
+    const subject = `${type === 'donation' ? 'Donation Receipt' : 'Payment Confirmed'} — ${branding.orgName || 'Organization'}`;
+    await sendEmail(env, to, subject, html, branding.orgName, cid);
 
     console.log(`[${cid}] Confirmation sent to ${to} for ${currency} ${amount}`);
     return jsonResp({ success: true, correlationId: cid }, 200, env);
@@ -206,15 +199,7 @@ async function handleSendFailure(request: Request, env: Env): Promise<Response> 
       footerText: branding.footerText,
     });
 
-    const fromEmail = process.env.DEFAULT_FROM_EMAIL || 'noreply@quorum.app';
-    const fromName = process.env.DEFAULT_FROM_NAME || 'Quorum';
-
-    await env.EMAIL.send({
-      to,
-      from: { email: fromEmail, name: branding.orgName || fromName },
-      subject: `Payment Failed — ${branding.orgName || 'Organization'}`,
-      html,
-    });
+    await sendEmail(env, to, `Payment Failed — ${branding.orgName || 'Organization'}`, html, branding.orgName, cid);
 
     console.log(`[${cid}] Failure notification sent to ${to}`);
     return jsonResp({ success: true, correlationId: cid }, 200, env);
@@ -264,15 +249,7 @@ async function handleSendReminder(request: Request, env: Env): Promise<Response>
       footerText: branding.footerText,
     });
 
-    const fromEmail = process.env.DEFAULT_FROM_EMAIL || 'noreply@quorum.app';
-    const fromName = process.env.DEFAULT_FROM_NAME || 'Quorum';
-
-    await env.EMAIL.send({
-      to,
-      from: { email: fromEmail, name: branding.orgName || fromName },
-      subject: `Renewal Reminder — ${branding.orgName || 'Organization'}`,
-      html,
-    });
+    await sendEmail(env, to, `Renewal Reminder — ${branding.orgName || 'Organization'}`, html, branding.orgName, cid);
 
     console.log(`[${cid}] Reminder sent to ${to}`);
     return jsonResp({ success: true, correlationId: cid }, 200, env);
@@ -305,20 +282,12 @@ async function handleNotifyAdmins(request: Request, env: Env): Promise<Response>
     const branding = await getOrgBranding(orgId, env);
     const adminIds = (org.adminIds as string[]) || [];
 
-    const fromEmail = process.env.DEFAULT_FROM_EMAIL || 'noreply@quorum.app';
-    const fromName = process.env.DEFAULT_FROM_NAME || 'Quorum';
-
     let sentCount = 0;
     for (const uid of adminIds) {
       const user = await firestoreGet('users', uid, accessToken, env.FIREBASE_PROJECT_ID);
       if (!user?.email) continue;
 
-      await env.EMAIL.send({
-        to: user.email as string,
-        from: { email: fromEmail, name: branding.orgName || fromName },
-        subject,
-        html,
-      });
+      await sendEmail(env, user.email as string, subject, html, branding.orgName);
       sentCount++;
     }
 

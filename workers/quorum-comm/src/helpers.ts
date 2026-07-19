@@ -3,27 +3,9 @@ export interface Env {
   FIREBASE_ADMIN_PRIVATE_KEY: string;
   FIREBASE_PROJECT_ID: string;
   API_KEY: string;
-  EMAIL: SendEmail;
+  RESEND_API_KEY: string;
+  RESEND_FROM_EMAIL: string;
   ALLOWED_ORIGIN: string;
-}
-
-interface SendEmail {
-  send(message: EmailMessage): Promise<EmailResponse>;
-}
-
-interface EmailMessage {
-  to: string | string[];
-  from: { email: string; name?: string };
-  subject: string;
-  html?: string;
-  text?: string;
-  cc?: string | string[];
-  bcc?: string | string[];
-  replyTo?: { email: string; name?: string };
-}
-
-interface EmailResponse {
-  messageId: string;
 }
 
 export interface EmailRequest {

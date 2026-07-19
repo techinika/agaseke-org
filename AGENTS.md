@@ -15,7 +15,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - Firebase (Firestore, Auth, Storage) — project "ndafana-one"
 - Zustand + React Query for state
 - **PesaPal API v3** — single payment gateway (Cards only, USD only)
-- **Cloudflare Workers** — 4 workers: `quorum-payments`, `quorum-uploads`, `quorum-cron`, `quorum-comm`
+- **Cloudflare Workers** — 5 workers: `quorum-payments`, `quorum-uploads`, `quorum-cron`, `quorum-comm`, `quorum-subscriptions`
 - **Cloudflare R2** — `quorum-assets` bucket for image uploads (replaces ImageKit)
 - Sora font via `next/font/google` (weights 200–800), JetBrains Mono for mono
 - Brand: #FF0000 (Quorum red); mobile-first; dark mode via next-themes
@@ -25,10 +25,12 @@ A web app for nonprofits to manage memberships and collect donations.
 - CURRENCY = USD (all amounts in USD, PesaPal processes in USD)
 - Platform fee: 10% for Starter (free), 5% for Growth ($99/mo) and Enterprise ($199/mo) plans (payer configurable: org or donor)
 - Subscription plans: Starter (free, up to 500 members), Growth ($99/mo, 500–1,000 members), Enterprise ($199/mo, 1,000+ members)
+- Multi-month subscriptions: 1–12 months, 10% discount for 5+ months
 - All plans include white-labeled pages (logo, colors, custom URL), bank payout settings, and custom SMTP email
 - AES-GCM 256 + PBKDF2 for chat encryption
-- **Email**: Cloudflare Email Service binding in `quorum-comm` worker (branded emails with org footer); Nodemailer SMTP fallback (org custom SMTP → system SMTP)
-- **Cron**: `quorum-cron` Cloudflare Worker (reconcile, payment-reminders, membership-expiry) authorized via `CRON_SECRET`
+- **Email**: Resend API via `quorum-comm` worker (branded emails with org footer); Nodemailer SMTP fallback (org custom SMTP → system SMTP)
+- **Subscriptions**: `quorum-subscriptions` worker handles multi-month billing, plan changes, renewal reminders, and expiry (verifies Firebase tokens directly via JWKS — no Next.js API route)
+- **Cron**: `quorum-cron` Cloudflare Worker (reconcile, payment-reminders, membership-expiry, subscription-renewal, subscription-expiry) authorized via `CRON_SECRET`
 - **Withdrawals**: $10 minimum, 5 working day processing
 
 ### Architecture
@@ -42,27 +44,26 @@ A web app for nonprofits to manage memberships and collect donations.
 - `org/[slug]/donate/` — donation flow with PesaPal card checkout
 - `org/[slug]/payment/return/[depositId]/[type]/` — payment return page (client-side verification via `quorum-payments` worker)
 - `org/[slug]/admins/` — admin roles management (super-admin, finance-admin, community-admin)
-- `org/[slug]/subscription/` — subscription plan management with PesaPal billing
-- `org/[slug]/subscription/return/[orderId]/` — subscription payment return page (polls for processing state)
+- `org/[slug]/subscription/` — subscription plan management with multi-month billing (calls `quorum-subscriptions` worker directly)
+- `org/[slug]/subscription/return/[orderId]/` — subscription payment return page (polls `quorum-payments/finalize`)
 - `admin/organizations/` — super admin page listing all organizations (requires `isAdmin: true` on user doc)
 - `org/[slug]/chat/` — public chat (guest-accessible)
 - `app/api/org/smtp/` — POST, encrypts SMTP password and saves to Firestore
-- `app/api/org/[slug]/subscription/` — GET/PATCH subscription plan with PesaPal billing
+- `app/api/org/[slug]/subscription/` — REMOVED (410 Gone). Subscription logic moved to `quorum-subscriptions` worker.
 - GA4 page view tracking via `GoogleAnalytics` component in root layout
 - Campaign create/edit moved from modals to dedicated pages: `campaigns/new/`, `campaigns/[campaignId]/edit/`
 - Tier create/edit moved from modals to dedicated pages: `members/tiers/new/`, `members/tiers/[tierId]/edit/`
-- **Sidebar improvements**: Fixed toggle on all screens, "View public page" link, "All organizations" hidden from non-admins ✅
 
 ### Cloudflare Workers (`workers/`)
 - `workers/quorum-payments/` — PesaPal payment integration
   - `POST /initiate` — Creates PesaPal payment link (returns redirect URL)
   - `POST /webhook` — Receives PesaPal IPN notifications, processes payments
-  - `POST /finalize` — Client-side return verification after PesaPal redirect
+  - `POST /finalize` — Client-side return verification after PesaPal redirect; calls `quorum-subscriptions/finalize` for subscription payments
   - `POST /reconcile` — Cron: verifies all pending transactions via PesaPal
   - Auth: `X-API-Key` for initiate/finalize; `Authorization: Bearer {WEBHOOK_SECRET}` for webhook; `Authorization: Bearer {CRON_SECRET}` for reconcile
   - Webhook auth warns if `WEBHOOK_SECRET` unset (backwards-compatible migration)
   - Campaign `raisedAmount` incremented on successful donations; race condition skips already-processed txns
-  - Bindings: `PESAPAL_CONSUMER_KEY`, `PESAPAL_CONSUMER_SECRET`, `PESAPAL_BASE_URL`, `FIREBASE_ADMIN_*`, `CRON_SECRET`, `WEBHOOK_SECRET`
+  - Bindings: `PESAPAL_CONSUMER_KEY`, `PESAPAL_CONSUMER_SECRET`, `PESAPAL_BASE_URL`, `FIREBASE_ADMIN_*`, `CRON_SECRET`, `WEBHOOK_SECRET`, `QUORUM_SUBSCRIPTIONS_URL`, `QUORUM_SUBSCRIPTIONS_API_KEY`
   - CORS: restricted to `ALLOWED_ORIGIN` (set `ALLOWED_ORIGIN=https://yourdomain.com`)
 - `workers/quorum-uploads/` — R2 image uploads
   - `POST /upload` — Multipart file upload to R2 bucket `quorum-assets` (auth required)
@@ -74,10 +75,12 @@ A web app for nonprofits to manage memberships and collect donations.
   - `GET|POST /reconcile` — Pending transaction reconciliation
   - `GET|POST /payment-reminders` — 3-day renewal reminders for memberships and recurring donations
   - `GET|POST /membership-expiry` — Marks expired memberships
-  - Cron trigger: daily at 06:00 UTC
+  - `GET|POST /subscription-renewal` — Calls `quorum-subscriptions/renewal-reminder`
+  - `GET|POST /subscription-expiry` — Calls `quorum-subscriptions/expiry`
+  - Cron trigger: daily at 06:00 UTC (runs all 5 tasks)
   - All endpoints auth: `Authorization: Bearer {CRON_SECRET}`
-  - Email: Nodemailer via SMTP (logged in dev, sent in production)
-- `workers/quorum-comm/` — Branded email sending via Cloudflare Email Service
+  - Bindings: `QUORUM_SUBSCRIPTIONS_URL`, `QUORUM_SUBSCRIPTIONS_API_KEY`
+- `workers/quorum-comm/` — Branded email sending via Resend API
   - `POST /send` — Generic email send (to, subject, html)
   - `POST /send-confirmation` — Payment confirmation email with org branding
   - `POST /send-failure` — Payment failure email with retry link
@@ -85,9 +88,22 @@ A web app for nonprofits to manage memberships and collect donations.
   - `POST /notify-admins` — Notify all org admins
   - `GET /health` — Health check
   - Auth: `X-API-Key` header
-  - Binding: `send_email` (Cloudflare Email Service)
+  - Email delivery: Resend API (`POST https://api.resend.com/emails` with Bearer token)
+  - Secrets: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`
   - Templates: payment-confirmation, payment-failed, payment-reminder, new-donation-notification, new-member-notification
   - Org branding: website URL, contact email/phone, custom footer text in email footers
+- `workers/quorum-subscriptions/` — Multi-month subscription management
+  - `GET /get-info` — Returns current subscription info (plan, dates, org details)
+  - `GET /calculate-price` — Multi-month pricing with 10% discount for 5+ months
+  - `POST /change-plan` — Initiates plan change (creates Firestore transaction, calls `quorum-payments/initiate`)
+  - `POST /finalize` — Called by `quorum-payments` after payment confirmation; updates org subscription dates
+  - `POST /handle-failure` — Called by `quorum-payments` on payment failure
+  - `GET /renewal-reminder` — Cron: sends renewal reminder emails for upcoming expirations
+  - `GET /expiry` — Cron: downgrades expired subscriptions and notifies admins
+  - Auth: Firebase ID token (JWKS) for user-facing endpoints; `X-API-Key` for worker-to-worker calls
+  - Pricing: `subtotal = monthlyRate × months`, 10% discount applied when `months >= 5`, max 12 months
+  - Bindings: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `QUORUM_PAYMENTS_URL`, `QUORUM_PAYMENTS_API_KEY`, `FIREBASE_ADMIN_*`
+  - CORS: restricted to `ALLOWED_ORIGIN`
 
 ### Key Patterns
 - AuthGuard via client-side auth store (Firebase Auth uses indexedDB — middleware can't read it)
@@ -104,9 +120,9 @@ A web app for nonprofits to manage memberships and collect donations.
 - Server-side Firestore writes via REST API + OAuth2 JWT assertion (in `lib/firebase/server.ts`)
 - Google Analytics gtag loaded in root layout with Suspense boundary for `useSearchParams`
 - **Shared payment logic**: `lib/payments.ts` — `completeDeposit()`, `failDeposit()`, `reconcilePendingTransaction()` — used by `quorum-payments` worker
-- **Email pipeline**: `quorum-comm` worker for branded emails via Cloudflare Email Service; `lib/email/index.ts` for Nodemailer fallback (org SMTP → system SMTP); org SMTP passwords encrypted with AES-GCM
+- **Email pipeline**: `quorum-comm` worker for branded emails via Resend API; `lib/email/index.ts` for Nodemailer fallback (org SMTP → system SMTP); org SMTP passwords encrypted with AES-GCM
 - **PesaPal client**: `lib/pesapal.ts` — token caching, payment initiation, transaction verification, status mapping
-- **Worker URLs**: `lib/workers.ts` — centralized worker URL config from env vars (payments, uploads, cron, comm)
+- **Worker URLs**: `lib/workers.ts` — centralized worker URL config from env vars (payments, uploads, cron, comm, subscriptions)
 - **Campaign form**: `CampaignFormFields` extracted as reusable component; `CampaignForm` wraps in dialog for backward compat; dedicated pages for create/edit
 - **Campaign auto-withdraw**: Each campaign has `withdrawalTrigger` field (`'anytime'` | `'target_reached'`) controlling when funds can be withdrawn
 - **Withdrawal system**: $10 minimum, 5 working day processing. Finance and donations pages show available balance with "Request withdrawal" button. Withdrawals stored in `organizations/{orgId}/withdrawals` subcollection.
@@ -114,7 +130,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - **Super admin**: User docs with `isAdmin: true` can access `/admin/organizations` to view all orgs; accessible from sidebar
 - **Firestore safety**: `useSendMessage` strips `undefined` values from data before `addDoc` to avoid Firestore rejecting undefined fields (e.g. `imageURL`)
 - **tiptap**: StarterKit v3.27+ bundles `link` and `underline` — explicitly disabled in config since they're added separately
-- **Sidebar**: Fixed on all screens, toggleable via hamburger/X button. Hamburger shown only when sidebar closed (at `left-3 top-3`), X button inside sidebar header when open. Content uses `AdminMainContent` client component for dynamic padding (`lg:pl-64` when open, `sm:pl-14` when closed to clear hamburger). Sidebar title is org name (not "Quorum") with `break-words`. "View public page" link opens org profile in new tab. "All organizations" link visible only to super admins. Admins (UserCog icon) link for role management.
+- **Sidebar**: Fixed on all screens, toggleable via hamburger/X button. Hamburger shown only when sidebar closed (at `left-3 top-3`), X button inside sidebar header when open. Content uses `AdminMainContent` client component for dynamic padding (`lg:pl-64` when open, `sm:pl-14` when closed to clear hamburger). Sidebar title is org name (not "Quorum") with `break-words`. "View public page" link opens org profile in new tab. "All organizations" link visible only to super admins. Admins (UserCog icon) link for role management. State persisted to `localStorage` (`quorum-sidebar-open`). Nav clicks only auto-close sidebar on mobile.
 - **Org listing**: `/org` page shows all orgs the user is an admin of, with card grid (avatar, description, country, category), "View page" (new tab) and "Dashboard" buttons, and a "New organization" button.
 - **Login redirect**: Default redirect after login changed from `/org/create` to `/org` (shows org listing instead of forcing creation).
 - **Org not-found**: Shared `OrgNotFound` component with configurable icon; server component uses `notFound()`, all public client pages render `OrgNotFound` when org is null (fixes blank pages, infinite spinners, and misleading error messages on checkout/payment pages).
@@ -133,10 +149,11 @@ A web app for nonprofits to manage memberships and collect donations.
 - **Org branding settings**: Settings page includes website URL, contact email, contact phone, and custom footer text for emails. Used by `quorum-comm` worker to add org branding to email footers.
 - **R2 uploads**: Image uploads go through `quorum-uploads` worker to R2 bucket `quorum-assets`. Returns public URL at `quorum-assets.r2.dev/files/{folder}/{uuid}.{ext}`.
 - **Member limit enforcement**: Join flow checks org's subscription plan member limit before allowing new memberships. Shows error toast if limit reached.
-- **Subscription billing**: Subscription page allows upgrading/downgrading plans. Paid plans (Growth/Enterprise) initiate PesaPal payment via `quorum-payments` worker. Starter plan updates directly. Plan only upgraded on payment confirmation (not on initial PATCH).
-- **Subscription return page**: `org/[slug]/subscription/return/[orderId]/` polls for payment processing state, shows success/failure UI with link back to subscription page.
-- **Yearly billing**: Subscription page supports monthly/yearly toggle with 15% discount on yearly plans. `SubscriptionBillingCycle` type, `yearlyPrice` field in `SUBSCRIPTION_PRICING`.
+- **Multi-month subscription billing**: Subscription page supports 1–12 month selection. 10% discount for 5+ months. Frontend calls `quorum-subscriptions` worker directly (no Next.js API route). Starter plan downgrade handled inline.
+- **Subscription return page**: `org/[slug]/subscription/return/[orderId]/` polls `quorum-payments/finalize`, shows success/failure UI with link back to subscription page.
 - **Settings subscription card**: Settings page shows current subscription plan with link to manage subscription.
+- **Settings form pre-fill**: Settings inputs use lazy `useState(() => org?.field ?? '')` initialization — form fields populate immediately from cached org data on mount.
+- **Sidebar persistence**: Sidebar open/closed state persisted to `localStorage` (`quorum-sidebar-open`). Only closes on user action (X button, overlay click on mobile). Nav clicks only auto-close on mobile.
 
 ### Logging (lib/logger.ts)
 - Dual logger: console (synchronous) + Firestore `logs` collection (async, fire-and-forget)
@@ -199,6 +216,8 @@ A web app for nonprofits to manage memberships and collect donations.
 - `QUORUM_CRON_URL` — quorum-cron worker URL
 - `QUORUM_COMM_URL` — quorum-comm worker URL
 - `QUORUM_COMM_API_KEY` — API key for quorum-comm worker
+- `QUORUM_SUBSCRIPTIONS_URL` — quorum-subscriptions worker URL
+- `QUORUM_SUBSCRIPTIONS_API_KEY` — API key for quorum-subscriptions worker
 - `SMTP_HOST/PORT/USER/PASS` — system SMTP provider (fallback)
 - `DEFAULT_FROM_EMAIL`, `DEFAULT_FROM_NAME` — default email sender
 - `SMTP_ENCRYPTION_KEY` — 32 bytes hex key for AES-GCM SMTP password encryption
@@ -209,7 +228,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - `WORKER_URL` — internal worker URL for quorum-payments (used by quorum-cron)
 
 ### Types
-- `types/organization.ts` — Organization with subscription, SMTP, payout, and branding fields (websiteUrl, contactEmail, contactPhone, footerText)
+- `types/organization.ts` — Organization with subscription, SMTP, payout, branding, and `subscriptionMonths` fields
 - `types/campaign.ts` — Campaign with `withdrawalTrigger: WithdrawalTrigger` (`'anytime'` | `'target_reached'`)
 - `types/withdrawal.ts` — Withdrawal with bank details, status (pending/processing/completed/failed), timestamps
 - `types/admin.ts` — OrgAdmin with role (`super-admin` | `finance-admin` | `community-admin`)
@@ -224,7 +243,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - **Minimal org footer**: `PublicOrgFooter` shows only "Built with Quorum ❤" with muted background (`bg-muted/20`) for visual separation. Removed copyright, terms/privacy links, and promo bar.
 - **Login/signup auto-redirect**: Both login and signup pages redirect to `/org` via `useEffect` when `useAuthStore` reports an already-authenticated user.
 
-### Completed — Deep Codebase Analysis Fixes ✅
+### Completed ✅
 - Added missing `'use client'` directives (badge, chat-view, create-room-dialog)
 - Removed unnecessary `'use client'` directives (rich-text-content, placeholder-page)
 - Fixed stale state in settings page across org navigation (ref-based org ID diff replaces `initialized` flag)
@@ -239,53 +258,56 @@ A web app for nonprofits to manage memberships and collect donations.
 - **Migrated from Flutterwave to PesaPal** — single gateway, card-only, USD. Created `lib/pesapal.ts` with token caching, payment initiation, verification, status mapping.
 - **Moved payments to Cloudflare Worker** — `quorum-payments` handles initiate, webhook, finalize, reconcile. Removed 4 Next.js API routes.
 - **Moved uploads to Cloudflare R2** — `quorum-uploads` worker with `quorum-assets` bucket. Removed ImageKit entirely.
-- **Moved cron to Cloudflare Worker** — `quorum-cron` handles reconcile, payment-reminders, membership-expiry with daily trigger. Removed 3 Next.js API routes.
+- **Moved cron to Cloudflare Worker** — `quorum-cron` handles reconcile, payment-reminders, membership-expiry, subscription-renewal, subscription-expiry with daily trigger.
 - **Removed ImageKit** — all references, files, env vars, and `ik.imagekit.io` from `next.config.ts`
-- **Removed Resend** — email now Nodemailer-only (org SMTP → system SMTP)
+- **Migrated quorum-comm from Cloudflare Email Service to Resend** — `sendViaResend()` via `POST https://api.resend.com/emails` with Bearer token auth. Removed `[[send_email]]` binding. Secrets: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`.
 - **Removed mobile money** — payment method selector deleted, cards only
 - **Added org payout settings** — bank name, account name, account number, SWIFT/BIC, bank address in settings page and Firestore
-- **Created `(legal)/layout.tsx`** — deduplicates PublicNav/PublicFooter from privacy and terms pages ✅
-- **Fixed `failDeposit` membership status gap** — now marks membership docs and member subcollection docs as `'failed'` (was only sending failure emails) ✅
-- **Added `category`/`country` fields to settings page** with Select widgets, shared `CATEGORIES`/`COUNTRIES` constants extracted to `lib/constants.ts` ✅
-- **Removed unused welcome email template** (not referenced anywhere) ✅
-- **Added campaign auto-withdraw** — `withdrawalTrigger` field on campaigns (`'anytime'` | `'target_reached'`) ✅
-- **Added withdrawal system** — $10 minimum, 5 working day processing. Finance + donations pages with request button. `types/withdrawal.ts`, `hooks/use-withdrawals.ts` ✅
-- **Added admin roles** — super-admin, finance-admin, community-admin. `/org/[slug]/admins/` page with add/remove/role-change. `types/admin.ts`, `hooks/use-admins.ts` ✅
-- **Added org branding** — website URL, contact email/phone, custom footer text in settings. Email templates use org branding in footers. ✅
-- **Created quorum-comm worker** — Cloudflare Email Service binding for branded emails. 5 endpoints for sending various email types. ✅
-- **Added subscription management UI** — Settings page shows current plan with link to subscription page. ✅
-- **Added member limit enforcement** — Join flow checks plan member limit before allowing new memberships. ✅
-- **Added PesaPal subscription billing** — Paid plans (Growth/Enterprise) initiate PesaPal payment. Starter updates directly. ✅
-- **Fixed PWA icons** — All icons (192, 512, maskable) now show "Q" instead of "A". ✅
-- **Yearly billing** — Monthly/yearly toggle with 15% discount. `SubscriptionBillingCycle` type. ✅
-- **Subscription return page** — `org/[slug]/subscription/return/[orderId]/` with polling UI. ✅
-- **Worker auth hardening** — `WEBHOOK_SECRET` for PesaPal webhook, CORS restricted on all workers, Firebase Auth via `jose` in workers. ✅
-- **Proxy security headers** — X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy. ✅
-- **SEO pages** — `not-found.tsx`, `error.tsx` (global + org), `robots.ts`, `sitemap.ts` with dynamic org pages. ✅
-- **Landing page SEO** — `generateMetadata` with OpenGraph/Twitter tags. ✅
-- **Email template branding** — payment-reminder, membership-expiry, pending-transaction-alert templates now pass org branding footer params. ✅
-- **Type fixes** — `Transaction.processedAt/failureReason/billingCycle`, `Membership.amount`, `OrgMember.status` typed as `MembershipStatus`. ✅
-- **Firestore REST fixes** — null values written as `{ nullValue: null }`, `incrementFirestoreField` uses `doubleValue` for decimals. ✅
-- **Fee display fixes** — CampaignCard/TierCard accept `feeRate` prop instead of hardcoded 10%. ✅
-- **Subscription API auth** — Route uses `verifyFirebaseToken` + admin check, deferred plan upgrade, ISO createdAt. ✅
-- **Fixed `reconcilePendingTransaction`** — now fetches `orderTrackingId` from Firestore before calling `verifyTransaction` (was passing `depositId` as tracking ID) ✅
-- **Fixed subscription API imports** — added `updateFirestoreDocument`, `createFirestoreDocument` imports (removed unused ones) ✅
-- **Added worker secrets** — `QUORUM_COMM_URL`, `QUORUM_COMM_API_KEY` in `quorum-payments/wrangler.toml` ✅
+- **Created `(legal)/layout.tsx`** — deduplicates PublicNav/PublicFooter from privacy and terms pages
+- **Fixed `failDeposit` membership status gap** — now marks membership docs and member subcollection docs as `'failed'` (was only sending failure emails)
+- **Added `category`/`country` fields to settings page** with Select widgets, shared `CATEGORIES`/`COUNTRIES` constants extracted to `lib/constants.ts`
+- **Removed unused welcome email template** (not referenced anywhere)
+- **Added campaign auto-withdraw** — `withdrawalTrigger` field on campaigns (`'anytime'` | `'target_reached'`)
+- **Added withdrawal system** — $10 minimum, 5 working day processing. Finance + donations pages with request button. `types/withdrawal.ts`, `hooks/use-withdrawals.ts`
+- **Added admin roles** — super-admin, finance-admin, community-admin. `/org/[slug]/admins/` page with add/remove/role-change. `types/admin.ts`, `hooks/use-admins.ts`
+- **Added org branding** — website URL, contact email/phone, custom footer text in settings. Email templates use org branding in footers.
+- **Created quorum-comm worker** — Branded email sending via Resend API. 6 endpoints for sending various email types.
+- **Created quorum-subscriptions worker** — Multi-month subscription management with Firebase token verification, 10% discount for 5+ months, plan changes, renewal reminders, and expiry handling.
+- **Added subscription management UI** — Settings page shows current plan with link to subscription page.
+- **Added member limit enforcement** — Join flow checks plan member limit before allowing new memberships.
+- **Multi-month subscription billing** — Subscription page supports 1–12 month selection with live price breakdown. Frontend calls `quorum-subscriptions` worker directly.
+- **Removed Next.js subscription API route** — Subscription logic fully handled by `quorum-subscriptions` worker (verifies Firebase tokens via JWKS directly).
+- **Fixed PWA icons** — All icons (192, 512, maskable) now show "Q" instead of "A".
+- **Worker auth hardening** — `WEBHOOK_SECRET` for PesaPal webhook, CORS restricted on all workers, Firebase Auth via `jose` in workers.
+- **Proxy security headers** — X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy.
+- **SEO pages** — `not-found.tsx`, `error.tsx` (global + org), `robots.ts`, `sitemap.ts` with dynamic org pages.
+- **Landing page SEO** — `generateMetadata` with OpenGraph/Twitter tags.
+- **Email template branding** — payment-reminder, membership-expiry, pending-transaction-alert templates now pass org branding footer params.
+- **Type fixes** — `Transaction.processedAt/failureReason/billingCycle`, `Membership.amount`, `OrgMember.status` typed as `MembershipStatus`.
+- **Firestore REST fixes** — null values written as `{ nullValue: null }`, `incrementFirestoreField` uses `doubleValue` for decimals.
+- **Fee display fixes** — CampaignCard/TierCard accept `feeRate` prop instead of hardcoded 10%.
+- **Fixed `reconcilePendingTransaction`** — now fetches `orderTrackingId` from Firestore before calling `verifyTransaction` (was passing `depositId` as tracking ID)
+- **Added worker secrets** — `QUORUM_COMM_URL`, `QUORUM_COMM_API_KEY`, `QUORUM_SUBSCRIPTIONS_URL`, `QUORUM_SUBSCRIPTIONS_API_KEY` in wrangler.toml files
+- **Settings form pre-fill** — Lazy `useState(() => org?.field ?? '')` initialization so inputs populate immediately from cached org data.
+- **Sidebar persistence** — Sidebar open/closed state persisted to `localStorage`. Nav clicks only auto-close sidebar on mobile (not desktop).
+- **Lint cleanup** — Removed unused imports and variables across subscription page, quorum-comm, quorum-subscriptions, and lib/payments.
 
 ### Next Steps
-1. Deploy `quorum-comm` worker: `cd workers/quorum-comm && wrangler deploy`
-2. Onboard email domain: `wrangler email sending enable yourdomain.com`
-3. Deploy `quorum-payments` worker: `cd workers/quorum-payments && wrangler deploy`
-4. Deploy `quorum-uploads` worker: `cd workers/quorum-uploads && wrangler deploy`
-5. Deploy `quorum-cron` worker: `cd workers/quorum-cron && wrangler deploy`
-6. Create R2 bucket `quorum-assets` via Cloudflare dashboard
-7. Register IPN URL in PesaPal dashboard: `https://quorum-payments.<subdomain>.workers.dev/webhook`
-8. Add PesaPal sandbox credentials to `.env.local`
-9. Add worker URLs and API keys to `.env.local` (including `QUORUM_COMM_URL`, `QUORUM_COMM_API_KEY`)
-10. Configure SMTP credentials for system email (fallback)
-11. Test full payment flow: donate → PesaPal sandbox → webhook → email receipt → cron reconciliation
-12. Test subscription flow: upgrade → PesaPal payment → plan update
-13. Test withdrawal flow: request withdrawal → 5-day processing
-14. Test admin roles: add admin → assign role → verify permissions
-15. Add PesaPal production credentials
-16. Test all public pages in incognito (logged-out) window after deployment
+1. Deploy `quorum-comm` worker: `cd workers/quorum-comm && npm install && npm run deploy`
+2. Set Resend secrets on `quorum-comm`: `wrangler secret put RESEND_API_KEY` and `wrangler secret put RESEND_FROM_EMAIL`
+3. Deploy `quorum-subscriptions` worker: `cd workers/quorum-subscriptions && npm install && npm run deploy`
+4. Set secrets on `quorum-subscriptions`: Firebase, PesaPal, Resend, worker API keys
+5. Deploy `quorum-payments` worker: `cd workers/quorum-payments && npm install && npm run deploy`
+6. Deploy `quorum-cron` worker: `cd workers/quorum-cron && npm install && npm run deploy`
+7. Update `quorum-cron` wrangler.toml with deployed `QUORUM_SUBSCRIPTIONS_URL` and `QUORUM_SUBSCRIPTIONS_API_KEY`
+8. Create R2 bucket `quorum-assets` via Cloudflare dashboard
+9. Register IPN URL in PesaPal dashboard: `https://quorum-payments.<subdomain>.workers.dev/webhook`
+10. Add PesaPal sandbox credentials to `.env.local`
+11. Add worker URLs and API keys to `.env.local` (including `QUORUM_SUBSCRIPTIONS_URL`, `QUORUM_SUBSCRIPTIONS_API_KEY`)
+12. Configure SMTP credentials for system email (fallback)
+13. Test full payment flow: donate → PesaPal sandbox → webhook → email receipt → cron reconciliation
+14. Test subscription flow: upgrade → multi-month PesaPal payment → plan update → email confirmation
+15. Test withdrawal flow: request withdrawal → 5-day processing
+16. Test admin roles: add admin → assign role → verify permissions
+17. Add PesaPal production credentials
+18. Test all public pages in incognito (logged-out) window after deployment

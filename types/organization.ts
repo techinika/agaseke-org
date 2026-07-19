@@ -19,6 +19,7 @@ export interface Organization {
   // Subscription settings
   subscriptionPlan: SubscriptionPlan;
   subscriptionBillingCycle?: SubscriptionBillingCycle;
+  subscriptionMonths?: number;
   subscriptionStartDate?: Timestamp;
   subscriptionEndDate?: Timestamp;
 

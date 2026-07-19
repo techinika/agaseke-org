@@ -4,7 +4,6 @@ import {
   queryFirestoreDocuments,
   updateFirestoreDocument,
   incrementFirestoreField,
-  createFirestoreDocument,
 } from '@/lib/firebase/server';
 import { COLLECTIONS, SUBCOLLECTIONS } from '@/lib/constants';
 import { sendDonationEmails, sendMembershipEmails, sendDonationFailedEmails, sendMembershipFailedEmails } from '@/lib/email/payment-emails';
@@ -199,21 +198,29 @@ async function processSubscription(tx: Record<string, unknown>, depositId: strin
   const targetPlan = tx.targetPlan as string | undefined;
   const targetBillingCycle = tx.targetBillingCycle as string | undefined;
   const orgId = tx.orgId as string | undefined;
+  const subscriptionMonths = (tx.subscriptionMonths as number) || 1;
 
   if (!targetPlan || !orgId) {
     logger.warn('payments', `processSubscription: missing targetPlan or orgId for depositId=${depositId}`);
     return;
   }
 
+  const now = new Date();
+  const endDate = new Date(now);
+  endDate.setMonth(endDate.getMonth() + subscriptionMonths);
+
   const updateData: Record<string, unknown> = {
     subscriptionPlan: targetPlan,
+    subscriptionMonths,
+    subscriptionStartDate: now.toISOString(),
+    subscriptionEndDate: endDate.toISOString(),
   };
   if (targetBillingCycle) {
     updateData.subscriptionBillingCycle = targetBillingCycle;
   }
 
   await updateFirestoreDocument(COLLECTIONS.ORGANIZATIONS, orgId, updateData);
-  logger.info('payments', `processSubscription: org ${orgId} updated to plan=${targetPlan}, billingCycle=${targetBillingCycle}`);
+  logger.info('payments', `processSubscription: org ${orgId} updated to plan=${targetPlan}, months=${subscriptionMonths}, endDate=${endDate.toISOString()}`);
 }
 
 export async function reconcilePendingTransaction(

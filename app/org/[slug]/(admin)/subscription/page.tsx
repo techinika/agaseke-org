@@ -7,9 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Check, Crown, Users, ArrowUp, ArrowDown, Loader2, CreditCard, AlertTriangle, Tag } from 'lucide-react';
-import { SUBSCRIPTION_PRICING, type SubscriptionPlan, type SubscriptionBillingCycle, YEARLY_DISCOUNT_RATE } from '@/lib/constants';
+import { SUBSCRIPTION_PRICING, type SubscriptionPlan, MULTI_MONTH_DISCOUNT_RATE, MIN_MONTHS_FOR_DISCOUNT } from '@/lib/constants';
 import { UpgradeDowngradeDialog } from '@/components/shared/upgrade-downgrade-dialog';
-import { useOrganizationBySlug } from '@/hooks/use-organization';
 import { useAuthStore } from '@/store/auth-store';
 import { WORKERS } from '@/lib/workers';
 
@@ -25,42 +24,62 @@ function formatPrice(price: number): string {
   return price % 1 === 0 ? price.toString() : price.toFixed(2);
 }
 
+interface PriceBreakdown {
+  plan: string;
+  planLabel: string;
+  monthlyRate: number;
+  months: number;
+  subtotal: number;
+  discountRate: number;
+  discountAmount: number;
+  total: number;
+  hasDiscount: boolean;
+  perMonthEffective: number;
+}
+
 export default function SubscriptionPage() {
   const params = useParams();
   const slug = params.slug as string;
-  const { data: org } = useOrganizationBySlug(slug);
-  const { user, profile } = useAuthStore();
+  const { user } = useAuthStore();
   const [currentPlan, setCurrentPlan] = useState<SubscriptionPlan>('starter');
-  const [currentBillingCycle, setCurrentBillingCycle] = useState<SubscriptionBillingCycle>('monthly');
+  const [currentMonths, setCurrentMonths] = useState(1);
+  const [currentEndDate, setCurrentEndDate] = useState<string>('');
   const [memberCount, setMemberCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [targetPlan, setTargetPlan] = useState<SubscriptionPlan>('growth');
-  const [billingCycle, setBillingCycle] = useState<SubscriptionBillingCycle>('monthly');
+  const [months, setMonths] = useState(1);
 
   useEffect(() => {
     if (!user) return;
-    const currentUser = user;
+    let cancelled = false;
     async function fetchData() {
       try {
-        const token = await currentUser.getIdToken();
-        const res = await fetch(`/api/org/${slug}/subscription`, {
-          headers: { 'Authorization': `Bearer ${token}` },
+        const token = await user!.getIdToken();
+        const res = await fetch(`${WORKERS.subscriptions.url}/get-info`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': WORKERS.subscriptions.apiKey,
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ slug }),
         });
-        if (res.ok) {
+        if (res.ok && !cancelled) {
           const data = await res.json();
           setCurrentPlan(data.plan || 'starter');
-          setCurrentBillingCycle(data.billingCycle || 'monthly');
-          setBillingCycle(data.billingCycle || 'monthly');
-          setMemberCount(data.memberCount || 0);
+          setCurrentMonths(data.months || 1);
+          setCurrentEndDate(data.endDate || '');
+          setMemberCount(data.pricing?.maxMembers ?? SUBSCRIPTION_PRICING[(data.plan as SubscriptionPlan) || 'starter'].maxMembers);
         }
       } catch {
         // Use defaults
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     fetchData();
+    return () => { cancelled = true; };
   }, [slug, user]);
 
   const plan = SUBSCRIPTION_PRICING[currentPlan];
@@ -68,27 +87,47 @@ export default function SubscriptionPage() {
   const isNearLimit = memberPercentage >= 80;
   const isAtLimit = memberPercentage >= 100;
 
-  function getPrice(planKey: SubscriptionPlan, cycle: SubscriptionBillingCycle): number {
+  function calculatePrice(planKey: SubscriptionPlan, selectedMonths: number): PriceBreakdown {
     const info = SUBSCRIPTION_PRICING[planKey];
-    if (cycle === 'yearly') return info.yearlyPrice;
-    return info.price;
+    const monthlyRate = info.price;
+    const subtotal = monthlyRate * selectedMonths;
+    const hasDiscount = selectedMonths >= MIN_MONTHS_FOR_DISCOUNT;
+    const discountAmount = hasDiscount ? Math.round(subtotal * MULTI_MONTH_DISCOUNT_RATE * 100) / 100 : 0;
+    const total = Math.round((subtotal - discountAmount) * 100) / 100;
+    const perMonthEffective = selectedMonths > 0 ? Math.round((total / selectedMonths) * 100) / 100 : 0;
+
+    return {
+      plan: planKey,
+      planLabel: info.label,
+      monthlyRate,
+      months: selectedMonths,
+      subtotal,
+      discountRate: hasDiscount ? MULTI_MONTH_DISCOUNT_RATE : 0,
+      discountAmount,
+      total,
+      hasDiscount,
+      perMonthEffective,
+    };
   }
 
   function handleUpgrade(target: SubscriptionPlan) {
     setTargetPlan(target);
+    setMonths(1);
     setDialogOpen(true);
   }
 
   async function handleConfirmPlanChange() {
     if (!user) throw new Error('Not authenticated');
     const token = await user.getIdToken();
-    const res = await fetch(`/api/org/${slug}/subscription`, {
-      method: 'PATCH',
+
+    const res = await fetch(`${WORKERS.subscriptions.url}/change-plan`, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'X-API-Key': WORKERS.subscriptions.apiKey,
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ plan: targetPlan, billingCycle }),
+      body: JSON.stringify({ slug, plan: targetPlan, months }),
     });
 
     if (!res.ok) {
@@ -98,40 +137,15 @@ export default function SubscriptionPage() {
 
     const data = await res.json();
 
-    if (data.requiresPayment) {
-      const appUrl = window.location.origin;
-      const returnUrl = `${appUrl}/org/${slug}/subscription/return/${data.orderId}`;
-
-      const paymentRes = await fetch(`${WORKERS.payments.url}/initiate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': WORKERS.payments.apiKey,
-        },
-        body: JSON.stringify({
-          depositId: data.orderId,
-          amount: data.amount,
-          returnUrl,
-          reason: `Subscription: ${data.plan} plan (${billingCycle})`,
-          email: user?.email || profile?.email,
-          name: profile?.displayName || user?.displayName || 'Organization',
-          slug,
-          orgName: org?.name || slug,
-        }),
-      });
-
-      if (!paymentRes.ok) {
-        const err = await paymentRes.json().catch(() => ({}));
-        throw new Error(err.error || 'Failed to initiate payment');
-      }
-
-      const { redirectUrl } = await paymentRes.json();
-      window.location.href = redirectUrl;
+    if (data.requiresPayment && data.redirectUrl) {
+      window.location.href = data.redirectUrl;
       return;
     }
 
+    // Starter plan — no payment needed
     setCurrentPlan(targetPlan);
-    setCurrentBillingCycle(billingCycle);
+    setCurrentMonths(1);
+    setCurrentEndDate('');
   }
 
   if (loading) {
@@ -142,7 +156,7 @@ export default function SubscriptionPage() {
     );
   }
 
-  const currentPrice = getPrice(currentPlan, currentBillingCycle);
+  const currentPricing = calculatePrice(currentPlan, currentMonths);
 
   return (
     <div className="space-y-6">
@@ -160,31 +174,34 @@ export default function SubscriptionPage() {
               </div>
               <div>
                 <CardTitle className="text-base">Current Plan</CardTitle>
-                <CardDescription>{plan.label} plan &middot; {currentBillingCycle === 'yearly' ? 'Yearly' : 'Monthly'}</CardDescription>
+                <CardDescription>
+                  {plan.label} plan &middot; {currentMonths} month{currentMonths > 1 ? 's' : ''}
+                  {currentEndDate && (
+                    <> &middot; expires {new Date(currentEndDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</>
+                  )}
+                </CardDescription>
               </div>
             </div>
             <Badge variant="outline" className={planColors[currentPlan]}>
-              {currentPrice === 0 ? 'Free' : `$${formatPrice(currentPrice)}/${currentBillingCycle === 'yearly' ? 'yr' : 'mo'}`}
+              {currentPricing.total === 0 ? 'Free' : `$${formatPrice(currentPricing.total)}/${currentMonths > 1 ? `${currentMonths}mo` : 'mo'}`}
             </Badge>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-lg border p-4">
-              <p className="text-sm text-muted-foreground">{currentBillingCycle === 'yearly' ? 'Yearly price' : 'Monthly price'}</p>
+              <p className="text-sm text-muted-foreground">Monthly rate</p>
               <p className="text-2xl font-bold">
-                {currentPrice === 0 ? 'Free' : `$${formatPrice(currentPrice)}`}
+                {currentPricing.monthlyRate === 0 ? 'Free' : `$${formatPrice(currentPricing.monthlyRate)}`}
               </p>
-              {currentPrice > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  per {currentBillingCycle === 'yearly' ? 'year' : 'month'}
-                  {currentBillingCycle === 'yearly' && currentPlan !== 'starter' && (
-                    <span className="ml-1 text-green-600 dark:text-green-400">
-                      (${formatPrice(SUBSCRIPTION_PRICING[currentPlan].price)}/mo equivalent)
-                    </span>
-                  )}
-                </p>
-              )}
+              <p className="text-xs text-muted-foreground">
+                per month
+                {currentPricing.hasDiscount && (
+                  <span className="ml-1 text-green-600 dark:text-green-400">
+                    (${formatPrice(currentPricing.perMonthEffective)}/mo effective)
+                  </span>
+                )}
+              </p>
             </div>
             <div className="rounded-lg border p-4">
               <p className="text-sm text-muted-foreground">Transaction fee</p>
@@ -225,41 +242,12 @@ export default function SubscriptionPage() {
         </CardContent>
       </Card>
 
-      <div className="flex items-center justify-center">
-        <div className="inline-flex rounded-lg border bg-muted p-1">
-          <button
-            onClick={() => setBillingCycle('monthly')}
-            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-              billingCycle === 'monthly'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Monthly
-          </button>
-          <button
-            onClick={() => setBillingCycle('yearly')}
-            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-              billingCycle === 'yearly'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Yearly
-            <Badge variant="secondary" className="ml-2 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-              -{(YEARLY_DISCOUNT_RATE * 100).toFixed(0)}% OFF
-            </Badge>
-          </button>
-        </div>
-      </div>
-
       <div className="grid gap-6 lg:grid-cols-3">
         {planOrder.map((planKey) => {
           const planInfo = SUBSCRIPTION_PRICING[planKey];
           const isCurrent = planKey === currentPlan;
           const isHigher = planOrder.indexOf(planKey) > planOrder.indexOf(currentPlan);
-          const displayPrice = getPrice(planKey, billingCycle);
-          const monthlyEquiv = planInfo.price;
+          const displayPrice = calculatePrice(planKey, months);
 
           return (
             <Card key={planKey} className={isCurrent ? 'border-primary' : ''}>
@@ -281,24 +269,24 @@ export default function SubscriptionPage() {
               <CardContent className="space-y-4">
                 <div>
                   <span className="text-3xl font-bold">
-                    {displayPrice === 0 ? 'Free' : `$${formatPrice(displayPrice)}`}
+                    {displayPrice.total === 0 ? 'Free' : `$${formatPrice(displayPrice.total)}`}
                   </span>
-                  {displayPrice > 0 && (
+                  {displayPrice.total > 0 && (
                     <span className="text-muted-foreground">
-                      /{billingCycle === 'yearly' ? 'yr' : 'mo'}
+                      /{months}mo
                     </span>
                   )}
-                  {billingCycle === 'yearly' && planKey !== 'starter' && (
+                  {displayPrice.hasDiscount && planKey !== 'starter' && (
                     <p className="mt-1 text-xs text-muted-foreground">
-                      ${formatPrice(monthlyEquiv)}/mo &middot; save {YEARLY_DISCOUNT_RATE * 100}%
+                      ${formatPrice(displayPrice.monthlyRate)}/mo &middot; save {(MULTI_MONTH_DISCOUNT_RATE * 100).toFixed(0)}%
                     </p>
                   )}
                 </div>
 
-                {billingCycle === 'yearly' && planKey !== 'starter' && (
+                {displayPrice.hasDiscount && planKey !== 'starter' && (
                   <div className="flex items-center gap-2 rounded-lg bg-green-50 dark:bg-green-900/20 px-3 py-2 text-sm text-green-700 dark:text-green-400">
                     <Tag className="size-4" />
-                    Save {((1 - planInfo.yearlyPrice / (planInfo.price * 12)) * 100).toFixed(0)}% with yearly billing
+                    Save ${formatPrice(displayPrice.discountAmount)} ({(MULTI_MONTH_DISCOUNT_RATE * 100).toFixed(0)}% off — {MIN_MONTHS_FOR_DISCOUNT}+ months)
                   </div>
                 )}
 
@@ -377,10 +365,10 @@ export default function SubscriptionPage() {
             <div className="rounded-lg border p-4">
               <div className="flex items-center gap-2">
                 <Crown className="size-4 text-muted-foreground" />
-                <p className="text-sm font-medium">Billing cycle</p>
+                <p className="text-sm font-medium">Multi-month discount</p>
               </div>
               <p className="mt-1 text-sm text-muted-foreground">
-                Monthly or yearly, cancel anytime
+                Save {(MULTI_MONTH_DISCOUNT_RATE * 100).toFixed(0)}% when you subscribe for {MIN_MONTHS_FOR_DISCOUNT}+ months at once
               </p>
             </div>
           </div>
@@ -393,7 +381,7 @@ export default function SubscriptionPage() {
               <li>• Starter plan: 10% platform fee on all donations and memberships</li>
               <li>• Growth & Enterprise plans: 5% platform fee on all donations and memberships</li>
               <li>• Subscription fee is separate from the transaction fee</li>
-              <li>• Yearly billing saves {YEARLY_DISCOUNT_RATE * 100}% on the subscription fee</li>
+              <li>• Subscribe for {MIN_MONTHS_FOR_DISCOUNT}+ months to save {(MULTI_MONTH_DISCOUNT_RATE * 100).toFixed(0)}% on the subscription fee</li>
               <li>• Choose who pays the transaction fee: your organization or the donor</li>
             </ul>
           </div>
@@ -405,7 +393,8 @@ export default function SubscriptionPage() {
         onOpenChange={setDialogOpen}
         currentPlan={currentPlan}
         targetPlan={targetPlan}
-        billingCycle={billingCycle}
+        months={months}
+        onMonthsChange={setMonths}
         onConfirm={handleConfirmPlanChange}
       />
     </div>

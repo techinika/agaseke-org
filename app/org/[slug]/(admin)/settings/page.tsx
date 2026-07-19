@@ -28,32 +28,32 @@ export default function SettingsPage() {
   const { data: org, isLoading } = useOrganizationBySlug(slug);
   const updateOrg = useUpdateOrganization(org?.id ?? '');
 
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [logoURL, setLogoURL] = useState('');
-  const [coverURL, setCoverURL] = useState('');
+  const [name, setName] = useState(() => org?.name ?? '');
+  const [description, setDescription] = useState(() => org?.description ?? '');
+  const [logoURL, setLogoURL] = useState(() => org?.logoURL ?? '');
+  const [coverURL, setCoverURL] = useState(() => org?.coverURL ?? '');
 
-  const [smtpHost, setSmtpHost] = useState('');
-  const [smtpPort, setSmtpPort] = useState('587');
-  const [smtpUser, setSmtpUser] = useState('');
+  const [smtpHost, setSmtpHost] = useState(() => org?.smtpHost ?? '');
+  const [smtpPort, setSmtpPort] = useState(() => String(org?.smtpPort ?? 587));
+  const [smtpUser, setSmtpUser] = useState(() => org?.smtpUser ?? '');
   const [smtpPass, setSmtpPass] = useState('');
-  const [smtpFromEmail, setSmtpFromEmail] = useState('');
-  const [smtpFromName, setSmtpFromName] = useState('');
-  const [brandColor, setBrandColor] = useState('#FF0000');
-  const [category, setCategory] = useState('');
-  const [country, setCountry] = useState('');
-  const [hasSmtpPass, setHasSmtpPass] = useState(false);
+  const [smtpFromEmail, setSmtpFromEmail] = useState(() => org?.smtpFromEmail ?? '');
+  const [smtpFromName, setSmtpFromName] = useState(() => org?.smtpFromName ?? '');
+  const [brandColor, setBrandColor] = useState(() => org?.brandColor ?? '#FF0000');
+  const [category, setCategory] = useState(() => org?.category ?? '');
+  const [country, setCountry] = useState(() => org?.country ?? '');
+  const [hasSmtpPass, setHasSmtpPass] = useState(() => !!org?.smtpPass);
 
-  const [bankName, setBankName] = useState('');
-  const [bankAccountName, setBankAccountName] = useState('');
-  const [bankAccountNumber, setBankAccountNumber] = useState('');
-  const [swiftCode, setSwiftCode] = useState('');
-  const [bankAddress, setBankAddress] = useState('');
+  const [bankName, setBankName] = useState(() => org?.bankName ?? '');
+  const [bankAccountName, setBankAccountName] = useState(() => org?.bankAccountName ?? '');
+  const [bankAccountNumber, setBankAccountNumber] = useState(() => org?.bankAccountNumber ?? '');
+  const [swiftCode, setSwiftCode] = useState(() => org?.swiftCode ?? '');
+  const [bankAddress, setBankAddress] = useState(() => org?.bankAddress ?? '');
 
-  const [websiteUrl, setWebsiteUrl] = useState('');
-  const [contactEmail, setContactEmail] = useState('');
-  const [contactPhone, setContactPhone] = useState('');
-  const [footerText, setFooterText] = useState('');
+  const [websiteUrl, setWebsiteUrl] = useState(() => org?.websiteUrl ?? '');
+  const [contactEmail, setContactEmail] = useState(() => org?.contactEmail ?? '');
+  const [contactPhone, setContactPhone] = useState(() => org?.contactPhone ?? '');
+  const [footerText, setFooterText] = useState(() => org?.footerText ?? '');
 
   const [savingSmtp, setSavingSmtp] = useState(false);
 

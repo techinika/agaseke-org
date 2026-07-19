@@ -1,18 +1,15 @@
 export interface Env {
-  PESAPAL_CONSUMER_KEY: string;
-  PESAPAL_CONSUMER_SECRET: string;
-  PESAPAL_BASE_URL: string;
   FIREBASE_ADMIN_CLIENT_EMAIL: string;
   FIREBASE_ADMIN_PRIVATE_KEY: string;
-  CRON_SECRET: string;
+  FIREBASE_PROJECT_ID: string;
   API_KEY: string;
-  WEBHOOK_SECRET: string;
-  WORKER_URL: string;
   ALLOWED_ORIGIN: string;
+  QUORUM_PAYMENTS_URL: string;
+  QUORUM_PAYMENTS_API_KEY: string;
   QUORUM_COMM_URL: string;
   QUORUM_COMM_API_KEY: string;
-  QUORUM_SUBSCRIPTIONS_URL: string;
-  QUORUM_SUBSCRIPTIONS_API_KEY: string;
+  CRON_SECRET: string;
+  APP_URL: string;
 }
 
 export function generateCorrelationId(prefix: string): string {
@@ -31,6 +28,55 @@ export function jsonResp(data: unknown, status = 200, env?: Env): Response {
 
 export function errorResp(message: string, status = 500, env?: Env): Response {
   return jsonResp({ error: message }, status, env);
+}
+
+// Firebase Auth — verify Firebase ID tokens via JWKS
+interface JwtHeader { alg: string; kid?: string; typ: string; }
+interface JwtPayload { iss?: string; sub?: string; aud?: string; exp?: number; iat?: number; email?: string; user_id?: string; [key: string]: unknown; }
+
+function base64UrlDecode(str: string): Uint8Array {
+  const padded = str.replace(/-/g, '+').replace(/_/g, '/');
+  const binary = atob(padded);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+export async function verifyFirebaseToken(token: string): Promise<JwtPayload | null> {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+
+    const header = JSON.parse(new TextDecoder().decode(base64UrlDecode(parts[0]))) as JwtHeader;
+    const payload = JSON.parse(new TextDecoder().decode(base64UrlDecode(parts[1]))) as JwtPayload;
+
+    if (header.alg !== 'RS256') return null;
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;
+
+    const projectId = process.env.FIREBASE_PROJECT_ID || 'agaseke4org';
+    if (payload.aud !== projectId) return null;
+
+    const certRes = await fetch(`https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com`);
+    if (!certRes.ok) return null;
+    const certs = await certRes.json() as Record<string, string>;
+
+    const certPem = certs[header.kid || ''];
+    if (!certPem) return null;
+
+    const certDer = pemToDer(certPem);
+    const publicKey = await crypto.subtle.importKey(
+      'spki', certDer, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']
+    );
+
+    const data = new TextEncoder().encode(`${parts[0]}.${parts[1]}`);
+    const signature = base64UrlDecode(parts[2]);
+    const valid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', publicKey, signature, data);
+    if (!valid) return null;
+
+    return payload;
+  } catch {
+    return null;
+  }
 }
 
 // Firebase Admin REST API helpers
@@ -97,6 +143,7 @@ function pemToArrayBuffer(pem: string): ArrayBuffer {
   return bytes.buffer;
 }
 
+// Firestore REST API helpers
 export async function firestoreGet(collection: string, docId: string, accessToken: string, projectId: string): Promise<Record<string, unknown> | null> {
   const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${collection}/${docId}`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
@@ -120,6 +167,40 @@ export async function firestoreQuery(
       structuredQuery: {
         from: [{ collectionId: collection }],
         where: { fieldFilter: { field: { fieldPath: field }, op: 'EQUAL', value: { stringValue: value } } },
+      },
+    }),
+  });
+
+  if (!res.ok) return [];
+  const results = await res.json();
+  return results
+    .filter((r: Record<string, unknown>) => r.document)
+    .map((r: Record<string, unknown>) => {
+      const doc = r.document as Record<string, unknown>;
+      const name = doc.name as string;
+      const id = name.split('/').pop() || '';
+      return { id, ...firestoreDocToData(doc) };
+    });
+}
+
+export async function firestoreQueryComposite(
+  collection: string,
+  filters: Array<{ field: string; value: string }>,
+  accessToken: string,
+  projectId: string
+): Promise<Array<Record<string, unknown> & { id: string }>> {
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
+  const where = filters.length === 1
+    ? { fieldFilter: { field: { fieldPath: filters[0].field }, op: 'EQUAL', value: { stringValue: filters[0].value } } }
+    : { compositeFilter: { op: 'AND', filters: filters.map(f => ({ fieldFilter: { field: { fieldPath: f.field }, op: 'EQUAL', value: { stringValue: f.value } } })) } };
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      structuredQuery: {
+        from: [{ collectionId: collection }],
+        where,
       },
     }),
   });
@@ -166,31 +247,38 @@ export async function firestoreUpdate(
   });
 }
 
-export async function firestoreIncrementField(
-  collectionPath: string,
-  docId: string,
-  field: string,
-  amount: number,
+export async function firestoreCreate(
+  collection: string,
+  data: Record<string, unknown>,
   accessToken: string,
   projectId: string
-): Promise<void> {
-  const documentPath = `projects/${projectId}/databases/(default)/documents/${collectionPath}/${docId}`;
-  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:commit`;
-  await fetch(url, {
+): Promise<string | null> {
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${collection}`;
+  const fields: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value === undefined || value === null) {
+      fields[key] = { nullValue: null };
+    } else if (typeof value === 'string') {
+      fields[key] = { stringValue: value };
+    } else if (typeof value === 'number') {
+      fields[key] = { doubleValue: value };
+    } else if (typeof value === 'boolean') {
+      fields[key] = { booleanValue: value };
+    } else {
+      fields[key] = { stringValue: String(value) };
+    }
+  }
+
+  const res = await fetch(url, {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      writes: [{
-        transform: {
-          document: documentPath,
-          fieldTransforms: [{
-            fieldPath: field,
-            increment: { doubleValue: amount },
-          }],
-        },
-      }],
-    }),
+    body: JSON.stringify({ fields }),
   });
+
+  if (!res.ok) return null;
+  const doc = await res.json();
+  const name = doc.name as string;
+  return name.split('/').pop() || null;
 }
 
 function firestoreDocToData(doc: Record<string, unknown>): Record<string, unknown> {

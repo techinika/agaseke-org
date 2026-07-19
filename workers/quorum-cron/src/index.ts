@@ -13,6 +13,8 @@ interface Env {
   QUORUM_PAYMENTS_API_KEY: string;
   QUORUM_COMM_URL: string;
   QUORUM_COMM_API_KEY: string;
+  QUORUM_SUBSCRIPTIONS_URL: string;
+  QUORUM_SUBSCRIPTIONS_API_KEY: string;
 }
 
 export default {
@@ -42,6 +44,12 @@ export default {
     if (path === '/membership-expiry') {
       return handleMembershipExpiry(env);
     }
+    if (path === '/subscription-renewal') {
+      return handleSubscriptionRenewal(env);
+    }
+    if (path === '/subscription-expiry') {
+      return handleSubscriptionExpiry(env);
+    }
 
     return jsonResp({ error: 'Not found' }, 404);
   },
@@ -51,6 +59,8 @@ export default {
     await handleReconcile(env);
     await handlePaymentReminders(env);
     await handleMembershipExpiry(env);
+    await handleSubscriptionRenewal(env);
+    await handleSubscriptionExpiry(env);
   },
 };
 
@@ -393,6 +403,60 @@ function parseFirestoreDoc(doc: Record<string, unknown>): Record<string, unknown
     else if ('nullValue' in field) result[key] = null;
   }
   return result;
+}
+
+// ─── Subscription Renewal & Expiry ────────────────────────────────────────────
+
+async function handleSubscriptionRenewal(env: Env): Promise<Response> {
+  const cid = genCid('srr');
+  try {
+    if (!env.QUORUM_SUBSCRIPTIONS_URL || !env.QUORUM_SUBSCRIPTIONS_API_KEY) {
+      console.warn(`[${cid}] QUORUM_SUBSCRIPTIONS_URL not configured`);
+      return jsonResp({ error: 'Subscriptions worker not configured' }, 500);
+    }
+
+    console.log(`[${cid}] calling quorum-subscriptions /renewal-reminder`);
+    const res = await fetch(`${env.QUORUM_SUBSCRIPTIONS_URL}/renewal-reminder`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.CRON_SECRET}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const results = await res.json();
+    console.log(`[${cid}] subscription renewal reminder result:`, JSON.stringify(results));
+    return jsonResp(results);
+  } catch (err) {
+    console.error(`[${cid}] subscription renewal reminder error`, err);
+    return jsonResp({ error: 'Subscription renewal reminder failed' }, 500);
+  }
+}
+
+async function handleSubscriptionExpiry(env: Env): Promise<Response> {
+  const cid = genCid('sex');
+  try {
+    if (!env.QUORUM_SUBSCRIPTIONS_URL || !env.QUORUM_SUBSCRIPTIONS_API_KEY) {
+      console.warn(`[${cid}] QUORUM_SUBSCRIPTIONS_URL not configured`);
+      return jsonResp({ error: 'Subscriptions worker not configured' }, 500);
+    }
+
+    console.log(`[${cid}] calling quorum-subscriptions /expiry`);
+    const res = await fetch(`${env.QUORUM_SUBSCRIPTIONS_URL}/expiry`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.CRON_SECRET}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const results = await res.json();
+    console.log(`[${cid}] subscription expiry result:`, JSON.stringify(results));
+    return jsonResp(results);
+  } catch (err) {
+    console.error(`[${cid}] subscription expiry error`, err);
+    return jsonResp({ error: 'Subscription expiry failed' }, 500);
+  }
 }
 
 // ─── Email (via quorum-comm worker) ──────────────────────────────────────────
