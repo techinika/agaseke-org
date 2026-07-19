@@ -97,10 +97,10 @@ export default function AdminsPage() {
     }
   }
 
-  async function handleRemoveAdmin(adminId: string, name: string) {
+  async function handleRemoveAdmin(adminId: string, uid: string, name: string) {
     if (!confirm(`Remove ${name} as admin? This cannot be undone.`)) return;
     try {
-      await removeAdmin.mutateAsync(adminId);
+      await removeAdmin.mutateAsync({ adminId, uid });
       toast.success('Admin removed');
     } catch {
       toast.error('Failed to remove admin');
@@ -222,7 +222,7 @@ export default function AdminsPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleRemoveAdmin(admin.id, admin.displayName)}
+                          onClick={() => handleRemoveAdmin(admin.id, admin.uid, admin.displayName)}
                           className="hover:text-destructive"
                         >
                           <Trash2 className="size-4" />
