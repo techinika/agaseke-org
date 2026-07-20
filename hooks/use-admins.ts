@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryDocuments, addDocument, updateDocument, deleteDocument } from '@/lib/firebase/firestore';
 import { COLLECTIONS } from '@/lib/constants';
 import { OrgAdmin } from '@/types/admin';
-import { orderBy, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { orderBy, arrayUnion, arrayRemove, serverTimestamp } from 'firebase/firestore';
 
 const ADMINS = 'admins';
 
@@ -40,6 +40,7 @@ export function useAddOrgAdmin(orgId: string) {
           role: data.role,
           status: 'pending',
           invitedBy: data.addedBy,
+          createdAt: serverTimestamp(),
         });
       }
     },

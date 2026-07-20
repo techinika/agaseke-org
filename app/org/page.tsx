@@ -30,7 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/page-header";
 import { useAuthStore } from "@/store/auth-store";
-import { useUserOrganizations } from "@/hooks/use-user-organizations";
+import { useUserOrganizations, type OrgWithRole } from "@/hooks/use-user-organizations";
 import {
   usePendingInvitations,
   useAcceptInvitation,
@@ -94,7 +94,7 @@ export default function MyOrganizationsPage() {
               : "Manage your organizations"
           }
         />
-        <Link href="/org/create">
+        <Link href="/org/create" className="mt-4 sm:mt-0 sm:ml-4">
           <Button className="gap-2">
             <Plus className="size-4" />
             New organization
@@ -210,6 +210,12 @@ export default function MyOrganizationsPage() {
                     <Badge variant="secondary" className="text-xs">
                       {org.status}
                     </Badge>
+                    <Badge
+                      variant={org.userRole === 'admin' ? 'default' : 'outline'}
+                      className="text-xs"
+                    >
+                      {org.userRole === 'admin' ? 'Admin' : 'Member'}
+                    </Badge>
                   </CardDescription>
                 </div>
               </CardHeader>
@@ -241,7 +247,7 @@ export default function MyOrganizationsPage() {
                 <Link
                   href={`/org/${org.slug}`}
                   target="_blank"
-                  className="flex-1"
+                  className={org.userRole === 'admin' ? 'flex-1' : 'w-full'}
                 >
                   <Button
                     variant="outline"
@@ -252,12 +258,14 @@ export default function MyOrganizationsPage() {
                     View page
                   </Button>
                 </Link>
-                <Link href={`/org/${org.slug}/dashboard`} className="flex-1">
-                  <Button size="sm" className="w-full gap-1.5">
-                    <LayoutDashboard className="size-3.5" />
-                    Dashboard
-                  </Button>
-                </Link>
+                {org.userRole === 'admin' && (
+                  <Link href={`/org/${org.slug}/dashboard`} className="flex-1">
+                    <Button size="sm" className="w-full gap-1.5">
+                      <LayoutDashboard className="size-3.5" />
+                      Dashboard
+                    </Button>
+                  </Link>
+                )}
               </CardFooter>
             </Card>
           ))

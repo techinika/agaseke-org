@@ -102,6 +102,7 @@ export default function CreateOrgPage() {
         logoURL: form.logoURL || null,
         coverURL: null,
         adminIds: [user.uid],
+        memberIds: [],
         status: 'active',
         country: form.country,
         category: form.category,

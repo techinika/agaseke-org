@@ -15,11 +15,11 @@ import { useAuthStore } from '@/store/auth-store';
 import { useCreateMembership } from '@/hooks/use-memberships';
 import { CURRENCY, COLLECTIONS, SUBCOLLECTIONS, SUBSCRIPTION_PRICING } from '@/lib/constants';
 import { calculateFee } from '@/lib/fees';
-import { addDocument, setDocument, queryDocuments } from '@/lib/firebase/firestore';
+import { addDocument, setDocument, queryDocuments, updateDocument } from '@/lib/firebase/firestore';
 import { generateOrderId, getReturnUrl } from '@/lib/pesapal';
 import { WORKERS } from '@/lib/workers';
 import { toast } from 'sonner';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp, arrayUnion } from 'firebase/firestore';
 import type { Organization } from '@/types/organization';
 import type { OrgServerData } from '@/lib/firebase/server';
 
@@ -98,6 +98,10 @@ export default function JoinCheckoutClient({ slug, initialOrg }: JoinCheckoutCli
         joinedAt: now,
         displayName: profile?.displayName || user.displayName || 'Member',
         photoURL: profile?.photoURL || user.photoURL,
+      });
+
+      await updateDocument(`${COLLECTIONS.ORGANIZATIONS}/${org.id}`, {
+        memberIds: arrayUnion(user.uid),
       });
 
       const txData: Record<string, unknown> = {

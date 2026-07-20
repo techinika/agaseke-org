@@ -9,6 +9,7 @@ export interface Organization {
   logoURL: string | null;
   coverURL: string | null;
   adminIds: string[];
+  memberIds: string[];
   createdAt: Timestamp;
   status: OrgStatus;
   country: string;
