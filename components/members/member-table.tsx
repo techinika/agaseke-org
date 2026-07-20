@@ -76,7 +76,7 @@ export function MemberTable({ members, tiers, memberships, isLoading }: MemberTa
           />
         </div>
         <Select value={tierFilter} onValueChange={(v) => v && setTierFilter(v)}>
-          <SelectTrigger className="w-full sm:w-44">
+          <SelectTrigger>
             <Filter className="mr-2 size-4" />
             <SelectValue placeholder="All tiers" />
           </SelectTrigger>

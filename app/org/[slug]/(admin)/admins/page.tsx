@@ -315,7 +315,7 @@ export default function AdminsPage() {
                             value={admin.role}
                             onValueChange={(v) => handleUpdateRole(admin.id, v as AdminRole)}
                           >
-                            <SelectTrigger className="w-40">
+                            <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
