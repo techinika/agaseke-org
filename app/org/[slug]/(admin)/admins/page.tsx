@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { Shield, UserPlus, Trash2, RefreshCw, Crown } from 'lucide-react';
+import { Shield, UserPlus, Trash2, RefreshCw, Crown, Mail } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -139,6 +139,39 @@ export default function AdminsPage() {
     }
   }
 
+  function handleResendInvitation(adminEmail: string, adminName: string, adminRole: AdminRole) {
+    const roleName = ADMIN_ROLES.find((r) => r.value === adminRole)?.label || adminRole;
+    const footerHtml = org?.name
+      ? `<p style="color:#999;font-size:12px;margin-top:24px;">You were added as a <strong>${roleName}</strong> admin for <strong>${org.name}</strong>.</p>`
+      : '';
+    fetch(`${WORKERS.comm.url}/send`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': WORKERS.comm.apiKey,
+      },
+      body: JSON.stringify({
+        to: adminEmail,
+        subject: `Reminder: You've been added as an admin for ${org?.name || 'an organization'}`,
+        html: `
+          <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+            <h2 style="color:#333;">Admin Invitation Reminder</h2>
+            <p>Hi ${adminName},</p>
+            <p>This is a reminder that you have been added as a <strong>${roleName}</strong> for <strong>${org?.name || 'an organization'}</strong>.</p>
+            <p>Log in to your Quorum account to access the admin dashboard.</p>
+            <a href="${typeof window !== 'undefined' ? window.location.origin : ''}/org/${slug}/dashboard"
+               style="display:inline-block;padding:10px 20px;background:#FF0000;color:#fff;text-decoration:none;border-radius:6px;margin-top:12px;">
+              Go to Dashboard
+            </a>
+            ${footerHtml}
+          </div>
+        `,
+      }),
+    })
+      .then(() => toast.success('Invitation resent'))
+      .catch(() => toast.error('Failed to resend invitation'));
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -251,13 +284,31 @@ export default function AdminsPage() {
                         <Shield className="size-5 text-primary" />
                       </div>
                       <div>
-                        <p className="font-medium">{admin.displayName}</p>
+                        <p className="font-medium">
+                          {admin.displayName}
+                          {admin.uid.startsWith('pending_') && (
+                            <Badge variant="outline" className="ml-2 text-xs text-amber-600 border-amber-300">
+                              Pending
+                            </Badge>
+                          )}
+                        </p>
                         <p className="text-xs text-muted-foreground">{admin.email}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {isAdmin && admin.uid !== user?.uid ? (
                         <>
+                          {admin.uid.startsWith('pending_') && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleResendInvitation(admin.email, admin.displayName, admin.role)}
+                              title="Resend invitation"
+                              className="hover:text-primary"
+                            >
+                              <Mail className="size-4" />
+                            </Button>
+                          )}
                           <Select
                             value={admin.role}
                             onValueChange={(v) => handleUpdateRole(admin.id, v as AdminRole)}
