@@ -26,13 +26,27 @@ export function useOrgAdmins(orgId: string) {
 export function useAddOrgAdmin(orgId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: Omit<OrgAdmin, 'id'>) => {
+    mutationFn: async (data: Omit<OrgAdmin, 'id'> & { orgName?: string; orgSlug?: string }) => {
       await addDocument(adminsPath(orgId), data);
       await updateDocument(orgPath(orgId), { adminIds: arrayUnion(data.uid) });
+
+      // Create invitation doc for pending admins (user doesn't have an account yet)
+      if (data.uid.startsWith('pending_')) {
+        await addDocument(COLLECTIONS.INVITATIONS, {
+          email: data.email,
+          orgId,
+          orgName: data.orgName || '',
+          orgSlug: data.orgSlug || '',
+          role: data.role,
+          status: 'pending',
+          invitedBy: data.addedBy,
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orgAdmins', orgId] });
       queryClient.invalidateQueries({ queryKey: ['organization', orgId] });
+      queryClient.invalidateQueries({ queryKey: ['invitations'] });
     },
   });
 }
@@ -52,13 +66,26 @@ export function useUpdateOrgAdmin(orgId: string) {
 export function useRemoveOrgAdmin(orgId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ adminId, uid }: { adminId: string; uid: string }) => {
+    mutationFn: async ({ adminId, uid, email }: { adminId: string; uid: string; email?: string }) => {
       await deleteDocument(`${adminsPath(orgId)}/${adminId}`);
       await updateDocument(orgPath(orgId), { adminIds: arrayRemove(uid) });
+
+      // Also delete pending invitation if it exists
+      if (uid.startsWith('pending_') && email) {
+        const invitations = await queryDocuments<{ id: string; email: string }>(
+          COLLECTIONS.INVITATIONS,
+          orderBy('createdAt', 'desc')
+        );
+        const invitation = invitations.find((i) => i.email === email);
+        if (invitation) {
+          await deleteDocument(`${COLLECTIONS.INVITATIONS}/${invitation.id}`);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orgAdmins', orgId] });
       queryClient.invalidateQueries({ queryKey: ['organization', orgId] });
+      queryClient.invalidateQueries({ queryKey: ['invitations'] });
     },
   });
 }

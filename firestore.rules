@@ -120,5 +120,14 @@ service cloud.firestore {
       allow create: if isAuthenticated();
       allow update, delete: if false;
     }
+
+    match /invitations/{invitationId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated()
+        && (isSuperAdmin()
+          || isOrgAdmin(request.resource.data.orgId));
+      allow update: if isAuthenticated() || isSuperAdmin();
+      allow delete: if isAuthenticated() || isSuperAdmin();
+    }
   }
 }

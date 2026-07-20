@@ -4,6 +4,7 @@ export const COLLECTIONS = {
   TRANSACTIONS: 'transactions',
   DONATIONS: 'donations',
   MEMBERSHIPS: 'memberships',
+  INVITATIONS: 'invitations',
 } as const;
 
 export const SUBCOLLECTIONS = {
