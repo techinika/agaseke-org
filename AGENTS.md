@@ -44,6 +44,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - `org/[slug]/(member)/` — member-only rooms
 - `org/[slug]/join/` — join flow with PesaPal card checkout (with member limit enforcement)
 - `org/[slug]/donate/` — donation flow with PesaPal card checkout
+- `org/[slug]/donate/campaigns/[campaignId]/` — campaign detail page with progress card and full description
 - `org/[slug]/payment/return/[depositId]/[type]/` — payment return page (client-side verification via `quorum-payments` worker)
 - `org/[slug]/admins/` — admin roles management (super-admin, finance-admin, community-admin)
 - `org/[slug]/subscription/` — subscription plan management with multi-month billing (calls `quorum-subscriptions` worker directly)
@@ -293,6 +294,7 @@ A web app for nonprofits to manage memberships and collect donations.
 - **Subscriptions worker auth fix** — Replaced broken Web Crypto `verifyFirebaseToken` (passed full X.509 cert DER to `importKey('spki', ...)`) with jose's `importX509` (installed jose as dependency).
 - **PEM base64 cleaning** — `pemToDer` now strips all non-base64 characters via `[^A-Za-z0-9+/=]` instead of just whitespace, handling `\n`, quotes, and other env-var artifacts.
 - **Detailed error responses** — All catch blocks in `quorum-subscriptions` worker return the actual error message (not just a generic "Failed to ...").
+- **Campaign detail page** — Replaced campaign info dialog on donate page with dedicated page at `org/[slug]/donate/campaigns/[campaignId]/` (two-column layout: progress card left, description right).
 
 ### Next Steps
 1. Deploy `quorum-comm` worker: `cd workers/quorum-comm && npm install && npm run deploy`

@@ -1,25 +1,23 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, Shield, Lock, CreditCard, Info } from 'lucide-react';
+import { ChevronRight, Shield, Lock, CreditCard, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import PublicOrgHeader from '@/components/shared/public-org-header';
 import PublicOrgFooter from '@/components/shared/public-org-footer';
-import { RichTextContent } from '@/components/shared/rich-text-content';
 import { useOrganizationBySlug } from '@/hooks/use-organization';
 import { useActiveCampaigns } from '@/hooks/use-campaigns';
 import { useCampaignDonationTotals } from '@/hooks/use-campaign-donations';
 import { useAuthStore } from '@/store/auth-store';
 import { CURRENCY, DONATION_FREQUENCIES } from '@/lib/constants';
 import { format } from 'date-fns';
-import type { Campaign } from '@/types/campaign';
 import type { Organization } from '@/types/organization';
 import { BrandColorWrapper } from '@/components/shared/brand-color-wrapper';
 import { OrgNotFound } from '@/components/shared/org-not-found';
@@ -50,7 +48,6 @@ export default function DonateClient({ slug, initialOrg }: DonateClientProps) {
     }
     return '';
   });
-  const [detailCampaign, setDetailCampaign] = useState<Campaign | null>(null);
 
   const [donorName, setDonorName] = useState(user ? (profile?.displayName || user.displayName || '') : '');
   const [donorEmail, setDonorEmail] = useState(user ? (profile?.email || user.email || '') : '');
@@ -223,14 +220,13 @@ export default function DonateClient({ slug, initialOrg }: DonateClientProps) {
                               />
                             </div>
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => setDetailCampaign(c)}
+                          <Link
+                            href={`/org/${slug}/donate/campaigns/${c.id}`}
                             className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                             title="View campaign details"
                           >
-                            <Info className="size-4" />
-                          </button>
+                            <ExternalLink className="size-4" />
+                          </Link>
                         </div>
                       );
                     })}
@@ -299,55 +295,6 @@ export default function DonateClient({ slug, initialOrg }: DonateClientProps) {
           </Card>
         </div>
         <PublicOrgFooter />
-
-        <Dialog open={!!detailCampaign} onOpenChange={(open) => { if (!open) setDetailCampaign(null); }}>
-          <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
-            {detailCampaign && (
-              <>
-                <DialogHeader>
-                  <DialogTitle className="text-xl">{detailCampaign.title}</DialogTitle>
-                  <DialogDescription>
-                    {detailCampaign.goalAmount.toLocaleString()} {CURRENCY} goal
-                    {detailCampaign.endDate && ` · Ends ${format(detailCampaign.endDate.toDate(), 'MMM d, yyyy')}`}
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  {(() => {
-                    const computedRaised = campaignTotals?.[detailCampaign.id] ?? 0;
-                    const raised = Math.max(detailCampaign.raisedAmount, computedRaised);
-                    const pct = detailCampaign.goalAmount > 0 ? Math.min((raised / detailCampaign.goalAmount) * 100, 100) : 0;
-                    return (
-                      <div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium">{raised.toLocaleString()} {CURRENCY} raised</span>
-                          <span className="text-muted-foreground">{Math.round(pct)}% of goal</span>
-                        </div>
-                        <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
-                          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })()}
-                  <RichTextContent html={detailCampaign.description} />
-                  <div className="flex gap-3 pt-2">
-                    <Button
-                      onClick={() => {
-                        setCampaignId(detailCampaign.id);
-                        setDetailCampaign(null);
-                      }}
-                      className="flex-1"
-                    >
-                      Select this campaign
-                    </Button>
-                    <Button variant="outline" onClick={() => setDetailCampaign(null)}>
-                      Close
-                    </Button>
-                  </div>
-                </div>
-              </>
-            )}
-          </DialogContent>
-        </Dialog>
       </div>
     </BrandColorWrapper>
   );
