@@ -36,9 +36,9 @@ export default function CampaignDetailClient({ slug, campaignId, initialOrg }: C
       <div className="min-h-screen">
         <div className="mx-auto max-w-5xl px-4 py-12">
           <Skeleton className="mb-8 h-64 rounded-2xl" />
-          <div className="grid gap-8 lg:grid-cols-5">
-            <div className="lg:col-span-2"><Skeleton className="h-80 rounded-xl" /></div>
-            <div className="lg:col-span-3"><Skeleton className="h-96 rounded-xl" /></div>
+              <div className="grid gap-8 lg:grid-cols-7">
+                <div className="lg:col-span-2"><Skeleton className="h-80 rounded-xl" /></div>
+                <div className="lg:col-span-5"><Skeleton className="h-96 rounded-xl" /></div>
           </div>
         </div>
       </div>
@@ -81,7 +81,7 @@ export default function CampaignDetailClient({ slug, campaignId, initialOrg }: C
         </div>
 
         <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-          <div className="grid gap-8 lg:grid-cols-5">
+          <div className="grid gap-8 lg:grid-cols-7">
             <div className="lg:col-span-2">
               <div className="sticky top-6 space-y-6">
                 <Card className="overflow-hidden border shadow-sm">
@@ -156,7 +156,7 @@ export default function CampaignDetailClient({ slug, campaignId, initialOrg }: C
               </div>
             </div>
 
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-5">
               <Card className="overflow-hidden border shadow-sm">
                 <CardContent className="p-6 sm:p-8">
                   {campaign.description ? (
