@@ -91,7 +91,8 @@ export function ChatView({
         const formData = new FormData();
         formData.append('file', pendingImage.file);
         formData.append('folder', 'chat');
-        const res = await fetch(`${WORKERS.uploads.url}/upload`, { method: 'POST', body: formData });
+        const token = await user!.getIdToken();
+        const res = await fetch(`${WORKERS.uploads.url}/upload`, { method: 'POST', body: formData, headers: { 'Authorization': `Bearer ${token}` } });
         if (!res.ok) throw new Error('Upload failed');
         const data = await res.json();
         imageURL = data.url;

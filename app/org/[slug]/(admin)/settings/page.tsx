@@ -194,9 +194,11 @@ export default function SettingsPage() {
       formData.append('file', file);
       formData.append('folder', folder);
 
+      const token = await user!.getIdToken();
       const res = await fetch(`${WORKERS.uploads.url}/upload`, {
         method: 'POST',
         body: formData,
+        headers: { 'Authorization': `Bearer ${token}` },
       });
 
       if (!res.ok) throw new Error('Upload failed');
