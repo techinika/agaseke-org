@@ -108,7 +108,7 @@ A web app for nonprofits to manage memberships and collect donations.
 
 ### Key Patterns
 - AuthGuard via client-side auth store (Firebase Auth uses indexedDB — middleware can't read it)
-- **Worker Firebase Auth**: `workers/shared/firebase-auth.ts` uses `jose` JWKS + JWT verification for verifying Firebase ID tokens in Cloudflare Workers
+- **Worker Firebase Auth**: `workers/shared/firebase-auth.ts` uses `jose` `importX509` + `jwtVerify` for verifying Firebase ID tokens in Cloudflare Workers. `quorum-subscriptions` has its own copy in `helpers.ts` (same jose-based approach, hardcodes `agaseke4org` project ID)
 - **Proxy security headers**: `proxy.ts` adds X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy (no auth verification — Firebase Auth uses IndexedDB)
 - **CORS on all workers**: All workers restrict CORS to `ALLOWED_ORIGIN` env var
 - **Webhook auth**: PesaPal webhook is unauthenticated (plain POST); validates payload structure (OrderTrackingId, OrderMerchantReference required)
@@ -288,11 +288,16 @@ A web app for nonprofits to manage memberships and collect donations.
 - **Settings form pre-fill** — Lazy `useState(() => org?.field ?? '')` initialization so inputs populate immediately from cached org data.
 - **Sidebar persistence** — Sidebar open/closed state persisted to `localStorage`. Nav clicks only auto-close sidebar on mobile (not desktop).
 - **Lint cleanup** — Removed unused imports and variables across subscription page, quorum-comm, quorum-subscriptions, and lib/payments.
+- **Upload worker auth fix** — All three frontend upload call sites (org create, settings, chat-view) now send `Authorization: Bearer <Firebase ID token>` (were missing auth headers entirely).
+- **Shared firebase-auth.ts fix** — Changed `importPKCS8` → `importX509` (Google's cert endpoint returns X.509 certificates, not PKCS#8 private keys).
+- **Subscriptions worker auth fix** — Replaced broken Web Crypto `verifyFirebaseToken` (passed full X.509 cert DER to `importKey('spki', ...)`) with jose's `importX509` (installed jose as dependency).
+- **PEM base64 cleaning** — `pemToDer` now strips all non-base64 characters via `[^A-Za-z0-9+/=]` instead of just whitespace, handling `\n`, quotes, and other env-var artifacts.
+- **Detailed error responses** — All catch blocks in `quorum-subscriptions` worker return the actual error message (not just a generic "Failed to ...").
 
 ### Next Steps
 1. Deploy `quorum-comm` worker: `cd workers/quorum-comm && npm install && npm run deploy`
 2. Set Resend secrets on `quorum-comm`: `wrangler secret put RESEND_API_KEY` and `wrangler secret put RESEND_FROM_EMAIL`
-3. Deploy `quorum-subscriptions` worker: `cd workers/quorum-subscriptions && npm install && npm run deploy`
+3. Deploy `quorum-subscriptions` worker: `cd workers/quorum-subscriptions && npm install && npm run deploy` (jose v6 added as dependency for Firebase token verification)
 4. Set secrets on `quorum-subscriptions`: Firebase, PesaPal, Resend, worker API keys
 5. Deploy `quorum-payments` worker: `cd workers/quorum-payments && npm install && npm run deploy`
 6. Deploy `quorum-cron` worker: `cd workers/quorum-cron && npm install && npm run deploy`

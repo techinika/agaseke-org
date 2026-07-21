@@ -121,7 +121,7 @@ async function handleGetInfo(request: Request, env: Env): Promise<Response> {
     }, 200, env);
   } catch (err) {
     console.error(`[${cid}] get-info error`, err);
-    return errorResp('Failed to get subscription info', 500, env);
+    return errorResp(`Failed to get subscription info: ${err instanceof Error ? err.message : String(err)}`, 500, env);
   }
 }
 
@@ -146,7 +146,7 @@ async function handleCalculatePrice(request: Request, env: Env): Promise<Respons
     return jsonResp(pricing, 200, env);
   } catch (err) {
     console.error(`[${cid}] calculate-price error`, err);
-    return errorResp('Failed to calculate price', 500, env);
+    return errorResp(`Failed to calculate price: ${err instanceof Error ? err.message : String(err)}`, 500, env);
   }
 }
 
@@ -254,7 +254,7 @@ async function handleChangePlan(request: Request, env: Env): Promise<Response> {
     if (!paymentRes.ok) {
       const errBody = await paymentRes.text();
       console.error(`[${cid}] Payment initiation failed: ${paymentRes.status} ${errBody.slice(0, 200)}`);
-      return errorResp('Failed to initiate payment', 500, env);
+      return errorResp(`Payment initiation failed: ${paymentRes.status}`, 500, env);
     }
 
     const paymentData = await paymentRes.json() as { redirectUrl: string; orderTrackingId: string };
@@ -271,7 +271,7 @@ async function handleChangePlan(request: Request, env: Env): Promise<Response> {
     }, 200, env);
   } catch (err) {
     console.error(`[${cid}] change-plan error`, err);
-    return errorResp('Failed to change plan', 500, env);
+    return errorResp(`Failed to change plan: ${err instanceof Error ? err.message : String(err)}`, 500, env);
   }
 }
 
@@ -314,7 +314,7 @@ async function handleFinalize(request: Request, env: Env): Promise<Response> {
     return jsonResp({ success: true, plan: targetPlan, months, endDate }, 200, env);
   } catch (err) {
     console.error(`[${cid}] finalize error`, err);
-    return errorResp('Failed to finalize subscription', 500, env);
+    return errorResp(`Failed to finalize subscription: ${err instanceof Error ? err.message : String(err)}`, 500, env);
   }
 }
 
@@ -338,7 +338,7 @@ async function handleFailure(request: Request, env: Env): Promise<Response> {
     return jsonResp({ success: true }, 200, env);
   } catch (err) {
     console.error(`[${cid}] handle-failure error`, err);
-    return errorResp('Failed to handle subscription failure', 500, env);
+    return errorResp(`Failed to handle subscription failure: ${err instanceof Error ? err.message : String(err)}`, 500, env);
   }
 }
 
