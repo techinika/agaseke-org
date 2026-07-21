@@ -24,7 +24,7 @@ export default {
     if (method === 'OPTIONS') {
       return new Response(null, {
         status: 204,
-        headers: { 'Access-Control-Allow-Origin': 'https://quorum.app', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Authorization, Content-Type' },
+        headers: { 'Access-Control-Allow-Origin': 'https://https://quorum-org-app.vercel.app', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Authorization, Content-Type' },
       });
     }
 
@@ -298,7 +298,7 @@ function genCid(prefix: string): string {
 function jsonResp(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://quorum.app' },
+    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://quorum-org-app.vercel.app' },
   });
 }
 

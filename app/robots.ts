@@ -1,14 +1,14 @@
-import type { MetadataRoute } from 'next';
+import type { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
-        userAgent: '*',
-        allow: '/',
-        disallow: ['/admin/', '/api/'],
+        userAgent: "*",
+        allow: "/",
+        disallow: ["/admin/", "/api/"],
       },
     ],
-    sitemap: `${process.env.NEXT_PUBLIC_APP_URL || 'https://quorum.app'}/sitemap.xml`,
+    sitemap: `${process.env.NEXT_PUBLIC_APP_URL || "https://quorum-org-app.vercel.app"}/sitemap.xml`,
   };
 }

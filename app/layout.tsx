@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   },
   description:
     'Quorum helps nonprofits, churches, schools, and associations manage memberships, collect donations, and connect with their community. Simple tools for African organizations.',
-  metadataBase: new URL('https://quorum.app'),
+  metadataBase: new URL('https://quorum-org-app.vercel.app'),
   manifest: '/manifest.webmanifest',
   icons: { icon: '/favicon.svg' },
   keywords: ['membership management', 'donation platform', 'nonprofit tools', 'Africa', 'organization management', 'member engagement'],

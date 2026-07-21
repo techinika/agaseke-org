@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Quorum — Membership & Donation Platform',
     description: 'Manage memberships, collect donations, and build community. White-labeled platform for nonprofits.',
-    url: process.env.NEXT_PUBLIC_APP_URL || 'https://quorum.app',
+    url: process.env.NEXT_PUBLIC_APP_URL || 'https://quorum-org-app.vercel.app',
     siteName: 'Quorum',
     type: 'website',
   },

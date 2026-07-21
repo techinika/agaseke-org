@@ -19,7 +19,7 @@ export default {
       return new Response(null, {
         status: 204,
         headers: {
-          'Access-Control-Allow-Origin': env.ALLOWED_ORIGIN || 'https://quorum.app',
+          'Access-Control-Allow-Origin': env.ALLOWED_ORIGIN || 'quorum-org-app.vercel.app',
           'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         },

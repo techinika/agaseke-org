@@ -106,7 +106,7 @@ export function emailLayout(
               ${customFooterHtml}
               ${orgFooterHtml}
               <p style="margin: 0 0 4px; font-size: 12px; color: ${TEXT_SECONDARY}; line-height: 1.5;">
-                Powered by <a href="https://quorum.app" style="color: ${brand}; text-decoration: underline;">Quorum</a>
+                Powered by <a href="https://quorum-org-app.vercel.app/" style="color: ${brand}; text-decoration: underline;">Quorum</a>
               </p>
               <p style="margin: 0; font-size: 11px; color: ${TEXT_SECONDARY}; line-height: 1.5;">
                 &copy; ${new Date().getFullYear()} ${orgName}. All rights reserved.
