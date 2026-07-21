@@ -62,7 +62,7 @@ export default function CampaignDetailClient({ slug, campaignId, initialOrg }: C
 
         <div className="relative overflow-hidden bg-gradient-to-br from-primary/90 via-primary/60 to-primary/30">
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
-          <div className="relative mx-auto max-w-5xl px-4 pb-10 pt-8 sm:px-6 sm:pb-14 sm:pt-12 lg:px-8">
+          <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-8 sm:px-6 sm:pb-14 sm:pt-12 lg:px-8">
             <button
               onClick={() => router.push(`/org/${slug}/donate`)}
               className="mb-6 inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-sm font-medium text-white/90 backdrop-blur-sm transition-colors hover:bg-white/30"
@@ -80,7 +80,7 @@ export default function CampaignDetailClient({ slug, campaignId, initialOrg }: C
           </div>
         </div>
 
-        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
           <div className="grid gap-8 lg:grid-cols-7">
             <div className="lg:col-span-2">
               <div className="sticky top-6 space-y-6">
@@ -158,7 +158,7 @@ export default function CampaignDetailClient({ slug, campaignId, initialOrg }: C
 
             <div className="lg:col-span-5">
               <Card className="overflow-hidden border shadow-sm">
-                <CardContent className="p-6 sm:p-8">
+                <CardContent className="p-8 sm:p-10">
                   {campaign.description ? (
                     <RichTextContent html={campaign.description} className="prose-lg" />
                   ) : (
