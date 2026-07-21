@@ -1,17 +1,17 @@
-import { importPKCS8, jwtVerify } from 'jose';
+import { importX509, jwtVerify } from 'jose';
 
-const FIREBASE_JWKS_URI = 'https://www.googleapis.com/service_accounts/v1/metadata/x509/securetoken@system.gserviceaccount.com';
+const FIREBASE_CERTS_URI = 'https://www.googleapis.com/service_accounts/v1/metadata/x509/securetoken@system.gserviceaccount.com';
 
-let cachedKeys: { keys: ReturnType<typeof importPKCS8>[]; fetchedAt: number } | null = null;
+let cachedKeys: { keys: ReturnType<typeof importX509>[]; fetchedAt: number } | null = null;
 
 export async function verifyFirebaseToken(token: string, projectId: string): Promise<{ uid: string; email?: string } | null> {
   try {
     if (!cachedKeys || Date.now() - cachedKeys.fetchedAt > 3600000) {
-      const res = await fetch(FIREBASE_JWKS_URI);
+      const res = await fetch(FIREBASE_CERTS_URI);
       const data = await res.json() as Record<string, string>;
-      cachedKeys = { keys: Object.values(data).map(k => importPKCS8(k, 'RS256')), fetchedAt: Date.now() };
+      cachedKeys = { keys: Object.values(data).map(k => importX509(k, 'RS256')), fetchedAt: Date.now() };
     }
-    
+
     for (const keyPromise of cachedKeys.keys) {
       try {
         const key = await keyPromise;

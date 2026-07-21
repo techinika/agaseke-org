@@ -1,3 +1,5 @@
+import { importX509, jwtVerify } from 'jose';
+
 export interface Env {
   FIREBASE_ADMIN_CLIENT_EMAIL: string;
   FIREBASE_ADMIN_PRIVATE_KEY: string;
@@ -28,50 +30,37 @@ export function errorResp(message: string, status = 500, env?: Env): Response {
   return jsonResp({ error: message }, status, env);
 }
 
-// Firebase Auth — verify Firebase ID tokens via JWKS
-interface JwtHeader { alg: string; kid?: string; typ: string; }
+const FIREBASE_CERTS_URI = 'https://www.googleapis.com/service_accounts/v1/metadata/x509/securetoken@system.gserviceaccount.com';
+
 interface JwtPayload { iss?: string; sub?: string; aud?: string; exp?: number; iat?: number; email?: string; user_id?: string; [key: string]: unknown; }
 
-function base64UrlDecode(str: string): Uint8Array {
-  const padded = str.replace(/-/g, '+').replace(/_/g, '/');
-  const binary = atob(padded);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
+let cachedKeys: { keys: ReturnType<typeof importX509>[]; fetchedAt: number } | null = null;
+
+function extractPayload(p: Record<string, unknown>): JwtPayload {
+  return p as unknown as JwtPayload;
 }
 
 export async function verifyFirebaseToken(token: string): Promise<JwtPayload | null> {
   try {
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
+    const projectId = 'agaseke4org';
 
-    const header = JSON.parse(new TextDecoder().decode(base64UrlDecode(parts[0]))) as JwtHeader;
-    const payload = JSON.parse(new TextDecoder().decode(base64UrlDecode(parts[1]))) as JwtPayload;
+    if (!cachedKeys || Date.now() - cachedKeys.fetchedAt > 3600000) {
+      const res = await fetch(FIREBASE_CERTS_URI);
+      const data = await res.json() as Record<string, string>;
+      cachedKeys = { keys: Object.values(data).map(k => importX509(k, 'RS256')), fetchedAt: Date.now() };
+    }
 
-    if (header.alg !== 'RS256') return null;
-    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;
-
-    const projectId = process.env.FIREBASE_PROJECT_ID || 'agaseke4org';
-    if (payload.aud !== projectId) return null;
-
-    const certRes = await fetch(`https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com`);
-    if (!certRes.ok) return null;
-    const certs = await certRes.json() as Record<string, string>;
-
-    const certPem = certs[header.kid || ''];
-    if (!certPem) return null;
-
-    const certDer = pemToDer(certPem);
-    const publicKey = await crypto.subtle.importKey(
-      'spki', certDer, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']
-    );
-
-    const data = new TextEncoder().encode(`${parts[0]}.${parts[1]}`);
-    const signature = base64UrlDecode(parts[2]);
-    const valid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', publicKey, signature, data);
-    if (!valid) return null;
-
-    return payload;
+    for (const keyPromise of cachedKeys.keys) {
+      try {
+        const key = await keyPromise;
+        const { payload } = await jwtVerify(token, key, {
+          issuer: `https://securetoken.google.com/${projectId}`,
+          audience: projectId,
+        });
+        return extractPayload(payload as unknown as Record<string, unknown>);
+      } catch { continue; }
+    }
+    return null;
   } catch {
     return null;
   }
@@ -103,7 +92,7 @@ export async function getFirebaseAccessToken(email: string, privateKey: string):
 
   const cryptoKey = await crypto.subtle.importKey(
     'pkcs8',
-    pemToArrayBuffer(privateKey),
+    pemToDer(privateKey),
     { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
     false,
     ['sign']
@@ -131,11 +120,10 @@ export async function getFirebaseAccessToken(email: string, privateKey: string):
   return tokenData.access_token;
 }
 
-function pemToArrayBuffer(pem: string): ArrayBuffer {
+function pemToDer(pem: string): ArrayBuffer {
   const cleaned = pem
-    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
-    .replace(/-----END PRIVATE KEY-----/g, '')
-    .replace(/\\n/g, '')
+    .replace(/-----BEGIN [A-Z ]+-----/g, '')
+    .replace(/-----END [A-Z ]+-----/g, '')
     .replace(/\s/g, '');
   const binaryString = atob(cleaned);
   const bytes = new Uint8Array(binaryString.length);
