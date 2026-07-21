@@ -121,13 +121,8 @@ export async function getFirebaseAccessToken(email: string, privateKey: string):
 }
 
 function pemToDer(pem: string): ArrayBuffer {
-  const cleaned = pem.replace(/[^A-Za-z0-9+/=]/g, '');
-  const binaryString = atob(cleaned);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes.buffer;
+  const b64 = pem.replace(/[^A-Za-z0-9+/=]/g, '');
+  return Buffer.from(b64, 'base64').buffer as ArrayBuffer;
 }
 
 // Firestore REST API helpers

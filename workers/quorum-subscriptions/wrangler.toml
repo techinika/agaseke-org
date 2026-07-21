@@ -7,11 +7,7 @@ compatibility_flags = ["nodejs_compat"]
 FIREBASE_PROJECT_ID = "agaseke4org"
 
 [secrets]
-FIREBASE_ADMIN_CLIENT_EMAIL = ""
-FIREBASE_ADMIN_PRIVATE_KEY = ""
-API_KEY = ""
 ALLOWED_ORIGIN = "https://quorum-org-app.vercel.app"
   QUORUM_PAYMENTS_URL = "https://quorum-payments.agasekeforcreators.workers.dev"
   QUORUM_COMM_URL = "https://quorum-comm.agasekeforcreators.workers.dev"
-CRON_SECRET = ""
 APP_URL = "https://quorum-org-app.vercel.app"
